@@ -31,8 +31,7 @@ class TreePruner {
             System.exit(1);
         }
 
-        Map<Object, Set<Node>> attributeValues = new TreeMap<>();
-        collectAttributeValues(tree, attributeName, attributeValues);
+        Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, attributeName);
 
         if (isVerbose) {
             System.out.println("Read tree: " + treeFileName);
@@ -64,29 +63,15 @@ class TreePruner {
      * collects all the values for a given attribute in a map with a list of tips nodes for each
      * @param tree
      * @param attributeName
-     * @param attributeValues
      */
-    private void collectAttributeValues(RootedTree tree, String attributeName,  Map<Object, Set<Node>> attributeValues) {
-        collectAttributeValues(tree, tree.getRootNode(), attributeName, attributeValues);
-    }
-
-    /**
-     * recursive version
-     * @param tree
-     * @param node
-     * @param attributeName
-     * @param attributeValues
-     */
-    private void collectAttributeValues(RootedTree tree, Node node, String attributeName, Map<Object, Set<Node>> attributeValues) {
-        if (tree.isExternal(node)) {
-            Object value = node.getAttribute(attributeName);
+    private Map<Object, Set<Node>> collectTipAttributeValues(RootedTree tree, String attributeName) {
+        Map<Object, Set<Node>> attributeValues = new TreeMap<>();
+        for (Node tip : tree.getExternalNodes()) {
+            Object value = tip.getAttribute(attributeName);
             Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
-            tips.add(node);
+            tips.add(tip);
         }
-
-        for (Node child : tree.getChildren(node)) {
-            collectAttributeValues(tree, child, attributeName, attributeValues);
-        }
+        return attributeValues;
     }
 
     /**
@@ -106,7 +91,8 @@ class TreePruner {
      * @param attributeName
      * @param attributeValue
      */
-    private boolean annotateMonophyleticNodes(RootedTree tree, Node node, String attributeName, Object attributeValue, boolean isHierarchical, String newAttributeName) {
+    private boolean annotateMonophyleticNodes(RootedTree tree, Node node, String attributeName, Object attributeValue,
+                                              boolean isHierarchical, String newAttributeName) {
         boolean isMonophyletic = true;
 
         if (tree.isExternal(node)) {
