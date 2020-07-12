@@ -1,7 +1,9 @@
 package network.artic.clusterfunk;
 
 import jebl.evolution.graphs.Node;
+import jebl.evolution.io.NewickExporter;
 import jebl.evolution.io.NexusExporter;
+import jebl.evolution.io.TreeExporter;
 import jebl.evolution.trees.RootedTree;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -92,11 +94,33 @@ class Command {
      * @param tree
      * @param fileName
      */
-    static void writeTree(RootedTree tree, String fileName) {
+    static void writeTreeFile(RootedTree tree, String fileName, Format format) {
+        writeTreeFile(Collections.singletonList(tree), fileName, format);
+    }
+
+    /**
+     * Writes a tree file with a list of trees
+     * @param trees
+     * @param fileName
+     */
+    static void writeTreeFile(List<RootedTree> trees, String fileName, Format format) {
         try {
             FileWriter writer = new FileWriter(fileName);
-            NexusExporter exporter = new NexusExporter(writer);
-            exporter.exportTree(tree);
+
+            TreeExporter exporter;
+
+            switch (format) {
+                case NEXUS:
+                    exporter = new NexusExporter(writer);
+                    break;
+                case NEWICK:
+                    exporter = new NewickExporter(writer);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown format: " + format);
+            }
+
+            exporter.exportTrees(trees);
             writer.close();
         } catch (IOException e) {
             errorStream.println("Error writing tree file: " + e.getMessage());

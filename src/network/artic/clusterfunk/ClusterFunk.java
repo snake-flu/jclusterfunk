@@ -11,8 +11,10 @@ class ClusterFunk {
 
     enum Command {
         NONE("", ""),
-        PRUNE("prune", "Prune out subtrees based on tip annotations."),
-        ANNOTATE("annotate", "Annotate tips and nodes from a metadata table.");
+        PRUNE("prune", "Prune out taxa from a list or based on metadata."),
+        SPLIT("split", "Split out subtrees based on tip annotations."),
+        ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
+        CONVERT("convert", "convert tree from one format to another.");
 
         Command(final String name, final String description) {
             this.name = name;
@@ -92,6 +94,14 @@ class ClusterFunk {
             .desc( "output file prefix" )
             .type(String.class).build();
 
+    private final static Option OUTPUT_FORMAT = Option.builder( "f" )
+            .longOpt("format")
+            .argName("nexus|newick")
+            .hasArg()
+            .required(false)
+            .desc( "output file format (nexus or newick)" )
+            .type(String.class).build();
+
     private final static Option ATTRIBUTE =  Option.builder( )
             .longOpt("attribute")
             .argName("attribute")
@@ -122,7 +132,7 @@ class ClusterFunk {
             .desc( "replace the annotations or tip label headers rather than appending (default false)" )
             .type(String.class).build();
 
-    private static final String VERSION = "v0.01a";
+    private static final String VERSION = "v0.0.1";
     private static final String HEADER = "\nClusterFunk " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
@@ -163,18 +173,30 @@ class ClusterFunk {
                 command = Command.valueOf(args[0].toUpperCase());
 
                 options.addOption("h", "help", false, "display help");
-                options.addOption("v", "verbose", false, "write analysis details to stderr");
+                options.addOption("v", "version", false, "display version");
+                options.addOption("verbose", false, "write analysis details to stderr");
 
                 switch (command) {
                     case PRUNE:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(METADATA);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_HEADER);
+                        options.addOption(HEADER_DELIMITER);
+                        break;
+                    case SPLIT:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
+                        options.addOption(OUTPUT_FORMAT);
                         options.addOption(ATTRIBUTE);
                         break;
                     case ANNOTATE:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FORMAT);
                         options.addOption(METADATA);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_HEADER);
@@ -185,12 +207,21 @@ class ClusterFunk {
                         options.addOptionGroup(annotateGroup);
                         options.addOption(REPLACE);
                         break;
+                    case CONVERT:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FORMAT);
+                        break;
                 }
 
                 commandLine = parser.parse( options, Arrays.copyOfRange(args, 1, args.length));
 
                 if (commandLine.hasOption("h")) {
                     printHelp(command, options);
+                    return;
+                }
+                if (commandLine.hasOption("v")) {
+                    System.out.println(VERSION);
                     return;
                 }
 
@@ -208,22 +239,48 @@ class ClusterFunk {
             return;
         }
 
-        boolean isVerbose = commandLine.hasOption("v");
+        boolean isVerbose = commandLine.hasOption("verbose");
+        Format format = Format.NEXUS;
+
+        if (commandLine.hasOption("f")) {
+            try {
+                format = Format.valueOf(commandLine.getOptionValue("f").toUpperCase());
+            } catch (IllegalArgumentException iae) {
+                System.out.println("Unrecognised output format: " + commandLine.getOptionValue("f") + "\n");
+                printHelp(command, options);
+                return;
+            }
+        }
 
         long startTime = System.currentTimeMillis();
 
         switch (command) {
 
             case PRUNE:
-                new Prune(commandLine.getOptionValue("i"), commandLine.getOptionValue("a"), commandLine.getOptionValue("o"), commandLine.getOptionValue("p"), isVerbose);
+//                Prune(String treeFileName, String metadataFileName, String outputPath,
+//                        String indexColumn, int indexHeader, String headerDelimiter,
+//                boolean pruneNonMatching,
+//                boolean isVerbose) {
+                new Prune(
+                        commandLine.getOptionValue("i"),
+                        commandLine.getOptionValue("m"),
+                        commandLine.getOptionValue("o"),
+                        format,
+                        commandLine.getOptionValue("index-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
+                        commandLine.getOptionValue("header-delimeter", "|"),
+                        Boolean.parseBoolean(commandLine.getOptionValue("replace", "false")),
+                        isVerbose);
+                break;
+            case SPLIT:
+                new Split(commandLine.getOptionValue("i"), commandLine.getOptionValue("a"), commandLine.getOptionValue("o"), commandLine.getOptionValue("p"), isVerbose);
                 break;
             case ANNOTATE:
-//                Annotate(String treeFileName, String metadataFileName, String outputPath,
-//                        String indexColumn, int indexHeader, String headerDelimiter,
-//                    List<String> headerColumns, boolean replaceColumns, List<String> annotationColumns,
-//                boolean isVerbose) {
-
-                new Annotate(commandLine.getOptionValue("i"), commandLine.getOptionValue("m"), commandLine.getOptionValue("o"),
+                new Annotate(
+                        commandLine.getOptionValue("i"),
+                        commandLine.getOptionValue("m"),
+                        commandLine.getOptionValue("o"),
+                        format,
                         commandLine.getOptionValue("index-column", null),
                         Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
                         commandLine.getOptionValue("header-delimeter", "|"),

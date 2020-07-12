@@ -16,9 +16,16 @@ import java.util.*;
  *
  */
 class Annotate extends Command {
-    Annotate(String treeFileName, String metadataFileName, String outputPath,
-             String indexColumn, int indexHeader, String headerDelimiter,
-             String[] headerColumns, String[] annotationColumns, boolean replace,
+    Annotate(String treeFileName,
+             String metadataFileName,
+             String outputPath,
+             Format outputFormat,
+             String indexColumn,
+             int indexHeader,
+             String headerDelimiter,
+             String[] headerColumns,
+             String[] annotationColumns,
+             boolean replace,
              boolean isVerbose) {
 
         super(isVerbose);
@@ -63,7 +70,7 @@ class Annotate extends Command {
         if (isVerbose) {
             System.out.println("Writing tree...");
         }
-        writeTree(tree, outputPath);
+        writeTreeFile(tree, outputPath, outputFormat);
 
         if (isVerbose) {
             System.out.println("Done.");

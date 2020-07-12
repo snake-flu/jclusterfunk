@@ -5,10 +5,17 @@
         Build file for JClusterFunk
     </description>
 
+    <property name="version" value="0.0.1" />
+    <property name="release_dir" value="release" />
+    <property name="name" value="jclusterfunk" />
+    <property name="package_dir" value="${release_dir}/${name}_v${version}" />
+
+
     <!-- set global properties for this build -->
     <property name="src" location="src"/>
     <property name="build" location="build"/>
 
+    <property name="bin" location="bin"/>
     <property name="lib" location="lib"/>
     <property name="dist" location="dist"/>
 
@@ -43,7 +50,7 @@
         <!-- Create the distribution directory -->
         <mkdir dir="${dist}"/>
 
-        <jar jarfile="${dist}/jclusterfunk.jar">
+        <jar jarfile="${dist}/${name}.jar">
             <zipgroupfileset dir="${lib}" includes="jebl.jar"/>
             <zipgroupfileset dir="${lib}" includes="commons-cli-1.4.jar"/>
             <zipgroupfileset dir="${lib}" includes="commons-csv-1.8.jar"/>
@@ -55,5 +62,26 @@
         </jar>
 
     </target>
+
+    <target name="release" depends="dist" description="generated release package">
+        <delete dir="${package_dir}" />
+        
+        <!-- Create the release directory -->
+        <mkdir dir="${package_dir}" />
+
+        <copy todir="${package_dir}">
+            <fileset dir="${bin}"/>
+        </copy>
+        <chmod dir="${package_dir}" perm="755" includes="**/**"/>
+
+        <copy file="${dist}/${name}.jar" todir="${package_dir}"/>
+
+        <tar destfile="${release_dir}/${name}_v${version}.tgz" compression="gzip">
+            <tarfileset dir="${package_dir}" prefix="${name}_v${version}"/>
+        </tar>
+
+        <echo message="release package is finished." />
+    </target>
+
 
 </project>

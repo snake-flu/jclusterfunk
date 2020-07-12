@@ -1,0 +1,29 @@
+{% set version = "0.0.1" %}
+
+package:
+  name: jclusterfunk
+  version: '{{ version }}'
+
+source:
+  url: https://github.com/cov-ert/jclusterfunk/releases/download/v{{ version }}/jclusterfunk_v{{ version }}.tgz
+  sha256: e0cc1565e483baeef42502ff5cee0f29d3c0ec7f04390a1761d939adde335b31
+
+build:
+  noarch: generic
+  number: 1
+
+requirements:
+  run:
+    - openjdk
+
+test:
+  commands:
+    - jclusterfunk --version
+
+about:
+  home: http://tree.bio.ed.ac.uk
+  license: LGPL-3.0
+  license_family: GPL
+  summary: JClusterFunk is a collection of tree manipulation functions
+  dev_url: https://github.com/cov-ert/jclusterfunk
+
