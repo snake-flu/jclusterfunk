@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/cov-ert/jclusterfunk/releases/download/v{{ version }}/jclusterfunk_v{{ version }}.tgz
-  sha256: e0cc1565e483baeef42502ff5cee0f29d3c0ec7f04390a1761d939adde335b31
+#  sha256: e0cc1565e483baeef42502ff5cee0f29d3c0ec7f04390a1761d939adde335b31
 
 build:
   noarch: generic
