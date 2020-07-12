@@ -6,10 +6,7 @@ import jebl.evolution.trees.RootedTree;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -17,6 +14,8 @@ import java.util.*;
  */
 class Command {
     final boolean isVerbose;
+    final static PrintStream errorStream = System.err;
+    final static PrintStream outStream = System.out;
 
     Command(boolean isVerbose) {
         this.isVerbose = isVerbose;
@@ -59,12 +58,30 @@ class Command {
         Map<String, CSVRecord> csv = new HashMap<>();
         try {
             Reader in = new FileReader(fileName);
-            Iterable<CSVRecord> records = CSVFormat.RFC4180.parse(in);
-            for (CSVRecord record : records) {
-                csv.put(record.get(0), record);
+            Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
+            if (indexColumn != null) {
+                // a particular column is used to index - check it is there for the first record
+                // and use it to key the records
+
+                boolean first = true;
+                for (CSVRecord record : records) {
+                    if (first) {
+                        if (record.get(indexColumn) == null) {
+                            errorStream.println("Index column, " + indexColumn + " not found in metadata table");
+                            System.exit(1);
+                        }
+                        first = false;
+                    }
+                    csv.put(record.get(indexColumn), record);
+                }
+            } else {
+                // key the records against the first column
+                for (CSVRecord record : records) {
+                    csv.put(record.get(0), record);
+                }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            errorStream.println("Error reading metadata file: " + e.getMessage());
             System.exit(1);
         }
         return csv;
@@ -82,7 +99,7 @@ class Command {
             exporter.exportTree(tree);
             writer.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            errorStream.println("Error writing tree file: " + e.getMessage());
             System.exit(1);
         }
     }

@@ -108,18 +108,18 @@ class ClusterFunk {
             .desc( "a list of metadata columns to add as tip label header fields" )
             .type(String.class).build();
 
-    private final static Option REPLACE_HEADERS =  Option.builder(  )
-            .longOpt("replace-headers")
-            .required(false)
-            .desc( "replace the tip label headers rather than appending (default false)" )
-            .type(String.class).build();
-
     private final static Option TIP_ATTRIBUTES =  Option.builder(  )
             .longOpt("tip-attributes")
             .argName("columns")
             .hasArgs()
             .required(false)
             .desc( "a list of metadata columns to add as tip attributes" )
+            .type(String.class).build();
+
+    private final static Option REPLACE =  Option.builder( "r" )
+            .longOpt("replace")
+            .required(false)
+            .desc( "replace the annotations or tip label headers rather than appending (default false)" )
             .type(String.class).build();
 
     private static final String VERSION = "v0.01a";
@@ -175,21 +175,15 @@ class ClusterFunk {
                     case ANNOTATE:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
-
-                        OptionGroup metadataGroup = new OptionGroup();
-                        metadataGroup.setRequired(true);
-                        metadataGroup.addOption(METADATA);
-                        metadataGroup.addOption(INDEX_COLUMN);
-                        metadataGroup.addOption(INDEX_HEADER);
-                        metadataGroup.addOption(HEADER_DELIMITER);
-                        options.addOptionGroup(metadataGroup);
-
+                        options.addOption(METADATA);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_HEADER);
+                        options.addOption(HEADER_DELIMITER);
                         OptionGroup annotateGroup = new OptionGroup();
-                        annotateGroup.setRequired(true);
                         annotateGroup.addOption(HEADER_FIELDS);
-                        annotateGroup.addOption(REPLACE_HEADERS);
                         annotateGroup.addOption(TIP_ATTRIBUTES);
                         options.addOptionGroup(annotateGroup);
+                        options.addOption(REPLACE);
                         break;
                 }
 
@@ -214,23 +208,35 @@ class ClusterFunk {
             return;
         }
 
-        boolean verbose = commandLine.hasOption("v");
+        boolean isVerbose = commandLine.hasOption("v");
 
         long startTime = System.currentTimeMillis();
 
         switch (command) {
 
             case PRUNE:
-                new Prune(commandLine.getOptionValue("i"), commandLine.getOptionValue("a"), commandLine.getOptionValue("o"), commandLine.getOptionValue("p"), verbose);
+                new Prune(commandLine.getOptionValue("i"), commandLine.getOptionValue("a"), commandLine.getOptionValue("o"), commandLine.getOptionValue("p"), isVerbose);
                 break;
             case ANNOTATE:
-//                new Annotate();
+//                Annotate(String treeFileName, String metadataFileName, String outputPath,
+//                        String indexColumn, int indexHeader, String headerDelimiter,
+//                    List<String> headerColumns, boolean replaceColumns, List<String> annotationColumns,
+//                boolean isVerbose) {
+
+                new Annotate(commandLine.getOptionValue("i"), commandLine.getOptionValue("m"), commandLine.getOptionValue("o"),
+                        commandLine.getOptionValue("index-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
+                        commandLine.getOptionValue("header-delimeter", "|"),
+                        commandLine.getOptionValues("header-fields"),
+                        commandLine.getOptionValues("tip-attributes"),
+                        Boolean.parseBoolean(commandLine.getOptionValue("replace", "false")),
+                        isVerbose);
                 break;
         }
 
         long timeTaken = (System.currentTimeMillis() - startTime) / 1000;
 
-        if (verbose) {
+        if (isVerbose) {
             System.err.println("Time taken: " + timeTaken + " secs");
         }
 

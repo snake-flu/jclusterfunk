@@ -3,6 +3,7 @@ package network.artic.clusterfunk;
 import jebl.evolution.graphs.Node;
 import jebl.evolution.io.ImportException;
 import jebl.evolution.io.NexusImporter;
+import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.RootedTree;
 import jebl.evolution.trees.SimpleRootedTree;
 import org.apache.commons.csv.CSVRecord;
@@ -17,7 +18,7 @@ import java.util.*;
 class Annotate extends Command {
     Annotate(String treeFileName, String metadataFileName, String outputPath,
              String indexColumn, int indexHeader, String headerDelimiter,
-             List<String> headerColumns, boolean replaceColumns, List<String> annotationColumns,
+             String[] headerColumns, String[] annotationColumns, boolean replace,
              boolean isVerbose) {
 
         super(isVerbose);
@@ -34,183 +35,100 @@ class Annotate extends Command {
 
         Map<String, CSVRecord> metadata = readCSV(metadataFileName, indexColumn);
 
+        CSVRecord firstRecord =  metadata.get(metadata.keySet().iterator().next());
+
         if (isVerbose) {
-            System.out.println("Read tree: " + treeFileName);
-            System.out.println("Taxa: " + tree.getTaxa().size());
+            System.out.println("          Read tree: " + treeFileName);
+            System.out.println("               Taxa: " + tree.getTaxa().size());
             System.out.println("Read metadata table: " + metadataFileName);
-            System.out.println("Rows: " + metadata.size());
+            System.out.println("               Rows: " + metadata.size());
+            System.out.println("       Index column: " + (indexColumn == null ? firstRecord.getParser().getHeaderNames().get(0) : indexColumn));
+            System.out.println();
         }
+
+        if (annotationColumns != null && annotationColumns.length > 0) {
+            if (isVerbose) {
+                System.out.println((replace ? "Replacing" : "Appending") + " tip annotations with columns: " + String.join(", ", annotationColumns));
+            }
+            annotateTips(tree, metadata, annotationColumns, replace);
+        }
+
+        if (headerColumns != null && headerColumns.length > 0) {
+            if (isVerbose) {
+                System.out.println((replace ? "Replacing" : "Appending") + " tip labels with columns: " + String.join(", ", headerColumns));
+            }
+            relabelTips(tree, metadata, headerColumns, replace, headerDelimiter);
+        }
+
+        if (isVerbose) {
+            System.out.println("Writing tree...");
+        }
+        writeTree(tree, outputPath);
+
+        if (isVerbose) {
+            System.out.println("Done.");
+        }
+
     }
 
     /**
-     * collects all the values for a given attribute in a map with a list of tips nodes for each
+     * Annotates the tips of a tree with a set of columns from the metadata table
      * @param tree
-     * @param attributeName
+     * @param metadata
+     * @param columnNames
+     * @param replace
      */
-    private Map<Object, Set<Node>> collectTipAttributeValues(RootedTree tree, String attributeName) {
-        Map<Object, Set<Node>> attributeValues = new TreeMap<>();
+    private void annotateTips(RootedTree tree, Map<String, CSVRecord> metadata, String[] columnNames, boolean replace) {
+        if (replace) {
+            clearExternalAttributes(tree);
+        }
+
         for (Node tip : tree.getExternalNodes()) {
-            Object value = tip.getAttribute(attributeName);
-            Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
-            tips.add(tip);
-        }
-        return attributeValues;
-    }
-
-    /**
-     * Finds the MRCA for a set of tip nodes and then recursively annotates the subtree
-     * @param tree
-     * @param attributeName
-     * @param attributeValue
-     */
-    private void annotateMonophyleticNodes(RootedTree tree, String attributeName, Object attributeValue, boolean isHierarchical, String newAttributeName) {
-        annotateMonophyleticNodes(tree, tree.getRootNode(), attributeName, attributeValue, isHierarchical, newAttributeName);
-    }
-
-    /**
-     * recursive version
-     * @param tree
-     * @param node
-     * @param attributeName
-     * @param attributeValue
-     */
-    private boolean annotateMonophyleticNodes(RootedTree tree, Node node, String attributeName, Object attributeValue,
-                                              boolean isHierarchical, String newAttributeName) {
-        boolean isMonophyletic = true;
-
-        if (tree.isExternal(node)) {
-            Object value = node.getAttribute(attributeName);
-            if (!(attributeValue.equals(value) || (isHierarchical && attributeValue.toString().startsWith(value.toString())))) {
-                return false;
+            String key = tree.getTaxon(tip).getName();
+            CSVRecord record = metadata.get(key);
+            if (record == null) {
+                errorStream.println("Tip index, " + key + ", not found in metadata table");
+                System.exit(1);
             }
-        } else {
-
-            for (Node child : tree.getChildren(node)) {
-                isMonophyletic = annotateMonophyleticNodes(tree, child, attributeName, attributeValue, isHierarchical, newAttributeName) && isMonophyletic;
+            for (String name : columnNames) {
+                tip.setAttribute(name, record.get(name));
             }
         }
-
-        if (isMonophyletic) {
-            node.setAttribute(newAttributeName, attributeValue);
-        }
-
-        return isMonophyletic;
     }
 
     /**
-     * Performs a parsimony reconstruction of a particular trait
+     * Annotates the tips of a tree with a set of columns from the metadata table
      * @param tree
-     * @param attributeName
+     * @param metadata
+     * @param columnNames
+     * @param replace
      */
-    private void parsimonyReconstruction(RootedTree tree, String attributeName) {
-        parsimonyReconstruction(tree, tree.getRootNode(), attributeName);
-    }
-
-    /**
-     * recursive version
-     * @param tree
-     * @param node
-     * @param attributeName
-     * @return
-     */
-    private Set<Object> parsimonyReconstruction(RootedTree tree, Node node, String attributeName) {
-        if (tree.isExternal(node)) {
-            Object value = node.getAttribute(attributeName);
-            return Collections.singleton(value);
-        }
-
-        Set<Object> union = null;
-        Set<Object> intersection = null;
-        for (Node child : tree.getChildren(node)) {
-            Set<Object> childSet = parsimonyReconstruction(tree, child, attributeName);
-            if (union == null) {
-                union = new HashSet<>(childSet);
-                intersection = new HashSet<>(childSet);
-            } else {
-                union.addAll(childSet);
-                intersection.retainAll(childSet);
+    private void relabelTips(RootedTree tree, Map<String, CSVRecord> metadata, String[] columnNames, boolean replace, String headerDelimiter) {
+        for (Node tip : tree.getExternalNodes()) {
+            String key = tree.getTaxon(tip).getName();
+            CSVRecord record = metadata.get(key);
+            if (record == null) {
+                errorStream.println("Tip index, " + key + ", not found in metadata table");
+                System.exit(1);
             }
-        }
-
-        if (union.size() == 1) {
-            node.setAttribute("union", union);
-        }
-        return union;
-    }
-
-    private void collapseSubtrees(RootedTree tree, String attributeName, Object attributeValue) {
-        collapseSubtrees(tree, tree.getRootNode(), attributeName, attributeValue, null);
-    }
-
-    /**
-     * recursive version
-     * @param tree
-     * @param node
-     * @param attributeName
-     * @param parentValue
-     */
-    private void collapseSubtrees(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue) {
-        if (!tree.isExternal(node)) {
-            Object value = node.getAttribute(attributeName);
-            if (attributeValue.equals(value) && !value.equals(parentValue)) {
-                node.setAttribute("!collapse", "{\"collapsed\",1.7E-4}");
+            StringBuilder tipLabel = new StringBuilder();
+            boolean first = true;
+            if (!replace) {
+                tipLabel.append(tree.getTaxon(tip).getName());
+                first = false;
             }
 
-            for (Node child : tree.getChildren(node)) {
-                collapseSubtrees(tree, child, attributeName, attributeValue, value);
-            }
-
-        }
-    }
-
-
-    /**
-     * When ever a change in the value of a given attribute occurs at a node, writes out a subtree from that node
-     * @param tree
-     * @param attributeName
-     * @param outputFileStem
-     */
-    private void pruneSubtrees(RootedTree tree, String attributeName, Object attributeValue, String outputPath, String outputFileStem) {
-        pruneSubtrees(tree, tree.getRootNode(), attributeName, attributeValue, null, outputPath, outputFileStem, new HashMap<Object, Integer>());
-    }
-
-    /**
-     * recursive version
-     * @param tree
-     * @param node
-     * @param attributeName
-     * @param parentValue
-     * @param outputFileStem
-     */
-    private void pruneSubtrees(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
-                               String outputPath, String outputFileStem, Map<Object, Integer> prunedMap) {
-        if (!tree.isExternal(node)) {
-            Object value = node.getAttribute(attributeName);
-            if (attributeValue.equals(value)) {
-                if (!value.equals(parentValue)) {
-                    node.setAttribute("!collapse", "{\"collapsed\",1.7E-4}");
-                    SimpleRootedTree subtree = new SimpleRootedTree();
-                    subtree.createNodes(tree, node);
-
-                    String name = value.toString();
-                    Integer count = prunedMap.getOrDefault(value, 0);
-                    count += 1;
-                    if (count > 1) {
-                        name += "_" + count;
-                    }
-                    prunedMap.put(value, count);
-
-                    String fileName = outputPath + outputFileStem + "_" + name + ".nexus";
-                    writeTree(subtree, fileName);
+            for (String name : columnNames) {
+                if (!first) {
+                    tipLabel.append(headerDelimiter);
+                    first = false;
                 }
+                tipLabel.append(record.get(name));
             }
-
-            for (Node child : tree.getChildren(node)) {
-                pruneSubtrees(tree, child, attributeName, attributeValue, value, outputPath, outputFileStem, prunedMap);
-            }
-
+            tree.renameTaxa(tree.getTaxon(tip), Taxon.getTaxon(tipLabel.toString()));
         }
     }
+
 
 }
 
