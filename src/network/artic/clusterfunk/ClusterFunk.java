@@ -164,6 +164,8 @@ class ClusterFunk {
 
         // create Options object
         Options options = new Options();
+        options.addOption("h", "help", false, "display help");
+        options.addOption("v", "version", false, "display version");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine commandLine = null;
@@ -172,8 +174,6 @@ class ClusterFunk {
             try {
                 command = Command.valueOf(args[0].toUpperCase());
 
-                options.addOption("h", "help", false, "display help");
-                options.addOption("v", "version", false, "display version");
                 options.addOption("verbose", false, "write analysis details to stderr");
 
                 switch (command) {
@@ -235,8 +235,22 @@ class ClusterFunk {
                 return;
             }
         } else {
+            try {
+                commandLine = parser.parse(options, args);
+            } catch (ParseException pe) {
+                System.out.println(pe.getMessage() + "\n");
+                printHelp(command, options);
+                return;
+            }
+
+            if (commandLine.hasOption("v")) {
+                System.out.println(VERSION);
+                return;
+            }
+
             printHelp(command, options);
             return;
+
         }
 
         boolean isVerbose = commandLine.hasOption("verbose");
