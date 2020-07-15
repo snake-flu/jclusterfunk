@@ -11,10 +11,13 @@ class ClusterFunk {
 
     enum Command {
         NONE("", ""),
-        PRUNE("prune", "Prune out taxa from a list or based on metadata."),
-        SPLIT("split", "Split out subtrees based on tip annotations."),
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
-        CONVERT("convert", "convert tree from one format to another.");
+        CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
+        CONVERT("convert", "Convert tree from one format to another."),
+        PRUNE("prune", "Prune out taxa from a list or based on metadata."),
+        REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
+        REROOT("reroot", "Re-root the tree using an outgroup."),
+        SPLIT("split", "Split out subtrees based on tip annotations.");
 
         Command(final String name, final String description) {
             this.name = name;
@@ -126,6 +129,24 @@ class ClusterFunk {
             .desc( "a list of metadata columns to add as tip attributes" )
             .type(String.class).build();
 
+    private final static Option OUTGROUPS =  Option.builder(  )
+            .longOpt("outgroups")
+            .argName("tips")
+            .hasArgs()
+            .required(true)
+            .desc( "a list of tips to use as an outgroup for re-rooting" )
+            .type(String.class).build();
+
+    private final static Option INCREASING =  Option.builder(  )
+            .longOpt("increasing")
+            .desc( "order nodes by increasing clade size" )
+            .type(String.class).build();
+
+    private final static Option DECREASING =  Option.builder( )
+            .longOpt("decreasing")
+            .desc( "order nodes by decreasing clade size" )
+            .type(String.class).build();
+
     private final static Option REPLACE =  Option.builder( "r" )
             .longOpt("replace")
             .required(false)
@@ -177,22 +198,6 @@ class ClusterFunk {
                 options.addOption("verbose", false, "write analysis details to stderr");
 
                 switch (command) {
-                    case PRUNE:
-                        options.addOption(INPUT);
-                        options.addOption(OUTPUT_PATH);
-                        options.addOption(OUTPUT_FORMAT);
-                        options.addOption(METADATA);
-                        options.addOption(INDEX_COLUMN);
-                        options.addOption(INDEX_HEADER);
-                        options.addOption(HEADER_DELIMITER);
-                        break;
-                    case SPLIT:
-                        options.addOption(INPUT);
-                        options.addOption(OUTPUT_PATH);
-                        options.addOption(OUTPUT_PREFIX);
-                        options.addOption(OUTPUT_FORMAT);
-                        options.addOption(ATTRIBUTE);
-                        break;
                     case ANNOTATE:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
@@ -207,10 +212,48 @@ class ClusterFunk {
                         options.addOptionGroup(annotateGroup);
                         options.addOption(REPLACE);
                         break;
+                    case CONTEXT:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FORMAT);
+                        break;
                     case CONVERT:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_FORMAT);
+                        break;
+                    case PRUNE:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(METADATA);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_HEADER);
+                        options.addOption(HEADER_DELIMITER);
+                        break;
+                    case REORDER:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FORMAT);
+                        OptionGroup orderGroup = new OptionGroup();
+                        orderGroup.addOption(INCREASING);
+                        orderGroup.addOption(DECREASING);
+                        options.addOptionGroup(orderGroup);
+                        break;
+                    case REROOT:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(INDEX_HEADER);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(OUTGROUPS);
+                        break;
+                    case SPLIT:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_PREFIX);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(ATTRIBUTE);
                         break;
                 }
 
@@ -270,25 +313,6 @@ class ClusterFunk {
 
         switch (command) {
 
-            case PRUNE:
-//                Prune(String treeFileName, String metadataFileName, String outputPath,
-//                        String indexColumn, int indexHeader, String headerDelimiter,
-//                boolean pruneNonMatching,
-//                boolean isVerbose) {
-                new Prune(
-                        commandLine.getOptionValue("i"),
-                        commandLine.getOptionValue("m"),
-                        commandLine.getOptionValue("o"),
-                        format,
-                        commandLine.getOptionValue("index-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
-                        commandLine.getOptionValue("header-delimeter", "|"),
-                        Boolean.parseBoolean(commandLine.getOptionValue("replace", "false")),
-                        isVerbose);
-                break;
-            case SPLIT:
-                new Split(commandLine.getOptionValue("i"), commandLine.getOptionValue("a"), commandLine.getOptionValue("o"), commandLine.getOptionValue("p"), isVerbose);
-                break;
             case ANNOTATE:
                 new Annotate(
                         commandLine.getOptionValue("i"),
@@ -301,6 +325,60 @@ class ClusterFunk {
                         commandLine.getOptionValues("header-fields"),
                         commandLine.getOptionValues("tip-attributes"),
                         Boolean.parseBoolean(commandLine.getOptionValue("replace", "false")),
+                        isVerbose);
+                break;
+            case CONTEXT:
+//                new Context(
+//                        commandLine.getOptionValue("i"),
+//                        commandLine.getOptionValue("o"),
+//                        format,
+//                        isVerbose);
+                break;
+            case CONVERT:
+//                new Convert(
+//                        commandLine.getOptionValue("i"),
+//                        commandLine.getOptionValue("o"),
+//                        format,
+//                        isVerbose);
+                break;
+            case PRUNE:
+                new Prune(
+                        commandLine.getOptionValue("i"),
+                        commandLine.getOptionValue("m"),
+                        commandLine.getOptionValue("o"),
+                        format,
+                        commandLine.getOptionValue("index-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
+                        commandLine.getOptionValue("header-delimeter", "|"),
+                        Boolean.parseBoolean(commandLine.getOptionValue("replace", "false")),
+                        isVerbose);
+                break;
+            case REORDER:
+//                new Reorder(
+//                        commandLine.getOptionValue("i"),
+//                        commandLine.getOptionValue("o"),
+//                        format,
+//                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
+//                        commandLine.getOptionValue("header-delimeter", "|"),
+//                        commandLine.getOptionValues("outgroups"),
+//                        isVerbose);
+                break;
+            case REROOT:
+                new Reroot(
+                        commandLine.getOptionValue("i"),
+                        commandLine.getOptionValue("o"),
+                        format,
+                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
+                        commandLine.getOptionValue("header-delimeter", "|"),
+                        commandLine.getOptionValues("outgroups"),
+                        isVerbose);
+                break;
+            case SPLIT:
+                new Split(
+                        commandLine.getOptionValue("i"),
+                        commandLine.getOptionValue("a"),
+                        commandLine.getOptionValue("o"),
+                        commandLine.getOptionValue("p"),
                         isVerbose);
                 break;
         }

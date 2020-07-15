@@ -1,9 +1,7 @@
 package network.artic.clusterfunk;
 
 import jebl.evolution.graphs.Node;
-import jebl.evolution.io.NewickExporter;
-import jebl.evolution.io.NexusExporter;
-import jebl.evolution.io.TreeExporter;
+import jebl.evolution.io.*;
 import jebl.evolution.trees.RootedTree;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -14,14 +12,92 @@ import java.util.*;
 /**
  * Base class for clusterfunk commands. Provides some static utility functions.
  */
-class Command {
+abstract class Command {
     final boolean isVerbose;
     final static PrintStream errorStream = System.err;
     final static PrintStream outStream = System.out;
 
+    /**
+     * Simple constructor
+     * @param isVerbose
+     */
     Command(boolean isVerbose) {
         this.isVerbose = isVerbose;
     }
+
+    final Map<String, CSVRecord> readMetadataTable(String metadataFileName, String indexColumn) {
+        Map<String, CSVRecord> metadata = readCSV(metadataFileName, indexColumn);
+
+        CSVRecord firstRecord =  metadata.get(metadata.keySet().iterator().next());
+
+        if (isVerbose) {
+            System.out.println("Read metadata table: " + metadataFileName);
+            System.out.println("               Rows: " + metadata.size());
+            System.out.println("       Index column: " + (indexColumn == null ? firstRecord.getParser().getHeaderNames().get(0) : indexColumn));
+            System.out.println();
+        }
+
+        return metadata;
+    }
+
+    /**
+     * a tree processing pipe
+     * @param treeFileName
+     * @param outputPath
+     * @param outputFormat
+     */
+    final void processTreeFile(
+            String treeFileName,
+            String outputPath,
+            Format outputFormat) {
+
+        List<RootedTree> trees = new ArrayList<>();
+
+        try {
+            NexusImporter importer = new NexusImporter(new FileReader(treeFileName));
+
+            while (importer.hasTree()) {
+                trees.add((RootedTree) importer.importNextTree());
+            }
+
+        } catch (ImportException | IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        if (isVerbose) {
+            System.out.println("  Read treefile: " + treeFileName);
+            if (trees.size() > 1) {
+                System.out.println("Number of trees: " + trees.size());
+            }
+            System.out.println(" Number of tips: " + trees.get(0).getExternalNodes().size());
+            System.out.println(" Number of tips: " + trees.get(0).getExternalNodes().size());
+            System.out.println();
+        }
+
+        if (isVerbose) {
+            if (trees.size() > 1) {
+                System.out.println("Processing trees");
+            } else {
+                System.out.println("Writing tree...");
+            }
+        }
+
+        List<RootedTree> outTrees = new ArrayList<>();
+
+        for (RootedTree tree : trees) {
+            outTrees.add(processTree(tree));
+        }
+
+        writeTreeFile(outTrees, outputPath, outputFormat);
+
+        if (isVerbose) {
+            System.out.println("Done.");
+        }
+
+    }
+
+    abstract RootedTree processTree(RootedTree tree);
 
     static void clearExternalAttributes(RootedTree tree) {
         for (Node node : tree.getExternalNodes()) {
