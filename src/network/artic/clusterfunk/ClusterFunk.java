@@ -1,5 +1,6 @@
 package network.artic.clusterfunk;
 
+import network.artic.clusterfunk.commands.*;
 import org.apache.commons.cli.*;
 
 import java.util.Arrays;
@@ -55,6 +56,14 @@ class ClusterFunk {
             .hasArg()
             .required(true)
             .desc( "input metadata file" )
+            .type(String.class).build();
+
+    private final static Option TAXA = Option.builder( "t" )
+            .longOpt("taxa")
+            .argName("file")
+            .hasArg()
+            .required(true)
+            .desc( "file of taxa (table or tree)" )
             .type(String.class).build();
 
     private final static Option INDEX_COLUMN = Option.builder( "c" )
@@ -153,6 +162,12 @@ class ClusterFunk {
             .desc( "replace the annotations or tip label headers rather than appending (default false)" )
             .type(String.class).build();
 
+    private final static Option KEEP_TAXA =  Option.builder( "k" )
+            .longOpt("keep-only")
+            .required(false)
+            .desc( "keep only the taxa specifed (default false)" )
+            .type(String.class).build();
+
     private static final String VERSION = "v0.0.1";
     private static final String HEADER = "\nClusterFunk " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
@@ -165,15 +180,18 @@ class ClusterFunk {
         if (command == Command.NONE) {
             sb.append("Available commands:\n ");
             for (Command c : Command.values()) {
-                sb.append(" ");
-                sb.append(c);
+                sb.append(" ")
+                        .append(c);
             }
             sb.append("\n\nuse: <command> -h,--help to display individual options\n");
 
             formatter.printHelp("clusterfunk <command> <options> [-h]", sb.toString(), options, ClusterFunk.FOOTER, false);
         } else {
-            sb.append("Command: " + command + "\n\n");
-            sb.append(command.getDescription() + "\n\n");
+            sb.append("Command: ")
+                    .append(command)
+                    .append("\n\n")
+                    .append(command.getDescription())
+                    .append("\n\n");
             formatter.printHelp("clusterfunk " + command, sb.toString(), options, ClusterFunk.FOOTER, true);
         }
 
@@ -226,10 +244,11 @@ class ClusterFunk {
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_FORMAT);
-                        options.addOption(METADATA);
+                        options.addOption(TAXA);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_HEADER);
                         options.addOption(HEADER_DELIMITER);
+                        options.addOption(KEEP_TAXA);
                         break;
                     case REORDER:
                         options.addOption(INPUT);
@@ -297,11 +316,11 @@ class ClusterFunk {
         }
 
         boolean isVerbose = commandLine.hasOption("verbose");
-        Format format = Format.NEXUS;
+        FormatType format = FormatType.NEXUS;
 
         if (commandLine.hasOption("f")) {
             try {
-                format = Format.valueOf(commandLine.getOptionValue("f").toUpperCase());
+                format = FormatType.valueOf(commandLine.getOptionValue("f").toUpperCase());
             } catch (IllegalArgumentException iae) {
                 System.out.println("Unrecognised output format: " + commandLine.getOptionValue("f") + "\n");
                 printHelp(command, options);
@@ -315,9 +334,9 @@ class ClusterFunk {
 
             case ANNOTATE:
                 new Annotate(
-                        commandLine.getOptionValue("i"),
-                        commandLine.getOptionValue("m"),
-                        commandLine.getOptionValue("o"),
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
                         format,
                         commandLine.getOptionValue("index-column", null),
                         Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
@@ -336,49 +355,55 @@ class ClusterFunk {
                 break;
             case CONVERT:
 //                new Convert(
-//                        commandLine.getOptionValue("i"),
-//                        commandLine.getOptionValue("o"),
+//                commandLine.getOptionValue("input"),
+//                        commandLine.getOptionValue("output"),
 //                        format,
 //                        isVerbose);
                 break;
             case PRUNE:
                 new Prune(
-                        commandLine.getOptionValue("i"),
-                        commandLine.getOptionValue("m"),
-                        commandLine.getOptionValue("o"),
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("taxa"),
+                        commandLine.getOptionValue("output"),
                         format,
                         commandLine.getOptionValue("index-column", null),
                         Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
                         commandLine.getOptionValue("header-delimeter", "|"),
-                        Boolean.parseBoolean(commandLine.getOptionValue("replace", "false")),
+                        Boolean.parseBoolean(commandLine.getOptionValue("keep-taxa", "false")),
                         isVerbose);
                 break;
             case REORDER:
-//                new Reorder(
-//                        commandLine.getOptionValue("i"),
-//                        commandLine.getOptionValue("o"),
-//                        format,
-//                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
-//                        commandLine.getOptionValue("header-delimeter", "|"),
-//                        commandLine.getOptionValues("outgroups"),
-//                        isVerbose);
+                OrderType orderType = commandLine.hasOption("increasing") ? OrderType.INCREASING : OrderType.DECREASING;
+                new Reorder(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        orderType,
+                        isVerbose);
                 break;
             case REROOT:
+                RootType rootType = commandLine.hasOption("midpoint") ? RootType.MIDPOINT : RootType.OUTGROUP;
                 new Reroot(
-                        commandLine.getOptionValue("i"),
-                        commandLine.getOptionValue("o"),
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
                         format,
                         Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
                         commandLine.getOptionValue("header-delimeter", "|"),
+                        rootType,
                         commandLine.getOptionValues("outgroups"),
                         isVerbose);
                 break;
             case SPLIT:
                 new Split(
-                        commandLine.getOptionValue("i"),
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("prefix"),
+                        format,
+                        commandLine.getOptionValue("index-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
+                        commandLine.getOptionValue("header-delimeter", "|"),
                         commandLine.getOptionValue("a"),
-                        commandLine.getOptionValue("o"),
-                        commandLine.getOptionValue("p"),
                         isVerbose);
                 break;
         }

@@ -1,47 +1,44 @@
-package network.artic.clusterfunk;
+package network.artic.clusterfunk.commands;
 
 import jebl.evolution.graphs.Node;
-import jebl.evolution.io.ImportException;
-import jebl.evolution.io.NexusImporter;
+import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.RootedTree;
 import jebl.evolution.trees.SimpleRootedTree;
+import network.artic.clusterfunk.FormatType;
 
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.*;
 
 /**
  *
  */
-class Split extends Command {
-    Split(String treeFileName,
-          String attributeName,
+public class Split extends Command {
+
+    public Split(String treeFileName,
+          String metadataFileName,
           String outputPath,
           String outputFileStem,
+          FormatType outputFormat,
+          String indexColumn,
+          int indexHeader,
+          String headerDelimiter,
+          String attributeName,
           boolean isVerbose) {
-        super(isVerbose);
 
-        RootedTree tree = null;
+        super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
-        try {
-            NexusImporter importer = new NexusImporter(new FileReader(treeFileName));
-            tree = (RootedTree)importer.importNextTree();
-        } catch (ImportException | IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+        RootedTree tree = readTree(treeFileName);
+
+        Map<Taxon, String> taxonMap = getTaxonMap(tree);
 
         Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, attributeName);
 
         if (isVerbose) {
-            System.out.println("Read tree: " + treeFileName);
-            System.out.println("Taxa: " + tree.getTaxa().size());
-            System.out.println("Attribute: " + attributeName);
-            System.out.println("Values: " + String.join(", ", toString(attributeValues.keySet())));
+            outStream.println("Attribute: " + attributeName);
+            outStream.println("Values: " + String.join(", ", toString(attributeValues.keySet())));
         }
 
         List<Object> keys = new ArrayList<>(attributeValues.keySet());
-        keys.sort((Comparator<Object>) (o1, o2) -> {
+        keys.sort((o1, o2) -> {
             return (o1.toString().length() == o2.toString().length() ?
                     o1.toString().compareTo(o2.toString()) :
                     o1.toString().length() - o2.toString().length());
@@ -58,10 +55,8 @@ class Split extends Command {
         }
 
 
-        writeTreeFile(tree, outputPath + "all_lineages.tree", Format.NEXUS);
-
         for (Object value: keys) {
-            pruneSubtrees(tree, "new_" + attributeName, value, outputPath, outputFileStem);
+            splitSubtrees(tree, "new_" + attributeName, value, outputPath, outputFileStem);
         }
 
     }
@@ -194,8 +189,8 @@ class Split extends Command {
      * @param attributeName
      * @param outputFileStem
      */
-    private void pruneSubtrees(RootedTree tree, String attributeName, Object attributeValue, String outputPath, String outputFileStem) {
-        pruneSubtrees(tree, tree.getRootNode(), attributeName, attributeValue, null, outputPath, outputFileStem, new HashMap<Object, Integer>());
+    private void splitSubtrees(RootedTree tree, String attributeName, Object attributeValue, String outputPath, String outputFileStem) {
+        splitSubtrees(tree, tree.getRootNode(), attributeName, attributeValue, null, outputPath, outputFileStem, new HashMap<Object, Integer>());
     }
 
     /**
@@ -206,7 +201,7 @@ class Split extends Command {
      * @param parentValue
      * @param outputFileStem
      */
-    private void pruneSubtrees(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
+    private void splitSubtrees(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
                                String outputPath, String outputFileStem, Map<Object, Integer> prunedMap) {
         if (!tree.isExternal(node)) {
             Object value = node.getAttribute(attributeName);
@@ -226,14 +221,14 @@ class Split extends Command {
 
                     String fileName = outputPath + outputFileStem + "_" + name + ".nexus";
                     if (isVerbose) {
-                        System.err.println("Writing subtree file: " + fileName);
+                        outStream.println("Writing subtree file: " + fileName);
                     }
-                    writeTreeFile(subtree, fileName, Format.NEXUS);
+                    writeTreeFile(subtree, fileName, FormatType.NEXUS);
                 }
             }
 
             for (Node child : tree.getChildren(node)) {
-                pruneSubtrees(tree, child, attributeName, attributeValue, value, outputPath, outputFileStem, prunedMap);
+                splitSubtrees(tree, child, attributeName, attributeValue, value, outputPath, outputFileStem, prunedMap);
             }
 
         }

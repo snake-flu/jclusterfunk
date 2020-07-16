@@ -1,25 +1,21 @@
-package network.artic.clusterfunk;
+package network.artic.clusterfunk.commands;
 
 import jebl.evolution.graphs.Node;
-import jebl.evolution.io.ImportException;
-import jebl.evolution.io.NexusImporter;
 import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.RootedTree;
-import jebl.evolution.trees.SimpleRootedTree;
+import network.artic.clusterfunk.FormatType;
 import org.apache.commons.csv.CSVRecord;
 
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.*;
 
 /**
  *
  */
-class Annotate extends Command {
-    Annotate(String treeFileName,
+public class Annotate extends Command {
+    public Annotate(String treeFileName,
              String metadataFileName,
              String outputPath,
-             Format outputFormat,
+             FormatType outputFormat,
              String indexColumn,
              int indexHeader,
              String headerDelimiter,
@@ -28,52 +24,24 @@ class Annotate extends Command {
              boolean replace,
              boolean isVerbose) {
 
-        super(isVerbose);
+        super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
-        RootedTree tree = null;
+        RootedTree tree = readTree(treeFileName);
 
-        try {
-            NexusImporter importer = new NexusImporter(new FileReader(treeFileName));
-            tree = (RootedTree)importer.importNextTree();
-        } catch (ImportException | IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        Map<String, CSVRecord> metadata = readCSV(metadataFileName, indexColumn);
-
-        CSVRecord firstRecord =  metadata.get(metadata.keySet().iterator().next());
-
-        if (isVerbose) {
-            System.out.println("          Read tree: " + treeFileName);
-            System.out.println("               Taxa: " + tree.getTaxa().size());
-            System.out.println("Read metadata table: " + metadataFileName);
-            System.out.println("               Rows: " + metadata.size());
-            System.out.println("       Index column: " + (indexColumn == null ? firstRecord.getParser().getHeaderNames().get(0) : indexColumn));
-            System.out.println();
-        }
+        Map<Taxon, String> taxonMap = getTaxonMap(tree);
 
         if (annotationColumns != null && annotationColumns.length > 0) {
             if (isVerbose) {
                 System.out.println((replace ? "Replacing" : "Appending") + " tip annotations with columns: " + String.join(", ", annotationColumns));
             }
-            annotateTips(tree, metadata, annotationColumns, replace);
+            annotateTips(tree, taxonMap, metadata, annotationColumns, replace);
         }
 
         if (headerColumns != null && headerColumns.length > 0) {
             if (isVerbose) {
                 System.out.println((replace ? "Replacing" : "Appending") + " tip labels with columns: " + String.join(", ", headerColumns));
             }
-            relabelTips(tree, metadata, headerColumns, replace, headerDelimiter);
-        }
-
-        if (isVerbose) {
-            System.out.println("Writing tree...");
-        }
-        writeTreeFile(tree, outputPath, outputFormat);
-
-        if (isVerbose) {
-            System.out.println("Done.");
+            relabelTips(tree, taxonMap, metadata, headerColumns, replace, headerDelimiter);
         }
 
     }
@@ -81,17 +49,18 @@ class Annotate extends Command {
     /**
      * Annotates the tips of a tree with a set of columns from the metadata table
      * @param tree
+     * @param taxonMap
      * @param metadata
      * @param columnNames
      * @param replace
      */
-    private void annotateTips(RootedTree tree, Map<String, CSVRecord> metadata, String[] columnNames, boolean replace) {
+    private void annotateTips(RootedTree tree, Map<Taxon, String> taxonMap, Map<String, CSVRecord> metadata, String[] columnNames, boolean replace) {
         if (replace) {
             clearExternalAttributes(tree);
         }
 
         for (Node tip : tree.getExternalNodes()) {
-            String key = tree.getTaxon(tip).getName();
+            String key = taxonMap.get(tree.getTaxon(tip));
             CSVRecord record = metadata.get(key);
             if (record == null) {
                 errorStream.println("Tip index, " + key + ", not found in metadata table");
@@ -106,13 +75,14 @@ class Annotate extends Command {
     /**
      * Annotates the tips of a tree with a set of columns from the metadata table
      * @param tree
+     * @param taxonMap
      * @param metadata
      * @param columnNames
      * @param replace
      */
-    private void relabelTips(RootedTree tree, Map<String, CSVRecord> metadata, String[] columnNames, boolean replace, String headerDelimiter) {
+    private void relabelTips(RootedTree tree, Map<Taxon, String> taxonMap, Map<String, CSVRecord> metadata, String[] columnNames, boolean replace, String headerDelimiter) {
         for (Node tip : tree.getExternalNodes()) {
-            String key = tree.getTaxon(tip).getName();
+            String key = taxonMap.get(tree.getTaxon(tip));
             CSVRecord record = metadata.get(key);
             if (record == null) {
                 errorStream.println("Tip index, " + key + ", not found in metadata table");
