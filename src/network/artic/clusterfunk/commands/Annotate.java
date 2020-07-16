@@ -22,6 +22,7 @@ public class Annotate extends Command {
              String[] headerColumns,
              String[] annotationColumns,
              boolean replace,
+             boolean ignoreMissing,
              boolean isVerbose) {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
@@ -31,18 +32,32 @@ public class Annotate extends Command {
         Map<Taxon, String> taxonMap = getTaxonMap(tree);
 
         if (annotationColumns != null && annotationColumns.length > 0) {
-            if (isVerbose) {
-                System.out.println((replace ? "Replacing" : "Appending") + " tip annotations with columns: " + String.join(", ", annotationColumns));
+            if (outputFormat != FormatType.NEXUS) {
+                errorStream.println("Tip annotations are only compatible with NEXUS output format");
+                System.exit(1);
             }
-            annotateTips(tree, taxonMap, metadata, annotationColumns, replace);
+
+            if (isVerbose) {
+                outStream.println((replace ? "Replacing" : "Appending") + " tip annotations with columns: " + String.join(", ", annotationColumns));
+                outStream.println();
+            }
+            annotateTips(tree, taxonMap, metadata, annotationColumns, replace, ignoreMissing);
         }
 
         if (headerColumns != null && headerColumns.length > 0) {
             if (isVerbose) {
-                System.out.println((replace ? "Replacing" : "Appending") + " tip labels with columns: " + String.join(", ", headerColumns));
+                outStream.println((replace ? "Replacing" : "Appending") + " tip labels with columns: " + String.join(", ", headerColumns));
+                outStream.println();
             }
-            relabelTips(tree, taxonMap, metadata, headerColumns, replace, headerDelimiter);
+            relabelTips(tree, taxonMap, metadata, headerColumns, headerDelimiter, replace, ignoreMissing);
         }
+
+        if (isVerbose) {
+            outStream.println("Writing tree file, " + outputPath + ", in " + outputFormat.name().toLowerCase() + " format");
+            outStream.println();
+        }
+
+        writeTreeFile(tree, outputPath, outputFormat);
 
     }
 
@@ -54,7 +69,12 @@ public class Annotate extends Command {
      * @param columnNames
      * @param replace
      */
-    private void annotateTips(RootedTree tree, Map<Taxon, String> taxonMap, Map<String, CSVRecord> metadata, String[] columnNames, boolean replace) {
+    private void annotateTips(RootedTree tree,
+                              Map<Taxon, String> taxonMap,
+                              Map<String, CSVRecord> metadata,
+                              String[] columnNames,
+                              boolean replace,
+                              boolean ignoreMissing) {
         if (replace) {
             clearExternalAttributes(tree);
         }
@@ -63,11 +83,14 @@ public class Annotate extends Command {
             String key = taxonMap.get(tree.getTaxon(tip));
             CSVRecord record = metadata.get(key);
             if (record == null) {
-                errorStream.println("Tip index, " + key + ", not found in metadata table");
-                System.exit(1);
-            }
-            for (String name : columnNames) {
-                tip.setAttribute(name, record.get(name));
+                if (!ignoreMissing) {
+                    errorStream.println("Tip index, " + key + ", not found in metadata table");
+                    System.exit(1);
+                }
+            } else {
+                for (String name : columnNames) {
+                    tip.setAttribute(name, record.get(name));
+                }
             }
         }
     }
@@ -80,29 +103,38 @@ public class Annotate extends Command {
      * @param columnNames
      * @param replace
      */
-    private void relabelTips(RootedTree tree, Map<Taxon, String> taxonMap, Map<String, CSVRecord> metadata, String[] columnNames, boolean replace, String headerDelimiter) {
+    private void relabelTips(RootedTree tree,
+                             Map<Taxon, String> taxonMap,
+                             Map<String, CSVRecord> metadata,
+                             String[] columnNames,
+                             String headerDelimiter,
+                             boolean replace,
+                             boolean ignoreMissing) {
         for (Node tip : tree.getExternalNodes()) {
             String key = taxonMap.get(tree.getTaxon(tip));
             CSVRecord record = metadata.get(key);
             if (record == null) {
-                errorStream.println("Tip index, " + key + ", not found in metadata table");
-                System.exit(1);
-            }
-            StringBuilder tipLabel = new StringBuilder();
-            boolean first = true;
-            if (!replace) {
-                tipLabel.append(tree.getTaxon(tip).getName());
-                first = false;
-            }
-
-            for (String name : columnNames) {
-                if (!first) {
-                    tipLabel.append(headerDelimiter);
+                if (!ignoreMissing) {
+                    errorStream.println("Tip index, " + key + ", not found in metadata table");
+                    System.exit(1);
+                }
+            } else {
+                StringBuilder tipLabel = new StringBuilder();
+                boolean first = true;
+                if (!replace) {
+                    tipLabel.append(tree.getTaxon(tip).getName());
                     first = false;
                 }
-                tipLabel.append(record.get(name));
+
+                for (String name : columnNames) {
+                    if (!first) {
+                        tipLabel.append(headerDelimiter);
+                        first = false;
+                    }
+                    tipLabel.append(record.get(name));
+                }
+                tree.renameTaxa(tree.getTaxon(tip), Taxon.getTaxon(tipLabel.toString()));
             }
-            tree.renameTaxa(tree.getTaxon(tip), Taxon.getTaxon(tipLabel.toString()));
         }
     }
 

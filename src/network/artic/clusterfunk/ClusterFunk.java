@@ -13,11 +13,11 @@ class ClusterFunk {
     enum Command {
         NONE("", ""),
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
-        CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
+//        CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
         CONVERT("convert", "Convert tree from one format to another."),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
         REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
-        REROOT("reroot", "Re-root the tree using an outgroup."),
+//        REROOT("reroot", "Re-root the tree using an outgroup."),
         SPLIT("split", "Split out subtrees based on tip annotations.");
 
         Command(final String name, final String description) {
@@ -79,7 +79,7 @@ class ClusterFunk {
             .argName("header number")
             .hasArg()
             .required(false)
-            .desc( "tip label header to use to match metadata (default = 0)" )
+            .desc( "tip label header to use to match metadata (default = whole label)" )
             .type(Integer.class).build();
 
     private final static Option HEADER_DELIMITER = Option.builder( "d" )
@@ -138,11 +138,17 @@ class ClusterFunk {
             .desc( "a list of metadata columns to add as tip attributes" )
             .type(String.class).build();
 
+    private final static Option MIDPOINT =  Option.builder( )
+            .longOpt("midpoint")
+            .required(false)
+            .desc( "midpoint root the tree" )
+            .type(String.class).build();
+
     private final static Option OUTGROUPS =  Option.builder(  )
             .longOpt("outgroups")
             .argName("tips")
             .hasArgs()
-            .required(true)
+            .required(false)
             .desc( "a list of tips to use as an outgroup for re-rooting" )
             .type(String.class).build();
 
@@ -162,8 +168,14 @@ class ClusterFunk {
             .desc( "replace the annotations or tip label headers rather than appending (default false)" )
             .type(String.class).build();
 
+    private final static Option IGNORE_MISSING =  Option.builder( )
+            .longOpt("ignore-missing")
+            .required(false)
+            .desc( "ignore any missing matches in annotations table (default false)" )
+            .type(String.class).build();
+
     private final static Option KEEP_TAXA =  Option.builder( "k" )
-            .longOpt("keep-only")
+            .longOpt("keep-taxa")
             .required(false)
             .desc( "keep only the taxa specifed (default false)" )
             .type(String.class).build();
@@ -204,7 +216,7 @@ class ClusterFunk {
         // create Options object
         Options options = new Options();
         options.addOption("h", "help", false, "display help");
-        options.addOption("v", "version", false, "display version");
+        options.addOption(null, "version", false, "display version");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine commandLine = null;
@@ -213,7 +225,7 @@ class ClusterFunk {
             try {
                 command = Command.valueOf(args[0].toUpperCase());
 
-                options.addOption("verbose", false, "write analysis details to stderr");
+                options.addOption("v","verbose", false, "write analysis details to console");
 
                 switch (command) {
                     case ANNOTATE:
@@ -229,12 +241,13 @@ class ClusterFunk {
                         annotateGroup.addOption(TIP_ATTRIBUTES);
                         options.addOptionGroup(annotateGroup);
                         options.addOption(REPLACE);
+                        options.addOption(IGNORE_MISSING);
                         break;
-                    case CONTEXT:
-                        options.addOption(INPUT);
-                        options.addOption(OUTPUT_PATH);
-                        options.addOption(OUTPUT_FORMAT);
-                        break;
+//                    case CONTEXT:
+//                        options.addOption(INPUT);
+//                        options.addOption(OUTPUT_PATH);
+//                        options.addOption(OUTPUT_FORMAT);
+//                        break;
                     case CONVERT:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
@@ -259,14 +272,17 @@ class ClusterFunk {
                         orderGroup.addOption(DECREASING);
                         options.addOptionGroup(orderGroup);
                         break;
-                    case REROOT:
-                        options.addOption(INPUT);
-                        options.addOption(OUTPUT_PATH);
-                        options.addOption(OUTPUT_FORMAT);
-                        options.addOption(INDEX_HEADER);
-                        options.addOption(HEADER_DELIMITER);
-                        options.addOption(OUTGROUPS);
-                        break;
+//                    case REROOT:
+//                        options.addOption(INPUT);
+//                        options.addOption(OUTPUT_PATH);
+//                        options.addOption(OUTPUT_FORMAT);
+//                        options.addOption(INDEX_HEADER);
+//                        options.addOption(HEADER_DELIMITER);
+//                        OptionGroup orderGroup2= new OptionGroup();
+//                        orderGroup2.addOption(OUTGROUPS);
+//                        orderGroup2.addOption(MIDPOINT);
+//                        options.addOptionGroup(orderGroup2);
+//                        break;
                     case SPLIT:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
@@ -278,11 +294,11 @@ class ClusterFunk {
 
                 commandLine = parser.parse( options, Arrays.copyOfRange(args, 1, args.length));
 
-                if (commandLine.hasOption("h")) {
+                if (commandLine.hasOption("help")) {
                     printHelp(command, options);
                     return;
                 }
-                if (commandLine.hasOption("v")) {
+                if (commandLine.hasOption("version")) {
                     System.out.println(VERSION);
                     return;
                 }
@@ -305,7 +321,7 @@ class ClusterFunk {
                 return;
             }
 
-            if (commandLine.hasOption("v")) {
+            if (commandLine.hasOption("version")) {
                 System.out.println(VERSION);
                 return;
             }
@@ -343,22 +359,24 @@ class ClusterFunk {
                         commandLine.getOptionValue("header-delimeter", "|"),
                         commandLine.getOptionValues("header-fields"),
                         commandLine.getOptionValues("tip-attributes"),
-                        Boolean.parseBoolean(commandLine.getOptionValue("replace", "false")),
+                        commandLine.hasOption("replace"),
+                        commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
-            case CONTEXT:
+//            case CONTEXT:
 //                new Context(
 //                        commandLine.getOptionValue("i"),
 //                        commandLine.getOptionValue("o"),
 //                        format,
 //                        isVerbose);
-                break;
+//                break;
             case CONVERT:
-//                new Convert(
-//                commandLine.getOptionValue("input"),
-//                        commandLine.getOptionValue("output"),
-//                        format,
-//                        isVerbose);
+                new Reorder(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        OrderType.UNCHANGED,
+                        isVerbose);
                 break;
             case PRUNE:
                 new Prune(
@@ -369,7 +387,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("index-column", null),
                         Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
                         commandLine.getOptionValue("header-delimeter", "|"),
-                        Boolean.parseBoolean(commandLine.getOptionValue("keep-taxa", "false")),
+                        commandLine.hasOption("keep-taxa"),
                         isVerbose);
                 break;
             case REORDER:
@@ -381,18 +399,18 @@ class ClusterFunk {
                         orderType,
                         isVerbose);
                 break;
-            case REROOT:
-                RootType rootType = commandLine.hasOption("midpoint") ? RootType.MIDPOINT : RootType.OUTGROUP;
-                new Reroot(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("output"),
-                        format,
-                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
-                        commandLine.getOptionValue("header-delimeter", "|"),
-                        rootType,
-                        commandLine.getOptionValues("outgroups"),
-                        isVerbose);
-                break;
+//            case REROOT:
+//                RootType rootType = commandLine.hasOption("midpoint") ? RootType.MIDPOINT : RootType.OUTGROUP;
+//                new Reroot(
+//                        commandLine.getOptionValue("input"),
+//                        commandLine.getOptionValue("output"),
+//                        format,
+//                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
+//                        commandLine.getOptionValue("header-delimeter", "|"),
+//                        rootType,
+//                        commandLine.getOptionValues("outgroups"),
+//                        isVerbose);
+//                break;
             case SPLIT:
                 new Split(
                         commandLine.getOptionValue("input"),
@@ -403,7 +421,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("index-column", null),
                         Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
                         commandLine.getOptionValue("header-delimeter", "|"),
-                        commandLine.getOptionValue("a"),
+                        commandLine.getOptionValue("attribute"),
                         isVerbose);
                 break;
         }

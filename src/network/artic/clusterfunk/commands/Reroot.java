@@ -36,20 +36,22 @@ public class Reroot extends Command {
                     outStream.println("Outgroup: " + String.join(", ", outgroups));
                     outStream.println();
                 }
-                outTree = new ReRootedTree(tree, ReRootedTree.RootingType.MID_POINT);
-                break;
+                throw new UnsupportedOperationException("Outgroup rooting not implemented yet");
+//                outTree = new ReRootedTree(tree, ReRootedTree.RootingType.MID_POINT);
+//                break;
             case MIDPOINT:
                 if (isVerbose) {
                     outStream.println("Midpoint rooting");
                     outStream.println();
                 }
-                outTree = new ReRootedTree(tree, ReRootedTree.RootingType.MID_POINT);
-                break;
+                throw new UnsupportedOperationException("Outgroup rooting not implemented yet");
+//                outTree = new ReRootedTree(tree, ReRootedTree.RootingType.MID_POINT);
+//                break;
             default:
                 throw new IllegalArgumentException("Unknown reroot type");
         }
 
-        writeTreeFile(outTree, outputPath, outputFormat);
+//        writeTreeFile(outTree, outputPath, outputFormat);
     }
 
 }
