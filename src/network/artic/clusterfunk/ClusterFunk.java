@@ -74,20 +74,20 @@ class ClusterFunk {
             .desc( "metadata column to use to match tip labels (default first column)" )
             .type(String.class).build();
 
-    private final static Option INDEX_HEADER = Option.builder( "h" )
-            .longOpt("index-header")
-            .argName("header number")
+    private final static Option INDEX_FIELD = Option.builder(  )
+            .longOpt("index-field")
+            .argName("field number")
             .hasArg()
             .required(false)
-            .desc( "tip label header to use to match metadata (default = whole label)" )
+            .desc( "tip label field to use to match metadata (default = whole label)" )
             .type(Integer.class).build();
 
-    private final static Option HEADER_DELIMITER = Option.builder( "d" )
+    private final static Option HEADER_DELIMITER = Option.builder(  )
             .longOpt("header-delimited")
             .argName("delimiter")
             .hasArg()
             .required(false)
-            .desc( "tip label header delimiter (default = '|')" )
+            .desc( "the delimiter used to specify fields in the tip labels (default = '|')" )
             .type(String.class).build();
 
     private final static Option OUTPUT_PATH = Option.builder( "o" )
@@ -234,7 +234,7 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(METADATA);
                         options.addOption(INDEX_COLUMN);
-                        options.addOption(INDEX_HEADER);
+                        options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         OptionGroup annotateGroup = new OptionGroup();
                         annotateGroup.addOption(HEADER_FIELDS);
@@ -259,7 +259,7 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(TAXA);
                         options.addOption(INDEX_COLUMN);
-                        options.addOption(INDEX_HEADER);
+                        options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(KEEP_TAXA);
                         break;
@@ -355,9 +355,9 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         format,
                         commandLine.getOptionValue("index-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
-                        commandLine.getOptionValue("header-delimeter", "|"),
-                        commandLine.getOptionValues("header-fields"),
+                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "|"),
+                        commandLine.getOptionValues("label-fields"),
                         commandLine.getOptionValues("tip-attributes"),
                         commandLine.hasOption("replace"),
                         commandLine.hasOption("ignore-missing"),
@@ -385,8 +385,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         format,
                         commandLine.getOptionValue("index-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
-                        commandLine.getOptionValue("header-delimeter", "|"),
+                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "|"),
                         commandLine.hasOption("keep-taxa"),
                         isVerbose);
                 break;
@@ -405,8 +405,8 @@ class ClusterFunk {
 //                        commandLine.getOptionValue("input"),
 //                        commandLine.getOptionValue("output"),
 //                        format,
-//                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
-//                        commandLine.getOptionValue("header-delimeter", "|"),
+//                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+//                        commandLine.getOptionValue("field-delimeter", "|"),
 //                        rootType,
 //                        commandLine.getOptionValues("outgroups"),
 //                        isVerbose);
@@ -419,8 +419,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("prefix"),
                         format,
                         commandLine.getOptionValue("index-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("index-header", "0")),
-                        commandLine.getOptionValue("header-delimeter", "|"),
+                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "|"),
                         commandLine.getOptionValue("attribute"),
                         isVerbose);
                 break;

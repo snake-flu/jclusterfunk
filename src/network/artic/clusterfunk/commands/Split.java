@@ -183,7 +183,7 @@ public class Split extends Command {
                     }
                     prunedMap.put(value, count);
 
-                    String fileName = outputPath + outputFileStem + "_" + name + ".nexus";
+                    String fileName = outputPath + outputFileStem + "_" + name + "." + outputFormat.name().toLowerCase();
                     if (isVerbose) {
                         outStream.println("Writing subtree file: " + fileName);
                     }
