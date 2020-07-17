@@ -11,18 +11,18 @@ import java.util.*;
 /**
  *
  */
-public class Split extends Command {
+public class Parsimony extends Command {
 
-    public Split(String treeFileName,
-          String metadataFileName,
-          String outputPath,
-          String outputFileStem,
-          FormatType outputFormat,
-          String indexColumn,
-          int indexHeader,
-          String headerDelimiter,
-          String attributeName,
-          boolean isVerbose) {
+    public Parsimony(String treeFileName,
+                     String metadataFileName,
+                     String outputPath,
+                     String outputFileStem,
+                     FormatType outputFormat,
+                     String indexColumn,
+                     int indexHeader,
+                     String headerDelimiter,
+                     String attributeName,
+                     boolean isVerbose) {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
@@ -56,7 +56,7 @@ public class Split extends Command {
 //        }
 
         for (Object value: keys) {
-            splitSubtrees(tree, attributeName, value, outputPath, outputFileStem, outputFormat);
+            splitSubtrees(tree, attributeName, value, outputPath, outputFileStem);
         }
 
     }
@@ -70,10 +70,8 @@ public class Split extends Command {
         Map<Object, Set<Node>> attributeValues = new TreeMap<>();
         for (Node tip : tree.getExternalNodes()) {
             Object value = tip.getAttribute(attributeName);
-            if (value != null) {
-                Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
-                tips.add(tip);
-            }
+            Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
+            tips.add(tip);
         }
         return attributeValues;
     }
@@ -101,7 +99,7 @@ public class Split extends Command {
 
         if (tree.isExternal(node)) {
             Object value = node.getAttribute(attributeName);
-            if (value == null || !(attributeValue.equals(value) || (isHierarchical && attributeValue.toString().startsWith(value.toString())))) {
+            if (!(attributeValue.equals(value) || (isHierarchical && attributeValue.toString().startsWith(value.toString())))) {
                 return false;
             }
         } else {
@@ -118,6 +116,46 @@ public class Split extends Command {
         return isMonophyletic;
     }
 
+    /**
+     * Performs a parsimony reconstruction of a particular trait
+     * @param tree
+     * @param attributeName
+     */
+    private void parsimonyReconstruction(RootedTree tree, String attributeName) {
+        parsimonyReconstruction(tree, tree.getRootNode(), attributeName);
+    }
+
+    /**
+     * recursive version
+     * @param tree
+     * @param node
+     * @param attributeName
+     * @return
+     */
+    private Set<Object> parsimonyReconstruction(RootedTree tree, Node node, String attributeName) {
+        if (tree.isExternal(node)) {
+            Object value = node.getAttribute(attributeName);
+            return Collections.singleton(value);
+        }
+
+        Set<Object> union = null;
+        Set<Object> intersection = null;
+        for (Node child : tree.getChildren(node)) {
+            Set<Object> childSet = parsimonyReconstruction(tree, child, attributeName);
+            if (union == null) {
+                union = new HashSet<>(childSet);
+                intersection = new HashSet<>(childSet);
+            } else {
+                union.addAll(childSet);
+                intersection.retainAll(childSet);
+            }
+        }
+
+        if (union.size() == 1) {
+            node.setAttribute("union", union);
+        }
+        return union;
+    }
 
     private void collapseSubtrees(RootedTree tree, String attributeName, Object attributeValue) {
         collapseSubtrees(tree, tree.getRootNode(), attributeName, attributeValue, null);
@@ -151,11 +189,8 @@ public class Split extends Command {
      * @param attributeName
      * @param outputFileStem
      */
-    private void splitSubtrees(RootedTree tree, String attributeName, Object attributeValue,
-                               String outputPath, String outputFileStem, FormatType outputFormat) {
-        splitSubtrees(tree, tree.getRootNode(), attributeName, attributeValue,
-                null, outputPath, outputFileStem, outputFormat,
-                new HashMap<Object, Integer>());
+    private void splitSubtrees(RootedTree tree, String attributeName, Object attributeValue, String outputPath, String outputFileStem) {
+        splitSubtrees(tree, tree.getRootNode(), attributeName, attributeValue, null, outputPath, outputFileStem, new HashMap<Object, Integer>());
     }
 
     /**
@@ -167,11 +202,12 @@ public class Split extends Command {
      * @param outputFileStem
      */
     private void splitSubtrees(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
-                               String outputPath, String outputFileStem, FormatType outputFormat, Map<Object, Integer> prunedMap) {
+                               String outputPath, String outputFileStem, Map<Object, Integer> prunedMap) {
         if (!tree.isExternal(node)) {
             Object value = node.getAttribute(attributeName);
             if (attributeValue.equals(value)) {
                 if (!value.equals(parentValue)) {
+                    node.setAttribute("!collapse", "{\"collapsed\",1.7E-4}");
                     SimpleRootedTree subtree = new SimpleRootedTree();
                     subtree.createNodes(tree, node);
 
@@ -187,12 +223,12 @@ public class Split extends Command {
                     if (isVerbose) {
                         outStream.println("Writing subtree file: " + fileName);
                     }
-                    writeTreeFile(subtree, fileName, outputFormat   );
+                    writeTreeFile(subtree, fileName, FormatType.NEXUS);
                 }
             }
 
             for (Node child : tree.getChildren(node)) {
-                splitSubtrees(tree, child, attributeName, attributeValue, value, outputPath, outputFileStem, outputFormat, prunedMap);
+                splitSubtrees(tree, child, attributeName, attributeValue, value, outputPath, outputFileStem, prunedMap);
             }
 
         }
