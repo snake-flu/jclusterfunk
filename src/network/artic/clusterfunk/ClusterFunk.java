@@ -10,6 +10,11 @@ import java.util.Arrays;
  */
 class ClusterFunk {
 
+    private final static String NAME = "jclusterfunk";
+    private static final String VERSION = "v0.0.1";
+    private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
+    private static final String FOOTER = "";
+
     enum Command {
         NONE("", ""),
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
@@ -90,9 +95,17 @@ class ClusterFunk {
             .desc( "the delimiter used to specify fields in the tip labels (default = '|')" )
             .type(String.class).build();
 
+    private final static Option OUTPUT_FILE = Option.builder( "o" )
+            .longOpt("output")
+            .argName("file")
+            .hasArg()
+            .required(true)
+            .desc( "output file" )
+            .type(String.class).build();
+
     private final static Option OUTPUT_PATH = Option.builder( "o" )
             .longOpt("output")
-            .argName("output_path")
+            .argName("path")
             .hasArg()
             .required(true)
             .desc( "output path" )
@@ -114,6 +127,14 @@ class ClusterFunk {
             .desc( "output file format (nexus or newick)" )
             .type(String.class).build();
 
+    private final static Option OUTPUT_METADATA = Option.builder( "d" )
+            .longOpt("output-metadata")
+            .argName("file")
+            .hasArg()
+            .required(false)
+            .desc( "output a metadata file to match the output tree" )
+            .type(String.class).build();
+
     private final static Option ATTRIBUTE =  Option.builder( )
             .longOpt("attribute")
             .argName("attribute")
@@ -122,12 +143,12 @@ class ClusterFunk {
             .desc( "the attribute name" )
             .type(String.class).build();
 
-    private final static Option HEADER_FIELDS =  Option.builder(  )
-            .longOpt("header-fields")
+    private final static Option LABEL_FIELDS =  Option.builder(  )
+            .longOpt("label-fields")
             .argName("columns")
             .hasArgs()
             .required(false)
-            .desc( "a list of metadata columns to add as tip label header fields" )
+            .desc( "a list of metadata columns to add as tip label fields" )
             .type(String.class).build();
 
     private final static Option TIP_ATTRIBUTES =  Option.builder(  )
@@ -180,10 +201,6 @@ class ClusterFunk {
             .desc( "keep only the taxa specifed (default false)" )
             .type(String.class).build();
 
-    private static final String VERSION = "v0.0.1";
-    private static final String HEADER = "\nClusterFunk " + VERSION + "\nBunch of functions for trees\n\n";
-    private static final String FOOTER = "";
-
     private static void printHelp(Command command, Options options) {
         HelpFormatter formatter = new HelpFormatter();
         StringBuilder sb = new StringBuilder();
@@ -197,14 +214,14 @@ class ClusterFunk {
             }
             sb.append("\n\nuse: <command> -h,--help to display individual options\n");
 
-            formatter.printHelp("clusterfunk <command> <options> [-h]", sb.toString(), options, ClusterFunk.FOOTER, false);
+            formatter.printHelp(NAME + " <command> <options> [-h]", sb.toString(), options, ClusterFunk.FOOTER, false);
         } else {
             sb.append("Command: ")
                     .append(command)
                     .append("\n\n")
                     .append(command.getDescription())
                     .append("\n\n");
-            formatter.printHelp("clusterfunk " + command, sb.toString(), options, ClusterFunk.FOOTER, true);
+            formatter.printHelp(NAME + " " + command, sb.toString(), options, ClusterFunk.FOOTER, true);
         }
 
     }
@@ -230,14 +247,14 @@ class ClusterFunk {
                 switch (command) {
                     case ANNOTATE:
                         options.addOption(INPUT);
-                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(METADATA);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         OptionGroup annotateGroup = new OptionGroup();
-                        annotateGroup.addOption(HEADER_FIELDS);
+                        annotateGroup.addOption(LABEL_FIELDS);
                         annotateGroup.addOption(TIP_ATTRIBUTES);
                         options.addOptionGroup(annotateGroup);
                         options.addOption(REPLACE);
@@ -246,18 +263,21 @@ class ClusterFunk {
 //                    case CONTEXT:
 //                        options.addOption(INPUT);
 //                        options.addOption(OUTPUT_PATH);
+//                        options.addOption(OUTPUT_PREFIX);
 //                        options.addOption(OUTPUT_FORMAT);
 //                        break;
                     case CONVERT:
                         options.addOption(INPUT);
-                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
                         break;
                     case PRUNE:
                         options.addOption(INPUT);
-                        options.addOption(OUTPUT_PATH);
-                        options.addOption(OUTPUT_FORMAT);
                         options.addOption(TAXA);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
@@ -265,7 +285,7 @@ class ClusterFunk {
                         break;
                     case REORDER:
                         options.addOption(INPUT);
-                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
                         OptionGroup orderGroup = new OptionGroup();
                         orderGroup.addOption(INCREASING);
@@ -274,7 +294,7 @@ class ClusterFunk {
                         break;
 //                    case REROOT:
 //                        options.addOption(INPUT);
-//                        options.addOption(OUTPUT_PATH);
+//                        options.addOption(OUTPUT_FILE);
 //                        options.addOption(OUTPUT_FORMAT);
 //                        options.addOption(INDEX_HEADER);
 //                        options.addOption(HEADER_DELIMITER);
@@ -382,8 +402,10 @@ class ClusterFunk {
                 new Prune(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("taxa"),
+                        commandLine.getOptionValue("metadata"),
                         commandLine.getOptionValue("output"),
                         format,
+                        commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("index-column", null),
                         Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "|"),

@@ -2,13 +2,18 @@ package network.artic.clusterfunk.commands;
 
 import jebl.evolution.graphs.Node;
 import jebl.evolution.io.*;
+import jebl.evolution.sequences.SequenceStateException;
 import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -24,7 +29,7 @@ abstract class Command {
     final String headerDelimiter;
 
     Map<String, CSVRecord> metadata = null;
-    CSVRecord firstRecord = null;
+    CSVRecord headerRecord = null;
     Set<String> taxa = null;
 
     /**
@@ -50,12 +55,10 @@ abstract class Command {
         metadata = readCSV(metadataFileName, indexColumn);
         taxa = metadata.keySet();
 
-        firstRecord =  metadata.get(taxa.iterator().next());
-
         if (isVerbose) {
             outStream.println("Read metadata table: " + metadataFileName);
             outStream.println("               Rows: " + metadata.size());
-            outStream.println("       Index column: " + (indexColumn == null ? firstRecord.getParser().getHeaderNames().get(0) : indexColumn));
+            outStream.println("       Index column: " + (indexColumn == null ? headerRecord.getParser().getHeaderNames().get(0) : indexColumn));
             outStream.println();
         }
     }
@@ -214,18 +217,19 @@ abstract class Command {
         return strings;
     }
 
-    private static Map<String, CSVRecord> readCSV(String fileName, String indexColumn) {
+    private Map<String, CSVRecord> readCSV(String fileName, String indexColumn) {
         Map<String, CSVRecord> csv = new HashMap<>();
         try {
             Reader in = new FileReader(fileName);
-            Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
+            CSVParser parser = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
             if (indexColumn != null) {
                 // a particular column is used to index - check it is there for the first record
                 // and use it to key the records
 
                 boolean first = true;
-                for (CSVRecord record : records) {
+                for (CSVRecord record : parser) {
                     if (first) {
+                        headerRecord = record;
                         if (record.get(indexColumn) == null) {
                             errorStream.println("Index column, " + indexColumn + " not found in metadata table");
                             System.exit(1);
@@ -236,7 +240,7 @@ abstract class Command {
                 }
             } else {
                 // key the records against the first column
-                for (CSVRecord record : records) {
+                for (CSVRecord record : parser) {
                     csv.put(record.get(0), record);
                 }
             }
@@ -252,7 +256,7 @@ abstract class Command {
      * @param tree
      * @param fileName
      */
-    static void writeTreeFile(RootedTree tree, String fileName, FormatType format) {
+    void writeTreeFile(RootedTree tree, String fileName, FormatType format) {
         writeTreeFile(Collections.singletonList(tree), fileName, format);
     }
 
@@ -261,7 +265,7 @@ abstract class Command {
      * @param trees
      * @param fileName
      */
-    static void writeTreeFile(List<RootedTree> trees, String fileName, FormatType format) {
+    void writeTreeFile(List<RootedTree> trees, String fileName, FormatType format) {
         try {
             FileWriter writer = new FileWriter(fileName);
 
@@ -285,4 +289,48 @@ abstract class Command {
             System.exit(1);
         }
     }
+
+    /**
+     * Writes a tree
+     * @param records
+     * @param fileName
+     */
+    void writeMetadataFile(List<CSVRecord> records, String fileName) {
+        writeCSVFile(records, fileName);
+    }
+
+    /**
+     * Writes a tree
+     * @param records
+     * @param fileName
+     */
+    private static void writeCSVFile(List<CSVRecord> records, String fileName) {
+        try {
+            PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(fileName)));
+
+            List<String> headerNames = records.get(0).getParser().getHeaderNames();
+            writer.println(String.join(",", headerNames));
+
+            for (CSVRecord record : records) {
+                boolean first = true;
+                for (String value : record) {
+                    if (first) {
+                        writer.print(value);
+                        first = false;
+                    } else {
+                        writer.print(",");
+                        writer.print(value);
+                    }
+                }
+                writer.println();
+            }
+
+            writer.close();
+        } catch (IOException e) {
+            errorStream.println("Error writing metadata file: " + e.getMessage());
+            System.exit(1);
+        }
+
+    }
+
 }

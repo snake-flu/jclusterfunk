@@ -19,7 +19,7 @@ public class Annotate extends Command {
              String indexColumn,
              int indexHeader,
              String headerDelimiter,
-             String[] headerColumns,
+             String[] labelColumns,
              String[] annotationColumns,
              boolean replace,
              boolean ignoreMissing,
@@ -44,12 +44,12 @@ public class Annotate extends Command {
             annotateTips(tree, taxonMap, metadata, annotationColumns, replace, ignoreMissing);
         }
 
-        if (headerColumns != null && headerColumns.length > 0) {
+        if (labelColumns != null && labelColumns.length > 0) {
             if (isVerbose) {
-                outStream.println((replace ? "Replacing" : "Appending") + " tip labels with columns: " + String.join(", ", headerColumns));
+                outStream.println((replace ? "Replacing" : "Appending") + " tip labels with columns: " + String.join(", ", labelColumns));
                 outStream.println();
             }
-            relabelTips(tree, taxonMap, metadata, headerColumns, headerDelimiter, replace, ignoreMissing);
+            relabelTips(tree, taxonMap, metadata, labelColumns, headerDelimiter, replace, ignoreMissing);
         }
 
         if (isVerbose) {

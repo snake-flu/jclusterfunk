@@ -5,6 +5,7 @@ import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.RootedSubtree;
 import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
+import org.apache.commons.csv.CSVRecord;
 
 import java.util.*;
 
@@ -13,16 +14,18 @@ import java.util.*;
  */
 public class Prune extends Command {
     public Prune(String treeFileName,
-          String taxaFileName,
-          String outputPath,
-          FormatType outputFormat,
-          String indexColumn,
-          int indexHeader,
-          String headerDelimiter,
-          boolean keepTaxa,
-          boolean isVerbose) {
+                 String taxaFileName,
+                 String metadataFileName,
+                 String outputFileName,
+                 FormatType outputFormat,
+                 String outputMetadataFileName,
+                 String indexColumn,
+                 int indexHeader,
+                 String headerDelimiter,
+                 boolean keepTaxa,
+                 boolean isVerbose) {
 
-        super(null, taxaFileName, indexColumn, indexHeader, headerDelimiter, isVerbose);
+        super(metadataFileName, taxaFileName, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
         RootedTree tree = readTree(treeFileName);
 
@@ -53,11 +56,23 @@ public class Prune extends Command {
         RootedTree outTree = new RootedSubtree(tree, includedTaxa);
 
         if (isVerbose) {
-            outStream.println("Writing tree file, " + outputPath + ", in " + outputFormat.name().toLowerCase() + " format");
+            outStream.println("Writing tree file, " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
             outStream.println();
         }
 
-        writeTreeFile(outTree, outputPath, outputFormat);
+        writeTreeFile(outTree, outputFileName, outputFormat);
+
+        if (outputMetadataFileName != null) {
+            List<CSVRecord> metadataRows = new ArrayList<>();
+            for (Taxon taxon : includedTaxa) {
+                metadataRows.add(metadata.get(taxonMap.get(taxon)));
+            }
+            if (isVerbose) {
+                outStream.println("Writing metadata file, " + outputMetadataFileName);
+                outStream.println();
+            }
+            writeMetadataFile(metadataRows, outputMetadataFileName);
+        }
     }
 }
 
