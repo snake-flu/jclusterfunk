@@ -67,7 +67,7 @@ class ClusterFunk {
             .longOpt("taxon-file")
             .argName("file")
             .hasArg()
-            .required(true)
+            .required(false)
             .desc( "file of taxa (in a CSV table or tree)" )
             .type(String.class).build();
 
@@ -167,6 +167,14 @@ class ClusterFunk {
             .desc( "a list of metadata columns to add as tip attributes" )
             .type(String.class).build();
 
+    private final static Option MAX_PARENT_LEVEL = Option.builder(  )
+            .longOpt("max-parent")
+            .argName("level")
+            .hasArg()
+            .required(false)
+            .desc( "maximum parent level to include in context trees (default = 1)" )
+            .type(Integer.class).build();
+    
     private final static Option MIDPOINT =  Option.builder( )
             .longOpt("midpoint")
             .required(false)
@@ -268,12 +276,21 @@ class ClusterFunk {
                         options.addOption(REPLACE);
                         options.addOption(IGNORE_MISSING);
                         break;
-//                    case CONTEXT:
-//                        options.addOption(INPUT);
-//                        options.addOption(OUTPUT_PATH);
-//                        options.addOption(OUTPUT_PREFIX);
-//                        options.addOption(OUTPUT_FORMAT);
-//                        break;
+                    case CONTEXT:
+                        options.addOption(INPUT);
+                        options.addOption(TAXON_FILE);
+                        options.addOption(TAXA);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_PREFIX);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(MAX_PARENT_LEVEL);
+                        options.addOption(IGNORE_MISSING);
+                        break;
                     case CONVERT:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_FILE);
@@ -313,9 +330,11 @@ class ClusterFunk {
 //                        break;
                     case SPLIT:
                         options.addOption(INPUT);
+                        options.addOption(METADATA);
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
                         options.addOption(ATTRIBUTE);
                         break;
                 }
@@ -391,13 +410,37 @@ class ClusterFunk {
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
-//            case CONTEXT:
-//                new Context(
-//                        commandLine.getOptionValue("i"),
-//                        commandLine.getOptionValue("o"),
-//                        format,
-//                        isVerbose);
-//                break;
+//    public Context(String treeFileName,
+//                            String taxaFileName,
+//                            List<String> targetTaxa,
+//                            String metadataFileName,
+//                            String outputPath,
+//                            String outputFileStem,
+//                            FormatType outputFormat,
+//                        String outputMetadataFileName,
+//                         String indexColumn,
+//                        int indexHeader,
+//                        String headerDelimiter,
+//                        int maxParentLevel,
+//                        boolean ignoreMissing,
+//                        boolean isVerbose) {
+            case CONTEXT:
+                new Context(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("taxon-file"),
+                        commandLine.getOptionValues("taxa"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output-path"),
+                        commandLine.getOptionValue("output-prefix"),
+                        format,
+                        commandLine.getOptionValue("output-metadata"),
+                        commandLine.getOptionValue("index-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "|"),
+                        Integer.parseInt(commandLine.getOptionValue("max-parent", "1")),
+                        commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
             case CONVERT:
                 new Reorder(
                         commandLine.getOptionValue("input"),
@@ -407,20 +450,6 @@ class ClusterFunk {
                         isVerbose);
                 break;
             case PRUNE:
-//    public Prune(String treeFileName,
-//                    String taxaFileName,
-//                    List<String> targetTaxa,
-//                    String metadataFileName,
-//                    String outputFileName,
-//                    FormatType outputFormat,
-//                    String outputMetadataFileName,
-//                    String indexColumn,
-//                int indexHeader,
-//                String headerDelimiter,
-//                boolean keepTaxa,
-//                boolean ignoreMissing,
-//                boolean isVerbose) {
-
                 new Prune(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("taxon-file"),
@@ -461,9 +490,10 @@ class ClusterFunk {
                 new Split(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
-                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("output-path"),
                         commandLine.getOptionValue("prefix"),
                         format,
+                        commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("index-column", null),
                         Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "|"),

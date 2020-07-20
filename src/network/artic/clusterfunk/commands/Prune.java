@@ -29,10 +29,14 @@ public class Prune extends Command {
 
         super(metadataFileName, taxaFileName, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
+        List<String> targetTaxaList = Arrays.asList(targetTaxa);
+        if (taxa == null && targetTaxaList.size() == 0) {
+            throw new IllegalArgumentException("context command requires a taxon list and/or additional target taxa");
+        }
+
         RootedTree tree = readTree(treeFileName);
 
         Map<Taxon, String> taxonMap = getTaxonMap(tree);
-        List<String> targetTaxaList = Arrays.asList(targetTaxa);
 
         if (!ignoreMissing && taxa != null) {
             if (taxa != null) {

@@ -13,17 +13,17 @@ import java.util.*;
  */
 public class Annotate extends Command {
     public Annotate(String treeFileName,
-             String metadataFileName,
-             String outputPath,
-             FormatType outputFormat,
-             String indexColumn,
-             int indexHeader,
-             String headerDelimiter,
-             String[] labelColumns,
-             String[] annotationColumns,
-             boolean replace,
-             boolean ignoreMissing,
-             boolean isVerbose) {
+                    String metadataFileName,
+                    String outputPath,
+                    FormatType outputFormat,
+                    String indexColumn,
+                    int indexHeader,
+                    String headerDelimiter,
+                    String[] labelColumns,
+                    String[] annotationColumns,
+                    boolean replace,
+                    boolean ignoreMissing,
+                    boolean isVerbose) {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 

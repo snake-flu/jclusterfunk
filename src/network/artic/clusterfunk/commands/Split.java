@@ -14,15 +14,16 @@ import java.util.*;
 public class Split extends Command {
 
     public Split(String treeFileName,
-          String metadataFileName,
-          String outputPath,
-          String outputFileStem,
-          FormatType outputFormat,
-          String indexColumn,
-          int indexHeader,
-          String headerDelimiter,
-          String attributeName,
-          boolean isVerbose) {
+                 String metadataFileName,
+                 String outputPath,
+                 String outputFileStem,
+                 FormatType outputFormat,
+                 String outputMetadataFileName,
+                 String indexColumn,
+                 int indexHeader,
+                 String headerDelimiter,
+                 String attributeName,
+                 boolean isVerbose) {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 

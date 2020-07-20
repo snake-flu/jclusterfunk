@@ -6,10 +6,7 @@ import jebl.evolution.trees.RootedSubtree;
 import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
@@ -17,11 +14,12 @@ import java.util.Set;
 public class Context extends Command {
     public Context(String treeFileName,
                    String taxaFileName,
-                   List<String> targetTaxa,
+                   String[] targetTaxa,
                    String metadataFileName,
                    String outputPath,
                    String outputFileStem,
                    FormatType outputFormat,
+                   String outputMetadataFileName,
                    String indexColumn,
                    int indexHeader,
                    String headerDelimiter,
@@ -31,7 +29,9 @@ public class Context extends Command {
 
         super(metadataFileName, taxaFileName, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
-        if (taxa == null && targetTaxa.size() == 0) {
+        List<String> targetTaxaList = Arrays.asList(targetTaxa);
+
+        if (taxa == null && targetTaxaList.size() == 0) {
             throw new IllegalArgumentException("context command requires a taxon list and/or additional target taxa");
         }
 
@@ -60,7 +60,7 @@ public class Context extends Command {
         for (Node tip : tree.getExternalNodes()) {
             Taxon taxon = tree.getTaxon(tip);
             String index = taxonMap.get(taxon);
-            if ((taxa != null && taxa.contains(index)) || targetTaxa.contains(index)) {
+            if ((taxa != null && taxa.contains(index)) || targetTaxaList.contains(index)) {
                 Node node = tip;
                 int parentLevel = 0;
                 do {
