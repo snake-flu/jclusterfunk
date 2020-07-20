@@ -145,58 +145,6 @@ public class Split extends Command {
     }
 
 
-    /**
-     * When ever a change in the value of a given attribute occurs at a node, writes out a subtree from that node
-     * @param tree
-     * @param attributeName
-     * @param outputFileStem
-     */
-    private void splitSubtrees(RootedTree tree, String attributeName, Object attributeValue,
-                               String outputPath, String outputFileStem, FormatType outputFormat) {
-        splitSubtrees(tree, tree.getRootNode(), attributeName, attributeValue,
-                null, outputPath, outputFileStem, outputFormat,
-                new HashMap<Object, Integer>());
-    }
-
-    /**
-     * recursive version
-     * @param tree
-     * @param node
-     * @param attributeName
-     * @param parentValue
-     * @param outputFileStem
-     */
-    private void splitSubtrees(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
-                               String outputPath, String outputFileStem, FormatType outputFormat, Map<Object, Integer> prunedMap) {
-        if (!tree.isExternal(node)) {
-            Object value = node.getAttribute(attributeName);
-            if (attributeValue.equals(value)) {
-                if (!value.equals(parentValue)) {
-                    SimpleRootedTree subtree = new SimpleRootedTree();
-                    subtree.createNodes(tree, node);
-
-                    String name = value.toString();
-                    Integer count = prunedMap.getOrDefault(value, 0);
-                    count += 1;
-                    if (count > 1) {
-                        name += "_" + count;
-                    }
-                    prunedMap.put(value, count);
-
-                    String fileName = outputPath + outputFileStem + "_" + name + "." + outputFormat.name().toLowerCase();
-                    if (isVerbose) {
-                        outStream.println("Writing subtree file: " + fileName);
-                    }
-                    writeTreeFile(subtree, fileName, outputFormat   );
-                }
-            }
-
-            for (Node child : tree.getChildren(node)) {
-                splitSubtrees(tree, child, attributeName, attributeValue, value, outputPath, outputFileStem, outputFormat, prunedMap);
-            }
-
-        }
-    }
 
 }
 

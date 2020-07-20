@@ -6,7 +6,7 @@ import org.apache.commons.cli.*;
 import java.util.Arrays;
 
 /**
- *
+ * Entrypoint class with main().
  */
 class ClusterFunk {
 
@@ -18,7 +18,7 @@ class ClusterFunk {
     enum Command {
         NONE("", ""),
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
-//        CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
+        CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
         CONVERT("convert", "Convert tree from one format to another."),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
         REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
@@ -63,16 +63,24 @@ class ClusterFunk {
             .desc( "input metadata file" )
             .type(String.class).build();
 
-    private final static Option TAXA = Option.builder( "t" )
-            .longOpt("taxa")
+    private final static Option TAXON_FILE = Option.builder( )
+            .longOpt("taxon-file")
             .argName("file")
             .hasArg()
             .required(true)
-            .desc( "file of taxa (table or tree)" )
+            .desc( "file of taxa (in a CSV table or tree)" )
+            .type(String.class).build();
+
+    private final static Option TAXA =  Option.builder( "t" )
+            .longOpt("taxa")
+            .argName("taxon-ids")
+            .hasArgs()
+            .required(false)
+            .desc( "a list of taxon ids" )
             .type(String.class).build();
 
     private final static Option INDEX_COLUMN = Option.builder( "c" )
-            .longOpt("index-column")
+            .longOpt("id-column")
             .argName("column name")
             .hasArg()
             .required(false)
@@ -80,7 +88,7 @@ class ClusterFunk {
             .type(String.class).build();
 
     private final static Option INDEX_FIELD = Option.builder(  )
-            .longOpt("index-field")
+            .longOpt("id-field")
             .argName("field number")
             .hasArg()
             .required(false)
@@ -88,7 +96,7 @@ class ClusterFunk {
             .type(Integer.class).build();
 
     private final static Option HEADER_DELIMITER = Option.builder(  )
-            .longOpt("header-delimited")
+            .longOpt("field-delimiter")
             .argName("delimiter")
             .hasArg()
             .required(false)
@@ -273,7 +281,7 @@ class ClusterFunk {
                         break;
                     case PRUNE:
                         options.addOption(INPUT);
-                        options.addOption(TAXA);
+                        options.addOption(TAXON_FILE);
                         options.addOption(METADATA);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
@@ -399,9 +407,24 @@ class ClusterFunk {
                         isVerbose);
                 break;
             case PRUNE:
+//    public Prune(String treeFileName,
+//                    String taxaFileName,
+//                    List<String> targetTaxa,
+//                    String metadataFileName,
+//                    String outputFileName,
+//                    FormatType outputFormat,
+//                    String outputMetadataFileName,
+//                    String indexColumn,
+//                int indexHeader,
+//                String headerDelimiter,
+//                boolean keepTaxa,
+//                boolean ignoreMissing,
+//                boolean isVerbose) {
+
                 new Prune(
                         commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("taxa"),
+                        commandLine.getOptionValue("taxon-file"),
+                        commandLine.getOptionValues("taxa"),
                         commandLine.getOptionValue("metadata"),
                         commandLine.getOptionValue("output"),
                         format,
@@ -410,6 +433,7 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "|"),
                         commandLine.hasOption("keep-taxa"),
+                        commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
             case REORDER:

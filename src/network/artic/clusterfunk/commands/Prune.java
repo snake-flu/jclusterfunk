@@ -15,6 +15,7 @@ import java.util.*;
 public class Prune extends Command {
     public Prune(String treeFileName,
                  String taxaFileName,
+                 String[] targetTaxa,
                  String metadataFileName,
                  String outputFileName,
                  FormatType outputFormat,
@@ -23,6 +24,7 @@ public class Prune extends Command {
                  int indexHeader,
                  String headerDelimiter,
                  boolean keepTaxa,
+                 boolean ignoreMissing,
                  boolean isVerbose) {
 
         super(metadataFileName, taxaFileName, indexColumn, indexHeader, headerDelimiter, isVerbose);
@@ -30,6 +32,25 @@ public class Prune extends Command {
         RootedTree tree = readTree(treeFileName);
 
         Map<Taxon, String> taxonMap = getTaxonMap(tree);
+        List<String> targetTaxaList = Arrays.asList(targetTaxa);
+
+        if (!ignoreMissing && taxa != null) {
+            if (taxa != null) {
+                for (String key : taxa) {
+                    if (!taxonMap.containsValue(key)) {
+                        errorStream.println("Taxon, " + key + ", not found in tree");
+                        System.exit(1);
+                    }
+                }
+            }
+
+            for (String key : targetTaxa) {
+                if (!taxonMap.containsValue(key)) {
+                    errorStream.println("Taxon, " + key + ", not found in tree");
+                    System.exit(1);
+                }
+            }
+        }
 
         // subtree option in JEBL requires the taxa that are to be included
         Set<Taxon> includedTaxa = new HashSet<>();
@@ -37,7 +58,7 @@ public class Prune extends Command {
         for (Node tip : tree.getExternalNodes()) {
             Taxon taxon = tree.getTaxon(tip);
             String index = taxonMap.get(taxon);
-            if ((taxa.contains(index) == keepTaxa)) {
+            if ((taxa != null && taxa.contains(index) == keepTaxa) || targetTaxaList.contains(index) == keepTaxa) {
                 includedTaxa.add(taxon);
             }
         }
