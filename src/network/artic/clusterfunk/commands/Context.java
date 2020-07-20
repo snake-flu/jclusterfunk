@@ -29,7 +29,7 @@ public class Context extends Command {
 
         super(metadataFileName, taxaFileName, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
-        List<String> targetTaxaList = Arrays.asList(targetTaxa);
+        List<String> targetTaxaList = (targetTaxa != null ? Arrays.asList(targetTaxa) : Collections.emptyList());
 
         if (taxa == null && targetTaxaList.size() == 0) {
             throw new IllegalArgumentException("context command requires a taxon list and/or additional target taxa");
@@ -49,7 +49,7 @@ public class Context extends Command {
                 }
             }
 
-            for (String key : targetTaxa) {
+            for (String key : targetTaxaList) {
                 if (!taxonMap.containsValue(key)) {
                     errorStream.println("Taxon, " + key + ", not found in tree");
                     System.exit(1);
@@ -71,7 +71,7 @@ public class Context extends Command {
             }
         }
 
-        splitSubtrees(tree, "include", true, outputPath, outputFileStem, outputFormat);
+        splitSubtrees(tree, "include", true, outputPath, outputFileStem, false, outputFormat);
 
 //        if (isVerbose) {
 //            outStream.println("   Number of taxa pruned: " + (tree.getExternalNodes().size() - includedTaxa.size()) );

@@ -341,9 +341,9 @@ abstract class Command {
      * @param outputFileStem
      */
     void splitSubtrees(RootedTree tree, String attributeName, Object attributeValue,
-                       String outputPath, String outputFileStem, FormatType outputFormat) {
+                       String outputPath, String outputFileStem, boolean labelWithValue, FormatType outputFormat) {
         splitSubtrees(tree, tree.getRootNode(), attributeName, attributeValue,
-                null, outputPath, outputFileStem, outputFormat,
+                null, outputPath, outputFileStem, labelWithValue, outputFormat,
                 new HashMap<Object, Integer>());
     }
 
@@ -356,7 +356,7 @@ abstract class Command {
      * @param outputFileStem
      */
     private void splitSubtrees(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
-                               String outputPath, String outputFileStem, FormatType outputFormat, Map<Object, Integer> prunedMap) {
+                               String outputPath, String outputFileStem, boolean labelWithValue, FormatType outputFormat, Map<Object, Integer> prunedMap) {
         if (!tree.isExternal(node)) {
             Object value = node.getAttribute(attributeName);
             if (attributeValue.equals(value)) {
@@ -364,15 +364,15 @@ abstract class Command {
                     SimpleRootedTree subtree = new SimpleRootedTree();
                     subtree.createNodes(tree, node);
 
-                    String name = value.toString();
+                    String name = (labelWithValue ? "_" + value.toString() : "");
                     Integer count = prunedMap.getOrDefault(value, 0);
                     count += 1;
-                    if (count > 1) {
+                    if (count > 1 || !labelWithValue) {
                         name += "_" + count;
                     }
                     prunedMap.put(value, count);
 
-                    String fileName = outputPath + outputFileStem + "_" + name + "." + outputFormat.name().toLowerCase();
+                    String fileName = outputPath + outputFileStem + name + "." + outputFormat.name().toLowerCase();
                     if (isVerbose) {
                         outStream.println("Writing subtree file: " + fileName);
                     }
@@ -381,7 +381,7 @@ abstract class Command {
             }
 
             for (Node child : tree.getChildren(node)) {
-                splitSubtrees(tree, child, attributeName, attributeValue, value, outputPath, outputFileStem, outputFormat, prunedMap);
+                splitSubtrees(tree, child, attributeName, attributeValue, value, outputPath, outputFileStem, labelWithValue, outputFormat, prunedMap);
             }
 
         }

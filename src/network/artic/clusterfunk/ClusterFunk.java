@@ -115,7 +115,7 @@ class ClusterFunk {
             .longOpt("output")
             .argName("path")
             .hasArg()
-            .required(true)
+            .required(false)
             .desc( "output path" )
             .type(String.class).build();
 
@@ -280,6 +280,7 @@ class ClusterFunk {
                         options.addOption(INPUT);
                         options.addOption(TAXON_FILE);
                         options.addOption(TAXA);
+                        METADATA.setRequired(false);
                         options.addOption(METADATA);
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
@@ -299,6 +300,7 @@ class ClusterFunk {
                     case PRUNE:
                         options.addOption(INPUT);
                         options.addOption(TAXON_FILE);
+                        METADATA.setRequired(false);
                         options.addOption(METADATA);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
@@ -330,6 +332,7 @@ class ClusterFunk {
 //                        break;
                     case SPLIT:
                         options.addOption(INPUT);
+                        METADATA.setRequired(false);
                         options.addOption(METADATA);
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
@@ -430,8 +433,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("taxon-file"),
                         commandLine.getOptionValues("taxa"),
                         commandLine.getOptionValue("metadata"),
-                        commandLine.getOptionValue("output-path"),
-                        commandLine.getOptionValue("output-prefix"),
+                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("prefix"),
                         format,
                         commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("index-column", null),
