@@ -6,6 +6,9 @@ import jebl.evolution.trees.RootedSubtree;
 import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -39,6 +42,8 @@ public class Context extends Command {
 
         Map<Taxon, String> taxonMap = getTaxonMap(tree);
 
+        String path = checkOutputPath(outputPath);
+
         if (!ignoreMissing && taxa != null) {
             if (taxa != null) {
                 for (String key : taxa) {
@@ -71,27 +76,8 @@ public class Context extends Command {
             }
         }
 
-        splitSubtrees(tree, "include", true, outputPath, outputFileStem, false, outputFormat);
-
-//        if (isVerbose) {
-//            outStream.println("   Number of taxa pruned: " + (tree.getExternalNodes().size() - includedTaxa.size()) );
-//            outStream.println("Number of taxa remaining: " + includedTaxa.size());
-//            outStream.println();
-//        }
-//
-//        if (includedTaxa.size() < 2) {
-//            errorStream.println("At least 2 taxa must remain in the tree");
-//            System.exit(1);
-//        }
-//
-//        RootedTree outTree = new RootedSubtree(tree, includedTaxa);
-//
-//        if (isVerbose) {
-//            outStream.println("Writing tree file, " + outputPath + ", in " + outputFormat.name().toLowerCase() + " format");
-//            outStream.println();
-//        }
-//
-//        writeTreeFile(outTree, outputPath, outputFormat);
+        splitSubtrees(tree, "include", true, path, outputFileStem, false, outputFormat);
     }
+
 }
 

@@ -27,6 +27,8 @@ public class Split extends Command {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
+        String path = checkOutputPath(outputPath);
+
         RootedTree tree = readTree(treeFileName);
 
         Map<Taxon, String> taxonMap = getTaxonMap(tree);
@@ -57,7 +59,7 @@ public class Split extends Command {
 //        }
 
         for (Object value: keys) {
-            splitSubtrees(tree, attributeName, value, outputPath, outputFileStem, true, outputFormat);
+            splitSubtrees(tree, attributeName, value, path, outputFileStem, true, outputFormat);
         }
 
     }

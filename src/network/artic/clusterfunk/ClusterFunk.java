@@ -3,6 +3,9 @@ package network.artic.clusterfunk;
 import network.artic.clusterfunk.commands.*;
 import org.apache.commons.cli.*;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 /**
@@ -404,8 +407,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("metadata"),
                         commandLine.getOptionValue("output"),
                         format,
-                        commandLine.getOptionValue("index-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "|"),
                         commandLine.getOptionValues("label-fields"),
                         commandLine.getOptionValues("tip-attributes"),
@@ -437,8 +440,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("prefix"),
                         format,
                         commandLine.getOptionValue("output-metadata"),
-                        commandLine.getOptionValue("index-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "|"),
                         Integer.parseInt(commandLine.getOptionValue("max-parent", "1")),
                         commandLine.hasOption("ignore-missing"),
@@ -461,8 +464,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         format,
                         commandLine.getOptionValue("output-metadata"),
-                        commandLine.getOptionValue("index-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "|"),
                         commandLine.hasOption("keep-taxa"),
                         commandLine.hasOption("ignore-missing"),
@@ -497,8 +500,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("prefix"),
                         format,
                         commandLine.getOptionValue("output-metadata"),
-                        commandLine.getOptionValue("index-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "|"),
                         commandLine.getOptionValue("attribute"),
                         isVerbose);
