@@ -24,20 +24,19 @@ public class Cluster extends Command {
 
         super(null, null, null, 0, null, isVerbose);
 
-        RootedTree tree = readTree(treeFileName);
 
         if (isVerbose) {
             outStream.println("Annotating clusters in tree where " + annotationName + " = " + annotationValue + " as " + clusterName );
             outStream.println();
         }
-        annotateClusters(tree, annotationName, annotationValue, clusterName, clusterPrefix);
 
-        if (isVerbose) {
-            outStream.println("Writing tree file, " + outputPath + ", in " + outputFormat.name().toLowerCase() + " format");
-            outStream.println();
-        }
-
-        writeTreeFile(tree, outputPath, outputFormat);
+        processTrees(treeFileName, new TreeFunction() {
+            @Override
+            public RootedTree processTree(RootedTree tree) {
+                annotateClusters(tree, annotationName, annotationValue, clusterName, clusterPrefix);
+                return tree;
+            }
+        });
 
     }
 

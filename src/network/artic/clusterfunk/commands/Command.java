@@ -109,6 +109,10 @@ abstract class Command {
     final List<RootedTree> readTrees(String treeFileName) {
         List<RootedTree> trees = new ArrayList<>();
 
+        if (isVerbose) {
+            outStream.println("  Reading treefile: " + treeFileName);
+        }
+
         try {
             TreeImporter importer = null;
 
@@ -136,7 +140,6 @@ abstract class Command {
         }
 
         if (isVerbose) {
-            outStream.println("  Read treefile: " + treeFileName);
             if (trees.size() > 1) {
                 outStream.println("Number of trees: " + trees.size());
             }
@@ -146,6 +149,66 @@ abstract class Command {
 
         return trees;
     }
+
+    final void processTrees(String treeFileName, String outputFileName, FormatType outputFormat, TreeFunction function) {
+
+        if (isVerbose) {
+            outStream.println("  Reading treefile: " + treeFileName);
+        }
+
+        try {
+            TreeImporter importer = null;
+
+            FormatType format = getTreeFileType(new FileReader(treeFileName));
+
+            if (format == FormatType.NEXUS) {
+                importer = new NexusImporter(new FileReader(treeFileName));
+            } else if (format == FormatType.NEWICK) {
+                importer = new NewickImporter(new FileReader(treeFileName), false);
+            } else {
+                errorStream.println("Unrecognised tree format in file, " + treeFileName);
+                System.exit(1);
+            }
+
+            try {
+                FileWriter writer = new FileWriter(outputFileName);
+
+                TreeExporter exporter;
+
+                switch (format) {
+                    case NEXUS:
+                        exporter = new NexusExporter(writer);
+                        break;
+                    case NEWICK:
+                        exporter = new NewickExporter(writer);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown format: " + format);
+                }
+
+            } catch (IOException e) {
+                errorStream.println("Error writing tree file: " + e.getMessage());
+                System.exit(1);
+            }
+
+            while (importer.hasTree()) {
+                RootedTree tree = function.processTree((RootedTree) importer.importNextTree());
+
+                exporter.exportTrees(trees);
+                writer.close();
+            }
+
+        } catch (IOException ioe) {
+            errorStream.println("Error reading tree file, " + treeFileName + ": " + ioe.getMessage());
+            System.exit(1);
+        } catch (ImportException ie) {
+            errorStream.println("Error parsing tree file, " + treeFileName + ": " + ie.getMessage());
+            System.exit(1);
+        }
+
+    }
+
+
 
     private FormatType getTreeFileType(Reader reader) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(reader);
