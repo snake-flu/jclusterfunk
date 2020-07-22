@@ -387,4 +387,54 @@ abstract class Command {
         }
     }
 
+    /**
+     * When ever a change in the value of a given attribute occurs at a node, creates a new cluster number and annotates
+     * descendents with that cluster number.
+     * @param tree
+     * @param attributeName
+     */
+    void annotateClusters(RootedTree tree, String attributeName, Object attributeValue, String clusterAttributeName, String clusterPrefix) {
+        annotateClusters(tree, tree.getRootNode(), attributeName, attributeValue, null,
+                clusterAttributeName, clusterPrefix, null, new HashMap<Object, Integer>());
+    }
+
+    /**
+     * recursive version
+     * @param tree
+     * @param node
+     * @param attributeName
+     * @param parentValue
+     */
+    private void annotateClusters(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
+                                  String clusterAttributeName, String clusterPrefix, String currentClusterName, Map<Object, Integer> countMap) {
+        Object value = node.getAttribute(attributeName);
+        if (attributeValue.equals(value)) {
+            if (!value.equals(parentValue)) {
+
+                Integer count = countMap.getOrDefault(value, 0);
+                count += 1;
+                if (clusterPrefix != null) {
+                    currentClusterName = clusterPrefix + count;
+                } else {
+                    currentClusterName = "" + count;
+                }
+
+                countMap.put(value, count);
+
+                if (isVerbose) {
+                    outStream.println("Creating cluster: " + currentClusterName);
+                }
+            }
+
+            node.setAttribute(clusterAttributeName, currentClusterName);
+        }
+
+        if (!tree.isExternal(node)) {
+            for (Node child : tree.getChildren(node)) {
+                annotateClusters(tree, child, attributeName, attributeValue, value, clusterAttributeName, clusterPrefix, currentClusterName, countMap);
+            }
+
+        }
+    }
+
 }

@@ -18,6 +18,7 @@ class ClusterFunk {
     enum Command {
         NONE("", ""),
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
+        CLUSTER("cluster", "label clusters by number based on node attributes."),
         CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
         CONVERT("convert", "Convert tree from one format to another."),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
@@ -145,10 +146,34 @@ class ClusterFunk {
 
     private final static Option ATTRIBUTE =  Option.builder( )
             .longOpt("attribute")
-            .argName("attribute")
+            .argName("attribute_name")
             .hasArg()
             .required(true)
             .desc( "the attribute name" )
+            .type(String.class).build();
+
+    private final static Option VALUE =  Option.builder( )
+            .longOpt("value")
+            .argName("attribute_value")
+            .hasArg()
+            .required(true)
+            .desc( "the attribute value" )
+            .type(String.class).build();
+
+    private final static Option CLUSTER_NAME =  Option.builder( )
+            .longOpt("cluster-name")
+            .argName("name")
+            .hasArg()
+            .required(true)
+            .desc( "the cluster name" )
+            .type(String.class).build();
+
+    private final static Option CLUSTER_PREFIX =  Option.builder( )
+            .longOpt("cluster-prefix")
+            .argName("prefix")
+            .hasArg()
+            .required(false)
+            .desc( "the cluster prefix (default = just a number)" )
             .type(String.class).build();
 
     private final static Option LABEL_FIELDS =  Option.builder(  )
@@ -275,6 +300,15 @@ class ClusterFunk {
                         options.addOptionGroup(annotateGroup);
                         options.addOption(REPLACE);
                         options.addOption(IGNORE_MISSING);
+                        break;
+                    case CLUSTER:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(ATTRIBUTE);
+                        options.addOption(VALUE);
+                        options.addOption(CLUSTER_NAME);
+                        options.addOption(CLUSTER_PREFIX);
                         break;
                     case CONTEXT:
                         options.addOption(INPUT);
@@ -413,20 +447,17 @@ class ClusterFunk {
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
-//    public Context(String treeFileName,
-//                            String taxaFileName,
-//                            List<String> targetTaxa,
-//                            String metadataFileName,
-//                            String outputPath,
-//                            String outputFileStem,
-//                            FormatType outputFormat,
-//                        String outputMetadataFileName,
-//                         String indexColumn,
-//                        int indexHeader,
-//                        String headerDelimiter,
-//                        int maxParentLevel,
-//                        boolean ignoreMissing,
-//                        boolean isVerbose) {
+            case CLUSTER:
+                new Cluster(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        commandLine.getOptionValue("attribute"),
+                        commandLine.getOptionValue("value"),
+                        commandLine.getOptionValue("cluster-name"),
+                        commandLine.getOptionValue("cluster-prefix"),
+                        isVerbose);
+                break;
             case CONTEXT:
                 new Context(
                         commandLine.getOptionValue("input"),
