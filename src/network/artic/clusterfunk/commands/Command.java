@@ -179,6 +179,9 @@ abstract class Command {
 
         FileWriter writer = null;
         try {
+            if (isVerbose) {
+                outStream.println("  Writing treefile: " + outputFileName);
+            }
             writer = new FileWriter(outputFileName);
 
             switch (outputFormat) {
@@ -198,12 +201,22 @@ abstract class Command {
         }
 
         try {
+            int count = 0;
             while (importer.hasTree()) {
                 RootedTree tree = function.processTree((RootedTree) importer.importNextTree());
 
                 exporter.exportTree(tree);
+                count++;
+                if (isVerbose && count % 100 == 0) {
+                    outStream.println("Number of trees processed: " + count);
+                }
             }
             exporter.close();
+
+            if (isVerbose) {
+                outStream.println("Total trees processed: " + count);
+                outStream.println();
+            }
 
         } catch (ImportException ie) {
             errorStream.println("Error parsing tree file, " + treeFileName + ": " + ie.getMessage());
