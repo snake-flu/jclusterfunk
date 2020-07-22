@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class Cluster extends Command {
     public Cluster(String treeFileName,
-                   String outputPath,
+                   String outputFileName,
                    FormatType outputFormat,
                    String annotationName,
                    String annotationValue,
@@ -24,13 +24,17 @@ public class Cluster extends Command {
 
         super(null, null, null, 0, null, isVerbose);
 
+        if (outputFormat != FormatType.NEXUS) {
+            errorStream.println("Tree annotations are only compatible with NEXUS output format");
+            System.exit(1);
+        }
 
         if (isVerbose) {
             outStream.println("Annotating clusters in tree where " + annotationName + " = " + annotationValue + " as " + clusterName );
             outStream.println();
         }
 
-        processTrees(treeFileName, new TreeFunction() {
+        processTrees(treeFileName, outputFileName, outputFormat, new TreeFunction() {
             @Override
             public RootedTree processTree(RootedTree tree) {
                 annotateClusters(tree, annotationName, annotationValue, clusterName, clusterPrefix);

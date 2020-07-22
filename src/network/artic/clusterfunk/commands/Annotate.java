@@ -14,7 +14,7 @@ import java.util.*;
 public class Annotate extends Command {
     public Annotate(String treeFileName,
                     String metadataFileName,
-                    String outputPath,
+                    String outputFileName,
                     FormatType outputFormat,
                     String indexColumn,
                     int indexHeader,
@@ -53,11 +53,11 @@ public class Annotate extends Command {
         }
 
         if (isVerbose) {
-            outStream.println("Writing tree file, " + outputPath + ", in " + outputFormat.name().toLowerCase() + " format");
+            outStream.println("Writing tree file, " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
             outStream.println();
         }
 
-        writeTreeFile(tree, outputPath, outputFormat);
+        writeTreeFile(tree, outputFileName, outputFormat);
 
     }
 

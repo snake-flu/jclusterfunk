@@ -157,8 +157,10 @@ abstract class Command {
             outStream.println("  Reading treefile: " + treeFileName);
         }
 
+        TreeImporter importer = null;
+        TreeExporter exporter = null;
+
         try {
-            TreeImporter importer = null;
 
             FormatType format = getTreeFileType(new FileReader(treeFileName));
 
@@ -170,40 +172,44 @@ abstract class Command {
                 errorStream.println("Unrecognised tree format in file, " + treeFileName);
                 System.exit(1);
             }
+        } catch (IOException ioe) {
+            errorStream.println("Error reading tree file: " + ioe.getMessage());
+            System.exit(1);
+        }
 
-            try {
-                FileWriter writer = new FileWriter(outputFileName);
+        FileWriter writer = null;
+        try {
+            writer = new FileWriter(outputFileName);
 
-                TreeExporter exporter;
-
-                switch (format) {
-                    case NEXUS:
-                        exporter = new NexusExporter(writer);
-                        break;
-                    case NEWICK:
-                        exporter = new NewickExporter(writer);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown format: " + format);
-                }
-
-            } catch (IOException e) {
-                errorStream.println("Error writing tree file: " + e.getMessage());
-                System.exit(1);
-            }
-
-            while (importer.hasTree()) {
-                RootedTree tree = function.processTree((RootedTree) importer.importNextTree());
-
-                exporter.exportTrees(trees);
-                writer.close();
+            switch (outputFormat) {
+                case NEXUS:
+                    exporter = new NexusExporter(writer);
+                    break;
+                case NEWICK:
+                    exporter = new NewickExporter(writer);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown format: " + outputFormat);
             }
 
         } catch (IOException ioe) {
-            errorStream.println("Error reading tree file, " + treeFileName + ": " + ioe.getMessage());
+            errorStream.println("Error writing tree file: " + ioe.getMessage());
             System.exit(1);
+        }
+
+        try {
+            while (importer.hasTree()) {
+                RootedTree tree = function.processTree((RootedTree) importer.importNextTree());
+
+                exporter.exportTree(tree);
+            }
+            exporter.close();
+
         } catch (ImportException ie) {
             errorStream.println("Error parsing tree file, " + treeFileName + ": " + ie.getMessage());
+            System.exit(1);
+        } catch (IOException ioe) {
+            errorStream.println("Error reading/writing tree file: " + ioe.getMessage());
             System.exit(1);
         }
 
@@ -495,10 +501,6 @@ abstract class Command {
                 }
 
                 countMap.put(value, count);
-
-                if (isVerbose) {
-                    outStream.println("Creating cluster: " + currentClusterName);
-                }
             }
 
             node.setAttribute(clusterAttributeName, currentClusterName);
