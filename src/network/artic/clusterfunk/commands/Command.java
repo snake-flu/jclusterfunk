@@ -14,6 +14,7 @@ import org.apache.commons.csv.CSVRecord;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -355,7 +356,7 @@ abstract class Command {
     }
 
     /**
-     * Writes a tree
+     * Writes a csv file
      * @param records
      * @param fileName
      */
@@ -364,7 +365,7 @@ abstract class Command {
     }
 
     /**
-     * Writes a tree
+     * Writes a csv file
      * @param records
      * @param fileName
      */
@@ -405,6 +406,7 @@ abstract class Command {
      */
     void splitSubtrees(RootedTree tree, String attributeName, Object attributeValue,
                        String outputPath, String outputFileStem, boolean labelWithValue, FormatType outputFormat) {
+
         splitSubtrees(tree, tree.getRootNode(), attributeName, attributeValue,
                 null, outputPath, outputFileStem, labelWithValue, outputFormat,
                 new HashMap<Object, Integer>());
@@ -450,6 +452,16 @@ abstract class Command {
         }
     }
 
+    protected String checkOutputPath(String outputPath) {
+        Path file = new File(outputPath).toPath();
+
+        if (!Files.isDirectory(file)) {
+            errorStream.println("Output path is not a directory: " + outputPath);
+            System.exit(1);
+        }
+
+        return outputPath.endsWith("/") ? outputPath : outputPath + "/";
+    }
     /**
      * When ever a change in the value of a given attribute occurs at a node, creates a new cluster number and annotates
      * descendents with that cluster number.
