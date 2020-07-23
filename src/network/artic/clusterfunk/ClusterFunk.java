@@ -27,7 +27,8 @@ class ClusterFunk {
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
         REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
 //        REROOT("reroot", "Re-root the tree using an outgroup."),
-        SPLIT("split", "Split out subtrees based on tip annotations.");
+        SPLIT("split", "Split out subtrees based on tip annotations."),
+        STATISTICS("statistics", "Extract statistics and information from trees.");
 
         Command(final String name, final String description) {
             this.name = name;
@@ -233,6 +234,12 @@ class ClusterFunk {
             .desc( "replace the annotations or tip label headers rather than appending (default false)" )
             .type(String.class).build();
 
+    private final static Option STATISTICS =  Option.builder( )
+            .longOpt("stats")
+            .required(true)
+            .desc( "a list of statistics to include in the output (see docs for details)" )
+            .type(String.class).build();
+
     private final static Option IGNORE_MISSING =  Option.builder( )
             .longOpt("ignore-missing")
             .required(false)
@@ -308,6 +315,7 @@ class ClusterFunk {
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
                         options.addOption(ATTRIBUTE);
                         options.addOption(VALUE);
                         options.addOption(CLUSTER_NAME);
@@ -376,6 +384,11 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(OUTPUT_METADATA);
                         options.addOption(ATTRIBUTE);
+                        break;
+                    case STATISTICS:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(STATISTICS);
                         break;
                 }
 
@@ -455,6 +468,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("output"),
                         format,
+                        commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("attribute"),
                         commandLine.getOptionValue("value"),
                         commandLine.getOptionValue("cluster-name"),
@@ -527,7 +541,7 @@ class ClusterFunk {
                 new Split(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
-                        commandLine.getOptionValue("output-path"),
+                        commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("prefix"),
                         format,
                         commandLine.getOptionValue("output-metadata"),
@@ -535,6 +549,13 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "|"),
                         commandLine.getOptionValue("attribute"),
+                        isVerbose);
+                break;
+            case STATISTICS:
+                new Statistics(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValues("stats"),
                         isVerbose);
                 break;
         }

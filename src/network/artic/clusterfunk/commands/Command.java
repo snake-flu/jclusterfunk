@@ -151,6 +151,10 @@ abstract class Command {
         return trees;
     }
 
+    final void processTrees(String treeFileName, TreeFunction function) {
+        processTrees(treeFileName, null, null, function);
+    }
+
     final void processTrees(String treeFileName, String outputFileName, FormatType outputFormat, TreeFunction function) {
 
         if (isVerbose) {
@@ -178,26 +182,29 @@ abstract class Command {
         }
 
         FileWriter writer = null;
-        try {
-            if (isVerbose) {
-                outStream.println("  Writing treefile: " + outputFileName);
-            }
-            writer = new FileWriter(outputFileName);
 
-            switch (outputFormat) {
-                case NEXUS:
-                    exporter = new NexusExporter(writer);
-                    break;
-                case NEWICK:
-                    exporter = new NewickExporter(writer);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown format: " + outputFormat);
-            }
+        if (outputFileName != null) {
+            try {
+                if (isVerbose) {
+                    outStream.println("  Writing treefile: " + outputFileName);
+                }
+                writer = new FileWriter(outputFileName);
 
-        } catch (IOException ioe) {
-            errorStream.println("Error writing tree file: " + ioe.getMessage());
-            System.exit(1);
+                switch (outputFormat) {
+                    case NEXUS:
+                        exporter = new NexusExporter(writer);
+                        break;
+                    case NEWICK:
+                        exporter = new NewickExporter(writer);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown format: " + outputFormat);
+                }
+
+            } catch (IOException ioe) {
+                errorStream.println("Error writing tree file: " + ioe.getMessage());
+                System.exit(1);
+            }
         }
 
         try {
@@ -205,13 +212,18 @@ abstract class Command {
             while (importer.hasTree()) {
                 RootedTree tree = function.processTree((RootedTree) importer.importNextTree());
 
-                exporter.exportTree(tree);
+                if (exporter != null) {
+                    exporter.exportTree(tree);
+                }
                 count++;
                 if (isVerbose && count % 100 == 0) {
                     outStream.println("Number of trees processed: " + count);
                 }
             }
-            exporter.close();
+
+            if (exporter != null) {
+                exporter.close();
+            }
 
             if (isVerbose) {
                 outStream.println("Total trees processed: " + count);
@@ -222,7 +234,7 @@ abstract class Command {
             errorStream.println("Error parsing tree file, " + treeFileName + ": " + ie.getMessage());
             System.exit(1);
         } catch (IOException ioe) {
-            errorStream.println("Error reading/writing tree file: " + ioe.getMessage());
+            errorStream.println("Error processing tree file: " + ioe.getMessage());
             System.exit(1);
         }
 
@@ -480,51 +492,6 @@ abstract class Command {
         }
 
         return outputPath.endsWith("/") ? outputPath : outputPath + "/";
-    }
-    /**
-     * When ever a change in the value of a given attribute occurs at a node, creates a new cluster number and annotates
-     * descendents with that cluster number.
-     * @param tree
-     * @param attributeName
-     */
-    void annotateClusters(RootedTree tree, String attributeName, Object attributeValue, String clusterAttributeName, String clusterPrefix) {
-        annotateClusters(tree, tree.getRootNode(), attributeName, attributeValue, null,
-                clusterAttributeName, clusterPrefix, null, new HashMap<Object, Integer>());
-    }
-
-    /**
-     * recursive version
-     * @param tree
-     * @param node
-     * @param attributeName
-     * @param parentValue
-     */
-    private void annotateClusters(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
-                                  String clusterAttributeName, String clusterPrefix, String currentClusterName, Map<Object, Integer> countMap) {
-        Object value = node.getAttribute(attributeName);
-        if (attributeValue.equals(value)) {
-            if (!value.equals(parentValue)) {
-
-                Integer count = countMap.getOrDefault(value, 0);
-                count += 1;
-                if (clusterPrefix != null) {
-                    currentClusterName = clusterPrefix + count;
-                } else {
-                    currentClusterName = "" + count;
-                }
-
-                countMap.put(value, count);
-            }
-
-            node.setAttribute(clusterAttributeName, currentClusterName);
-        }
-
-        if (!tree.isExternal(node)) {
-            for (Node child : tree.getChildren(node)) {
-                annotateClusters(tree, child, attributeName, attributeValue, value, clusterAttributeName, clusterPrefix, currentClusterName, countMap);
-            }
-
-        }
     }
 
 }
