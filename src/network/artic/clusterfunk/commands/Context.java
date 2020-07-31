@@ -76,7 +76,7 @@ public class Context extends Command {
             }
         }
 
-        splitSubtrees(tree, "include", true, path, outputFileStem, false, outputFormat);
+        splitSubtrees(tree, "include", true, false, path, outputFileStem, false, outputFormat);
     }
 
 }

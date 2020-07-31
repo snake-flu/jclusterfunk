@@ -379,7 +379,7 @@ abstract class Command {
             }
 
             exporter.exportTrees(trees);
-            writer.close();
+            exporter.close();
         } catch (IOException e) {
             errorStream.println("Error writing tree file: " + e.getMessage());
             System.exit(1);
@@ -435,11 +435,11 @@ abstract class Command {
      * @param attributeName
      * @param outputFileStem
      */
-    void splitSubtrees(RootedTree tree, String attributeName, Object attributeValue,
+    void splitSubtrees(RootedTree tree, String attributeName, Object attributeValue, boolean includeNested,
                        String outputPath, String outputFileStem, boolean labelWithValue, FormatType outputFormat) {
 
         splitSubtrees(tree, tree.getRootNode(), attributeName, attributeValue,
-                null, outputPath, outputFileStem, labelWithValue, outputFormat,
+                null, includeNested, outputPath, outputFileStem, labelWithValue, outputFormat,
                 new HashMap<Object, Integer>());
     }
 
@@ -451,9 +451,11 @@ abstract class Command {
      * @param parentValue
      * @param outputFileStem
      */
-    private void splitSubtrees(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
+    private void splitSubtrees(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue, boolean includeNested,
                                String outputPath, String outputFileStem, boolean labelWithValue, FormatType outputFormat, Map<Object, Integer> prunedMap) {
         if (!tree.isExternal(node)) {
+            boolean wasSplit = false;
+
             Object value = node.getAttribute(attributeName);
             if (attributeValue.equals(value)) {
                 if (!value.equals(parentValue)) {
@@ -472,12 +474,15 @@ abstract class Command {
                     if (isVerbose) {
                         outStream.println("Writing subtree file: " + fileName);
                     }
-                    writeTreeFile(subtree, fileName, outputFormat   );
+                    writeTreeFile(subtree, fileName, outputFormat);
+                    wasSplit = true;
                 }
             }
 
-            for (Node child : tree.getChildren(node)) {
-                splitSubtrees(tree, child, attributeName, attributeValue, value, outputPath, outputFileStem, labelWithValue, outputFormat, prunedMap);
+            if (!wasSplit || includeNested) {
+                for (Node child : tree.getChildren(node)) {
+                    splitSubtrees(tree, child, attributeName, attributeValue, value, includeNested, outputPath, outputFileStem, labelWithValue, outputFormat, prunedMap);
+                }
             }
 
         }

@@ -59,7 +59,7 @@ public class Split extends Command {
 //        }
 
         for (Object value: keys) {
-            splitSubtrees(tree, attributeName, value, path, outputFileStem, true, outputFormat);
+            splitSubtrees(tree, attributeName, value, true, path, outputFileStem, true, outputFormat);
         }
 
     }
