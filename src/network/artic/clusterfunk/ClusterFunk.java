@@ -14,7 +14,7 @@ import java.util.Arrays;
 class ClusterFunk {
 
     private final static String NAME = "jclusterfunk";
-    private static final String VERSION = "v0.0.1";
+    private static final String VERSION = "v0.0.2";
     private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
