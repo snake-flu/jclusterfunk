@@ -22,9 +22,12 @@ class ClusterFunk {
         NONE("", ""),
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
         CLUSTER("cluster", "label clusters by number based on node attributes."),
+        SUBCLUSTER("subcluster", "split existing clusters into subclusters."),
         CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
         CONVERT("convert", "Convert tree from one format to another."),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
+        RACCOON_DOG("raccoon-dog", "CoG-UK lineage designations."),
+        RECONSTRUCT("reconstruct", "Reconstruct internal node annotations."),
         REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
 //        REROOT("reroot", "Re-root the tree using an outgroup."),
         SPLIT("split", "Split out subtrees based on tip annotations."),
@@ -203,7 +206,15 @@ class ClusterFunk {
             .required(false)
             .desc( "maximum parent level to include in context trees (default = 1)" )
             .type(Integer.class).build();
-    
+
+    private final static Option MAX_CHILD_LEVEL = Option.builder(  )
+            .longOpt("max-child")
+            .argName("level")
+            .hasArg()
+            .required(false)
+            .desc( "maximum level of children to include in subtrees (default = 1)" )
+            .type(Integer.class).build();
+
     private final static Option MIDPOINT =  Option.builder( )
             .longOpt("midpoint")
             .required(false)
@@ -355,6 +366,23 @@ class ClusterFunk {
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(KEEP_TAXA);
                         break;
+                    case RACCOON_DOG:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
+                        options.addOption(ATTRIBUTE);
+                        options.addOption(VALUE);
+                        options.addOption(CLUSTER_NAME);
+                        options.addOption(CLUSTER_PREFIX);
+                        options.addOption(MAX_CHILD_LEVEL);
+                        break;
+                    case RECONSTRUCT:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(TIP_ATTRIBUTES);
+                        break;
                     case REORDER:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_FILE);
@@ -390,6 +418,19 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FILE);
                         options.addOption(STATISTICS);
                         break;
+                    case SUBCLUSTER:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
+                        options.addOption(ATTRIBUTE);
+                        options.addOption(VALUE);
+                        options.addOption(CLUSTER_NAME);
+                        options.addOption(CLUSTER_PREFIX);
+                        options.addOption(MAX_CHILD_LEVEL);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown enum value, " + command);
                 }
 
                 commandLine = parser.parse( options, Arrays.copyOfRange(args, 1, args.length));
@@ -444,6 +485,10 @@ class ClusterFunk {
             }
         }
 
+        if (isVerbose) {
+            System.out.println("Command: " + command);
+        }
+
         long startTime = System.currentTimeMillis();
 
         switch (command) {
@@ -473,6 +518,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("value"),
                         commandLine.getOptionValue("cluster-name"),
                         commandLine.getOptionValue("cluster-prefix"),
+                        0,
                         isVerbose);
                 break;
             case CONTEXT:
@@ -514,6 +560,31 @@ class ClusterFunk {
                         commandLine.getOptionValue("field-delimeter", "|"),
                         commandLine.hasOption("keep-taxa"),
                         commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
+            case RACCOON_DOG:
+                new RaccoonDog(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        commandLine.getOptionValue("output-metadata"),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "|"),
+                        commandLine.getOptionValue("attribute"),
+                        commandLine.getOptionValue("value"),
+                        commandLine.getOptionValue("cluster-name"),
+                        commandLine.getOptionValue("cluster-prefix"),
+                        Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
+                        isVerbose);
+                break;
+            case RECONSTRUCT:
+                new Reconstruct(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        commandLine.getOptionValues("tip-attributes"),
                         isVerbose);
                 break;
             case REORDER:
@@ -558,6 +629,21 @@ class ClusterFunk {
                         commandLine.getOptionValues("stats"),
                         isVerbose);
                 break;
+            case SUBCLUSTER:
+                new Cluster(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        commandLine.getOptionValue("output-metadata"),
+                        commandLine.getOptionValue("attribute"),
+                        commandLine.getOptionValue("value"),
+                        commandLine.getOptionValue("cluster-name"),
+                        commandLine.getOptionValue("cluster-prefix"),
+                        Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
+                        isVerbose);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown enum value, " + command);
         }
 
         long timeTaken = (System.currentTimeMillis() - startTime) / 1000;

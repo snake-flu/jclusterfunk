@@ -35,18 +35,18 @@ public class Split extends Command {
 
         Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, attributeName);
 
-        if (isVerbose) {
-            outStream.println("Attribute: " + attributeName);
-            outStream.println("Values: " + String.join(", ", toString(attributeValues.keySet())));
-            outStream.println();
-        }
-
         List<Object> keys = new ArrayList<>(attributeValues.keySet());
         keys.sort((o1, o2) -> {
             return (o1.toString().length() == o2.toString().length() ?
                     o1.toString().compareTo(o2.toString()) :
                     o1.toString().length() - o2.toString().length());
         });
+
+        if (isVerbose) {
+            outStream.println("Attribute: " + attributeName);
+            outStream.println("Values: " + String.join(", ", toString(keys)));
+            outStream.println();
+        }
 
         clearInternalAttributes(tree);
 
@@ -104,7 +104,7 @@ public class Split extends Command {
 
         if (tree.isExternal(node)) {
             Object value = node.getAttribute(attributeName);
-            if (value == null || !(attributeValue.equals(value) || (isHierarchical && attributeValue.toString().startsWith(value.toString())))) {
+            if (value == null || !(attributeValue.equals(value) || (isHierarchical && isSublineage(attributeValue.toString(), value.toString())))) {
                 return false;
             }
         } else {
@@ -121,6 +121,28 @@ public class Split extends Command {
         return isMonophyletic;
     }
 
+    /**
+     * Is lineage 1 a sub-lineage of lineage 2 in the dot notation
+     * @param lineage1
+     * @param lineage2
+     * @return
+     */
+    private boolean isSublineage(String lineage1, String lineage2) {
+        String[] split1 = lineage1.split("\\.");
+        String[] split2 = lineage2.split("\\.");
+
+        if (split1.length < split2.length) {
+            // lineage1 is actually shorter than lineage2
+            return false;
+        }
+        ;
+        for (int i = 0; i < split2.length; i++) {
+            if (!split1[i].equals(split2[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     private void collapseSubtrees(RootedTree tree, String attributeName, Object attributeValue) {
         collapseSubtrees(tree, tree.getRootNode(), attributeName, attributeValue, null);

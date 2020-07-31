@@ -25,6 +25,7 @@ public class Cluster extends Command {
                    String annotationValue,
                    String clusterName,
                    String clusterPrefix,
+                   final int maxChildLevel,
                    boolean isVerbose) {
 
         super(null, null, null, 0, null, isVerbose);
@@ -64,7 +65,7 @@ public class Cluster extends Command {
         }
 
         processTrees(treeFileName, outputFileName, outputFormat, tree -> {
-            Map<Object, Double> tmrcaMap = annotateClusters(tree, annotationName, annotationValue, clusterName, clusterPrefix);
+            Map<Object, Double> tmrcaMap = annotateClusters(tree, annotationName, annotationValue, clusterName, clusterPrefix, maxChildLevel);
 
             if (outputMetadataWriter != null) {
                 for (Node tip : tree.getExternalNodes()) {
@@ -115,11 +116,11 @@ public class Cluster extends Command {
      * @param attributeName
      */
     Map<Object, Double> annotateClusters(RootedTree tree, String attributeName, Object attributeValue, String clusterAttributeName,
-                                         String clusterPrefix) {
+                                         String clusterPrefix, int maxChildLevel) {
 
         Map<Object, Double> tmrcaMap = new HashMap<Object, Double>();
         annotateClusters(tree, tree.getRootNode(), attributeName, attributeValue, null,
-                clusterAttributeName, clusterPrefix, null,
+                clusterAttributeName, clusterPrefix, null, maxChildLevel,
                 new HashMap<Object, Integer>(),
                 tmrcaMap);
         return tmrcaMap;
@@ -133,7 +134,7 @@ public class Cluster extends Command {
      * @param parentValue
      */
     private void annotateClusters(RootedTree tree, Node node, String attributeName, Object attributeValue, Object parentValue,
-                                  String clusterAttributeName, String clusterPrefix, String currentClusterName,
+                                  String clusterAttributeName, String clusterPrefix, String currentClusterName, int maxChildLevel,
                                   Map<Object, Integer> countMap, Map<Object, Double> tmrcaMap) {
 
         Object value = node.getAttribute(attributeName);
@@ -162,7 +163,7 @@ public class Cluster extends Command {
 
         if (!tree.isExternal(node)) {
             for (Node child : tree.getChildren(node)) {
-                annotateClusters(tree, child, attributeName, attributeValue, value, clusterAttributeName, clusterPrefix, currentClusterName, countMap, tmrcaMap);
+                annotateClusters(tree, child, attributeName, attributeValue, value, clusterAttributeName, clusterPrefix, currentClusterName, maxChildLevel, countMap, tmrcaMap);
             }
         }
     }

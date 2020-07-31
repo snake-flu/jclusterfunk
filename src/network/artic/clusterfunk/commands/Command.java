@@ -38,6 +38,19 @@ abstract class Command {
      * Simple constructor
      * @param isVerbose
      */
+    public Command(boolean isVerbose) {
+        this(null, null, null, 0, null, isVerbose);
+    }
+
+    /**
+     * Constructor
+     * @param metadataFileName
+     * @param taxaFileName
+     * @param indexColumn
+     * @param indexHeader
+     * @param headerDelimiter
+     * @param isVerbose
+     */
     Command(String metadataFileName, String taxaFileName, String indexColumn, int indexHeader, String headerDelimiter, boolean isVerbose) {
         this.indexColumn = indexColumn;
         this.indexHeader = indexHeader;
@@ -302,9 +315,9 @@ abstract class Command {
      * @param objectSet
      * @return
      */
-    static Set<String> toString(Set<Object> objectSet)
+    static Collection<String> toString(Collection<Object> objectSet)
     {
-        Set<String> strings = new TreeSet<>();
+        Set<String> strings = new LinkedHashSet<>();
         for (Object o : objectSet) {
             if (o != null) {
                 strings.add(o.toString());
@@ -336,7 +349,12 @@ abstract class Command {
                 }
             } else {
                 // key the records against the first column
+                boolean first = true;
                 for (CSVRecord record : parser) {
+                    if (first) {
+                        headerRecord = record;
+                        first = false;
+                    }
                     csv.put(record.get(0), record);
                 }
             }

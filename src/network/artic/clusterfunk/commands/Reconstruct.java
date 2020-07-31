@@ -11,53 +11,55 @@ import java.util.*;
 /**
  *
  */
-public class Parsimony extends Command {
+public class Reconstruct extends Command {
 
-    public Parsimony(String treeFileName,
-                     String metadataFileName,
-                     String outputPath,
-                     String outputFileStem,
-                     FormatType outputFormat,
-                     String indexColumn,
-                     int indexHeader,
-                     String headerDelimiter,
-                     String attributeName,
-                     boolean isVerbose) {
+    public Reconstruct(String treeFileName,
+                       String outputFileName,
+                       FormatType outputFormat,
+                       String[] tipAttibutes,
+                       boolean isVerbose) {
 
-        super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
+        super(isVerbose);
+
+        if (outputFormat != FormatType.NEXUS) {
+            errorStream.println("Annotations are only compatible with NEXUS output format");
+            System.exit(1);
+        }
 
         RootedTree tree = readTree(treeFileName);
 
-        Map<Taxon, String> taxonMap = getTaxonMap(tree);
+        for (String attributeName : tipAttibutes) {
+            Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, attributeName);
 
-        Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, attributeName);
-
-        if (isVerbose) {
-            outStream.println("Attribute: " + attributeName);
-            outStream.println("Values: " + String.join(", ", toString(attributeValues.keySet())));
-            outStream.println();
-        }
-
-        List<Object> keys = new ArrayList<>(attributeValues.keySet());
-        keys.sort((o1, o2) -> {
-            return (o1.toString().length() == o2.toString().length() ?
+            List<Object> keys = new ArrayList<>(attributeValues.keySet());
+            keys.sort((o1, o2) -> (o1.toString().length() == o2.toString().length() ?
                     o1.toString().compareTo(o2.toString()) :
-                    o1.toString().length() - o2.toString().length());
-        });
+                    o1.toString().length() - o2.toString().length()));
 
-        clearInternalAttributes(tree);
+            if (isVerbose) {
+                outStream.println("Attribute: " + attributeName);
+                outStream.println("Values: " + String.join(", ", toString(attributeValues.keySet())));
+                outStream.println();
+            }
 
-        for (Object value: keys) {
-            annotateMonophyleticNodes(tree, attributeName, value, true, attributeName);
+
+//        clearInternalAttributes(tree);
+
+            for (Object value : keys) {
+                annotateMonophyleticNodes(tree, attributeName, value, false, attributeName);
+            }
         }
 
 //        for (Object value: keys) {
 //            collapseSubtrees(tree, attributeName, value);
 //        }
 
-        for (Object value: keys) {
-            splitSubtrees(tree, attributeName, value, outputPath, outputFileStem);
+        if (isVerbose) {
+            outStream.println("Writing tree file, " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
+            outStream.println();
         }
+
+        writeTreeFile(tree, outputFileName, outputFormat);
 
     }
 
@@ -70,8 +72,10 @@ public class Parsimony extends Command {
         Map<Object, Set<Node>> attributeValues = new TreeMap<>();
         for (Node tip : tree.getExternalNodes()) {
             Object value = tip.getAttribute(attributeName);
-            Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
-            tips.add(tip);
+            if (value != null) {
+                Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
+                tips.add(tip);
+            }
         }
         return attributeValues;
     }
@@ -99,7 +103,7 @@ public class Parsimony extends Command {
 
         if (tree.isExternal(node)) {
             Object value = node.getAttribute(attributeName);
-            if (!(attributeValue.equals(value) || (isHierarchical && attributeValue.toString().startsWith(value.toString())))) {
+            if (value == null || !(attributeValue.equals(value) || (isHierarchical && attributeValue.toString().startsWith(value.toString())))) {
                 return false;
             }
         } else {

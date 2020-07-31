@@ -89,7 +89,9 @@ public class Annotate extends Command {
                 }
             } else {
                 for (String name : columnNames) {
-                    tip.setAttribute(name, record.get(name));
+                    if (!record.get(name).isEmpty()) {
+                        tip.setAttribute(name, record.get(name));
+                    }
                 }
             }
         }
