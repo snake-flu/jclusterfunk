@@ -51,6 +51,15 @@ class ClusterFunk {
             return name;
         }
 
+        public static Command getCommand(String name) {
+            for (Command command : values()) {
+                if (name.equalsIgnoreCase(command.getName())) {
+                    return command;
+                }
+            }
+            throw new IllegalArgumentException("Command not found");
+        }
+
         private final String name;
         private final String description;
     }
@@ -302,8 +311,8 @@ class ClusterFunk {
 
         if (args.length > 0 && !args[0].startsWith("-")) {
             try {
-                command = Command.valueOf(args[0].toUpperCase());
-
+                command = Command.getCommand(args[0]);
+                
                 options.addOption("v","verbose", false, "write analysis details to console");
 
                 switch (command) {
@@ -368,14 +377,15 @@ class ClusterFunk {
                         break;
                     case RACCOON_DOG:
                         options.addOption(INPUT);
+                        options.addOption(METADATA);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(OUTPUT_METADATA);
-                        options.addOption(ATTRIBUTE);
-                        options.addOption(VALUE);
-                        options.addOption(CLUSTER_NAME);
-                        options.addOption(CLUSTER_PREFIX);
-                        options.addOption(MAX_CHILD_LEVEL);
+//                        options.addOption(ATTRIBUTE);
+//                        options.addOption(VALUE);
+//                        options.addOption(CLUSTER_NAME);
+//                        options.addOption(CLUSTER_PREFIX);
+//                        options.addOption(MAX_CHILD_LEVEL);
                         break;
                     case RECONSTRUCT:
                         options.addOption(INPUT);
