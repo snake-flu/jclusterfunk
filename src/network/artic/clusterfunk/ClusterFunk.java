@@ -545,6 +545,7 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "|"),
                         Integer.parseInt(commandLine.getOptionValue("max-parent", "1")),
+                        Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;

@@ -4,6 +4,7 @@ import jebl.evolution.graphs.Node;
 import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.RootedSubtree;
 import jebl.evolution.trees.RootedTree;
+import jebl.evolution.trees.SimpleRootedTree;
 import network.artic.clusterfunk.FormatType;
 
 import java.io.File;
@@ -27,6 +28,7 @@ public class Context extends Command {
                    int indexHeader,
                    String headerDelimiter,
                    int maxParentLevel,
+                   int maxChildLevel,
                    boolean ignoreMissing,
                    boolean isVerbose) {
 
@@ -62,10 +64,28 @@ public class Context extends Command {
             }
         }
 
+        Set<Node> targetTips = new HashSet<>();
+
         for (Node tip : tree.getExternalNodes()) {
             Taxon taxon = tree.getTaxon(tip);
             String index = taxonMap.get(taxon);
             if ((taxa != null && taxa.contains(index)) || targetTaxaList.contains(index)) {
+                targetTips.add(tip);
+            }
+        }
+
+        Map<Node, Subtree> subtreeMap = new HashMap<>();
+
+        annotateContext(tree, targetTips, maxParentLevel);
+        collectSubtrees(tree, subtreeMap);
+        collapseSubtrees(tree, targetTips, maxChildLevel);
+
+        writeSubtrees(subtreeMap, path, outputFileStem, false, outputFormat);
+    }
+
+    private void annotateContext(RootedTree tree, Set<Node> targetTips, int maxParentLevel) {
+        for (Node tip : tree.getExternalNodes()) {
+            if (targetTips.contains(tip)) {
                 Node node = tip;
                 int parentLevel = 0;
                 do {
@@ -75,9 +95,73 @@ public class Context extends Command {
                 } while (parentLevel < maxParentLevel && !tree.isRoot(node));
             }
         }
-
-        splitSubtrees(tree, "include", true, false, path, outputFileStem, false, outputFormat);
     }
 
+    private void collectSubtrees(RootedTree tree, Map<Node, Subtree> subtreeMap) {
+        collectSubtrees(tree, tree.getRootNode(), subtreeMap);
+    }
+
+    private void collectSubtrees(RootedTree tree, Node node, Map<Node, Subtree> subtreeMap) {
+        if (!tree.isExternal(node)) {
+            if (node.getAttribute("include") == Boolean.TRUE) {
+                subtreeMap.put(node, new Subtree(node, "subtree_" + (subtreeMap.size() + 1)));
+            }
+            for (Node child : tree.getChildren(node)) {
+                collectSubtrees(tree, child, subtreeMap);
+            }
+        }
+    }
+
+    private void collapseSubtrees(RootedTree tree, Set<Node> targetTips, int maxChildLevel) {
+        collapseSubtrees(tree, tree.getRootNode(), targetTips, 0, maxChildLevel);
+    }
+
+    private void collapseSubtrees(RootedTree tree, Node node, Set<Node> targetTips, int childLevel, int maxChildLevel) {
+        if (tree.isExternal(node)) {
+            if (targetTips.contains(node)) {
+
+            }
+        } else {
+            if (childLevel <= maxChildLevel) {
+                for (Node child : tree.getChildren(node)) {
+                    collapseSubtrees(tree, child, targetTips, childLevel + 1, maxChildLevel);
+                }
+            } else {
+                // collapse the node
+                node.setAttribute("include", false);
+            }
+        }
+    }
+
+    /**
+     * When ever a change in the value of a given attribute occurs at a node, writes out a subtree from that node
+     */
+    void writeSubtrees(Map<Node, Subtree> subtreeMap,
+                       String outputPath, String outputFileStem, boolean labelWithValue, FormatType outputFormat) {
+
+        for (Node key : subtreeMap.keySet()) {
+            Subtree subtree = subtreeMap.get(key);
+
+            SimpleRootedTree tree = new SimpleRootedTree();
+            tree.createNodes(tree, subtree.root);
+
+            String fileName = outputPath + outputFileStem + subtree.name + "." + outputFormat.name().toLowerCase();
+            if (isVerbose) {
+                outStream.println("Writing subtree file: " + fileName);
+            }
+            writeTreeFile(tree, fileName, outputFormat);
+
+        }
+    }
+
+    private static class Subtree {
+        public Subtree(Node root, String name) {
+            this.root = root;
+            this.name = name;
+        }
+
+        Node root;
+        String name;
+    }
 }
 
