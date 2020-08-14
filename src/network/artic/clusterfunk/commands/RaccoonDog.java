@@ -36,9 +36,9 @@ public class RaccoonDog extends Command {
 
         RootedTree tree = readTree(treeFileName);
 
-        String attributeName = "del_introduction";
+        clusterName = "del_lineage";
 
-        Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, attributeName);
+        Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, clusterName);
 
         List<Object> keys = new ArrayList<>(attributeValues.keySet());
         keys.sort((o1, o2) -> (o1.toString().length() == o2.toString().length() ?
@@ -46,7 +46,7 @@ public class RaccoonDog extends Command {
                 o1.toString().length() - o2.toString().length()));
 
         if (isVerbose) {
-            outStream.println("Attribute: " + attributeName);
+            outStream.println("Attribute: " + clusterName);
             outStream.println("Values (" + keys.size() + "): " + String.join(", ", toString(keys)));
             outStream.println();
         }
@@ -76,13 +76,8 @@ public class RaccoonDog extends Command {
             clusterLineageMap.put(key.toString(), counts.keySet().iterator().next());
         }
 
-        labelLineages(tree, tree.getRootNode(), "del_introduction", null, "uk_lineage", clusterLineageMap);
-
-        numberSubLineages(tree, tree.getRootNode(), "uk_lineage", null, "new_uk_lineage", minLineageSize);
-
-//        clearInternalAttributes(tree);
-
-
+        labelLineages(tree, clusterName, "uk_lineage", clusterLineageMap);
+        clusterLineages(tree, tree.getRootNode(), "uk_lineage", null, "new_uk_lineage", clusterLineageMap);
 
         if (isVerbose) {
             outStream.println("Writing tree file, " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
@@ -94,20 +89,21 @@ public class RaccoonDog extends Command {
     }
 
     /**
-     * collects all the values for a given attribute in a map with a list of tips nodes for each
+     * recursive version
      * @param tree
-     * @param attributeName
+     * @param clusterLineageMap
      */
-    private Map<Object, Set<Node>> collectTipAttributeValues(RootedTree tree, String attributeName) {
-        Map<Object, Set<Node>> attributeValues = new TreeMap<>();
-        for (Node tip : tree.getExternalNodes()) {
-            Object value = tip.getAttribute(attributeName);
-            if (value != null) {
-                Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
-                tips.add(tip);
+    private void labelLineages(RootedTree tree, String clusterName, String lineageName, Map<String, String> clusterLineageMap) {
+        for (Node node : tree.getInternalNodes()) {
+            String cluster = (String)node.getAttribute(clusterName);
+            if (cluster != null) {
+                String lineage = clusterLineageMap.get(cluster);
+                if (isVerbose) {
+                    outStream.println("Found cluster, " + cluster + " - assigning to " + lineage);
+                }
+                node.setAttribute(lineageName, lineage);
             }
         }
-        return attributeValues;
     }
 
     /**
@@ -116,130 +112,54 @@ public class RaccoonDog extends Command {
      * @param node
      * @param clusterLineageMap
      */
-    private void labelLineages(RootedTree tree, Node node, String clusterName, String parentCluster, String lineageName, Map<String, String> clusterLineageMap) {
+    private void clusterLineages(RootedTree tree, Node node, String lineageName, String parentCluster, String newLineageName, Map<String, String> clusterLineageMap) {
         if (!tree.isExternal(node)) {
-            String cluster = (String)node.getAttribute(clusterName);
-            if (cluster != null && !cluster.equals(parentCluster)) {
-                Object lineage = clusterLineageMap.get(cluster);
-                node.setAttribute(lineageName, lineage.toString());
-            }
-
+            Map<String, Integer> lineages = new HashMap<>();
             for (Node child : tree.getChildren(node)) {
-                labelLineages(tree, child, clusterName, cluster, lineageName, clusterLineageMap);
+                String lineage = (String)child.getAttribute(lineageName);
+                if (lineage != null) {
+                    int count = lineages.computeIfAbsent(lineage, k -> 0);
+                    lineages.put(lineage, count + 1);
+                }
             }
 
-        }
-    }
-
-    /**
-     * recursive version
-     * @param tree
-     * @param node
-     */
-    private void numberSubLineages(RootedTree tree, Node node, String lineageName, Object parentLineage, String newLineageName, int minSublineageSize) {
-        if (!tree.isExternal(node)) {
-            String lineage = (String)node.getAttribute(lineageName);
-            if (lineage != null && !lineage.equals(parentLineage)) {
-                // entered a new lineage
-                if (lineage.equals("UK1286")) {
-                    System.out.println("eek");
+            if (lineages.size() > 0) {
+                if (lineages.size() > 1) {
+                    throw new RuntimeException("more than one child lineage present");
                 }
+                String lineage = lineages.keySet().iterator().next();
 
                 List<Pair> childSizes = new ArrayList<>();
                 for (Node child : tree.getChildren(node)) {
-                    String childLineage = (String)child.getAttribute(lineageName);
-                    if (childLineage != null && childLineage.equals(lineage)) {
+                    if (lineage.equals((String)child.getAttribute(lineageName))) {
                         childSizes.add(new Pair(child, countTips(tree, child)));
                     }
                 }
                 childSizes.sort(Comparator.comparing(k -> -k.count));
+
+                int minSublineageSize = 10;
 
                 int sublineageNumber = 1;
                 for (Pair pair : childSizes) {
                     if (pair.count >= minSublineageSize) {
                         String sublineage = lineage + "." + sublineageNumber;
                         pair.node.setAttribute(newLineageName, sublineage);
-                        propagateAttribute(tree, pair.node, lineageName, lineage, newLineageName, sublineage);
+                        propagateAttribute(tree, pair.node, "country_uk_deltran", true, newLineageName, sublineage);
                         sublineageNumber += 1;
                     } else {
                         pair.node.setAttribute(newLineageName, lineage);
-                        propagateAttribute(tree, pair.node, lineageName, lineage, newLineageName, lineage);
+                        propagateAttribute(tree, pair.node, newLineageName, lineage);
                     }
                 }
             }
 
             for (Node child : tree.getChildren(node)) {
-                numberSubLineages(tree, child, lineageName, lineage, newLineageName, minSublineageSize);
+                clusterLineages(tree, child, lineageName, null, newLineageName, clusterLineageMap);
             }
 
         }
     }
 
-    private void propagateAttribute(RootedTree tree, Node node, String oldAttributeName, String oldAttributeValue, String newAttributeName, String newAttributeValue) {
-        if (!tree.isExternal(node)) {
-            for (Node child : tree.getChildren(node)) {
-                propagateAttribute(tree, child, oldAttributeName, oldAttributeValue, newAttributeName, newAttributeValue);
-            }
-        }
-        Object value = node.getAttribute(oldAttributeName);
-        if (value != null && value.equals(oldAttributeValue)) {
-            node.setAttribute(newAttributeName, newAttributeValue);
-        }
-
-    }
-
-    private int countTips(RootedTree tree, Node node) {
-        if (tree.isExternal(node)) {
-            return 1;
-        }
-
-        int count = 0;
-        for (Node child : tree.getChildren(node)) {
-            count += countTips(tree, child);
-        }
-        return count;
-    }
-
-    private Set<Node> collectTips(RootedTree tree, Node node) {
-        if (tree.isExternal(node)) {
-            return Collections.singleton(node);
-        }
-
-        Set<Node> tips = new HashSet<>();
-        for (Node child : tree.getChildren(node)) {
-            tips.addAll(collectTips(tree, child));
-        }
-        return tips;
-    }
-
-    private String getMostCommonAttribute(RootedTree tree, Node node, String attributeName) {
-        Set<Node> tips = collectTips(tree, node);
-        Map<String, Integer> lineageCounts = new HashMap<>();
-        for (Node tip: tips) {
-            String lineage = (String)tip.getAttribute(attributeName);
-            if (lineage != null) {
-                int count = lineageCounts.computeIfAbsent(lineage, k -> 0);
-                lineageCounts.put(lineage, count + 1);
-            }
-        }
-        Map<String, Integer> sortedCounts = lineageCounts
-                .entrySet()
-                .stream()
-                .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-                .collect(
-                        toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
-        return sortedCounts.keySet().iterator().next();
-    }
-
-    public class Pair {
-        public Pair(Node node, int count) {
-            this.node = node;
-            this.count = count;
-        }
-
-        Node node;
-        int count;
-    }
 
 }
 

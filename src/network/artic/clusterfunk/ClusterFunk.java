@@ -224,6 +224,14 @@ class ClusterFunk {
             .desc( "maximum level of children to include in subtrees (default = 1)" )
             .type(Integer.class).build();
 
+    private final static Option MIN_CLUSTER_SIZE = Option.builder(  )
+            .longOpt("min-size")
+            .argName("size")
+            .hasArg()
+            .required(false)
+            .desc( "minimum number of tips in a subcluster (default = 10)" )
+            .type(Integer.class).build();
+
     private final static Option MIDPOINT =  Option.builder( )
             .longOpt("midpoint")
             .required(false)
@@ -434,10 +442,8 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(OUTPUT_METADATA);
                         options.addOption(ATTRIBUTE);
-                        options.addOption(VALUE);
-                        options.addOption(CLUSTER_NAME);
                         options.addOption(CLUSTER_PREFIX);
-                        options.addOption(MAX_CHILD_LEVEL);
+                        options.addOption(MIN_CLUSTER_SIZE);
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown enum value, " + command);
@@ -641,16 +647,14 @@ class ClusterFunk {
                         isVerbose);
                 break;
             case SUBCLUSTER:
-                new Cluster(
+                new Subcluster(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("output"),
                         format,
                         commandLine.getOptionValue("output-metadata"),
-                        commandLine.getOptionValue("attribute"),
-                        commandLine.getOptionValue("value"),
-                        commandLine.getOptionValue("cluster-name"),
                         commandLine.getOptionValue("cluster-prefix"),
-                        Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
+                        commandLine.getOptionValue("attribute"),
+                        Integer.parseInt(commandLine.getOptionValue("min-size", "10")),
                         isVerbose);
                 break;
             default:

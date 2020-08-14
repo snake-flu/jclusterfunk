@@ -64,23 +64,6 @@ public class Reconstruct extends Command {
     }
 
     /**
-     * collects all the values for a given attribute in a map with a list of tips nodes for each
-     * @param tree
-     * @param attributeName
-     */
-    private Map<Object, Set<Node>> collectTipAttributeValues(RootedTree tree, String attributeName) {
-        Map<Object, Set<Node>> attributeValues = new TreeMap<>();
-        for (Node tip : tree.getExternalNodes()) {
-            Object value = tip.getAttribute(attributeName);
-            if (value != null) {
-                Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
-                tips.add(tip);
-            }
-        }
-        return attributeValues;
-    }
-
-    /**
      * Finds the MRCA for a set of tip nodes and then recursively annotates the subtree
      * @param tree
      * @param attributeName

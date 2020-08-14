@@ -18,6 +18,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static java.util.stream.Collectors.toMap;
+
 /**
  * Base class for clusterfunk commands. Provides some static utility functions.
  */
@@ -310,6 +312,89 @@ abstract class Command {
         }
     }
 
+    static void propagateAttribute(RootedTree tree, Node node, String newAttributeName, String newAttributeValue) {
+        propagateAttribute(tree, node, null, null, newAttributeName, newAttributeValue);
+    }
+
+    static void propagateAttribute(RootedTree tree, Node node, String oldAttributeName, Object oldAttributeValue, String newAttributeName, String newAttributeValue) {
+        if (!tree.isExternal(node)) {
+            for (Node child : tree.getChildren(node)) {
+                propagateAttribute(tree, child, oldAttributeName, oldAttributeValue, newAttributeName, newAttributeValue);
+            }
+        }
+        if (oldAttributeName != null) {
+            Object value = node.getAttribute(oldAttributeName);
+            if (value != null && (oldAttributeValue == null || value.equals(oldAttributeValue))) {
+                node.setAttribute(newAttributeName, newAttributeValue);
+            }
+        } else {
+            node.setAttribute(newAttributeName, newAttributeValue);
+        }
+    }
+
+    static int countTips(RootedTree tree, Node node) {
+        if (tree.isExternal(node)) {
+            return 1;
+        }
+
+        int count = 0;
+        for (Node child : tree.getChildren(node)) {
+            count += countTips(tree, child);
+        }
+        return count;
+    }
+
+    static Set<Node> collectTips(RootedTree tree, Node node) {
+        if (tree.isExternal(node)) {
+            return Collections.singleton(node);
+        }
+
+        Set<Node> tips = new HashSet<>();
+        for (Node child : tree.getChildren(node)) {
+            tips.addAll(collectTips(tree, child));
+        }
+        return tips;
+    }
+
+    /**
+     * collects all the values for a given attribute in a map with a list of tips nodes for each
+     * @param tree
+     * @param attributeName
+     */
+    static Map<Object, Set<Node>> collectTipAttributeValues(RootedTree tree, String attributeName) {
+        Map<Object, Set<Node>> attributeValues = new TreeMap<>();
+        for (Node tip : tree.getExternalNodes()) {
+            Object value = tip.getAttribute(attributeName);
+            if (value != null) {
+                Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
+                tips.add(tip);
+            }
+        }
+        return attributeValues;
+    }
+
+
+
+    static String getMostCommonAttribute(RootedTree tree, Node node, String attributeName) {
+        Set<Node> tips = collectTips(tree, node);
+        Map<String, Integer> lineageCounts = new HashMap<>();
+        for (Node tip: tips) {
+            String lineage = (String)tip.getAttribute(attributeName);
+            if (lineage != null) {
+                int count = lineageCounts.computeIfAbsent(lineage, k -> 0);
+                lineageCounts.put(lineage, count + 1);
+            }
+        }
+        Map<String, Integer> sortedCounts = lineageCounts
+                .entrySet()
+                .stream()
+                .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                .collect(
+                        toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
+        return sortedCounts.keySet().iterator().next();
+    }
+
+
     /**
      * Takes a set of objects and creates a set of strings using the toString() method
      * @param objectSet
@@ -515,6 +600,16 @@ abstract class Command {
         }
 
         return outputPath.endsWith("/") ? outputPath : outputPath + "/";
+    }
+
+    public static class Pair {
+        public Pair(Node node, int count) {
+            this.node = node;
+            this.count = count;
+        }
+
+        Node node;
+        int count;
     }
 
 }
