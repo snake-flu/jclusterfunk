@@ -592,6 +592,10 @@ abstract class Command {
     }
 
     protected String checkOutputPath(String outputPath) {
+        if (outputPath == null || outputPath == "") {
+            return "./";
+        }
+
         Path file = new File(outputPath).toPath();
 
         if (!Files.isDirectory(file)) {

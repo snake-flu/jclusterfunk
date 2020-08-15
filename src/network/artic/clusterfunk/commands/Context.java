@@ -80,7 +80,7 @@ public class Context extends Command {
         collectSubtrees(tree, subtreeMap);
         collapseSubtrees(tree, targetTips, maxChildLevel);
 
-        writeSubtrees(subtreeMap, path, outputFileStem, false, outputFormat);
+        writeSubtrees(tree, subtreeMap, path, outputFileStem, false, outputFormat);
     }
 
     private void annotateContext(RootedTree tree, Set<Node> targetTips, int maxParentLevel) {
@@ -136,20 +136,20 @@ public class Context extends Command {
     /**
      * When ever a change in the value of a given attribute occurs at a node, writes out a subtree from that node
      */
-    void writeSubtrees(Map<Node, Subtree> subtreeMap,
+    void writeSubtrees(RootedTree tree, Map<Node, Subtree> subtreeMap,
                        String outputPath, String outputFileStem, boolean labelWithValue, FormatType outputFormat) {
 
         for (Node key : subtreeMap.keySet()) {
             Subtree subtree = subtreeMap.get(key);
 
-            SimpleRootedTree tree = new SimpleRootedTree();
-            tree.createNodes(tree, subtree.root);
+            SimpleRootedTree newTree = new SimpleRootedTree();
+            newTree.createNodes(tree, subtree.root);
 
             String fileName = outputPath + outputFileStem + subtree.name + "." + outputFormat.name().toLowerCase();
             if (isVerbose) {
                 outStream.println("Writing subtree file: " + fileName);
             }
-            writeTreeFile(tree, fileName, outputFormat);
+            writeTreeFile(newTree, fileName, outputFormat);
 
         }
     }
