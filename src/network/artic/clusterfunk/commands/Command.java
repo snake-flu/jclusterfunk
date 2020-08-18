@@ -316,6 +316,16 @@ abstract class Command {
         propagateAttribute(tree, node, null, null, newAttributeName, newAttributeValue);
     }
 
+    /**
+     * Recursively sets an attribute. If oldAttributeName and oldAttributeValue are give then only sets the new attribute
+     * if the old attribute exists and has the given value.
+     * @param tree
+     * @param node
+     * @param oldAttributeName
+     * @param oldAttributeValue
+     * @param newAttributeName
+     * @param newAttributeValue
+     */
     static void propagateAttribute(RootedTree tree, Node node, String oldAttributeName, Object oldAttributeValue, String newAttributeName, String newAttributeValue) {
         if (!tree.isExternal(node)) {
             for (Node child : tree.getChildren(node)) {

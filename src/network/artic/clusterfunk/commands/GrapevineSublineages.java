@@ -3,30 +3,23 @@ package network.artic.clusterfunk.commands;
 import jebl.evolution.graphs.Node;
 import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
-import static java.util.stream.Collectors.*;
 
 import java.util.*;
 
+import static java.util.stream.Collectors.toMap;
+
 /**
- *
+ * Bespoke function to split Grapevine UK_lineages into sublineages
  */
-public class RaccoonDog extends Command {
+public class GrapevineSublineages extends Command {
 
-    public RaccoonDog(String treeFileName,
-                      String metadataFileName,
-                      String outputFileName,
-                      FormatType outputFormat,
-                      String indexColumn,
-                      int indexHeader,
-                      String headerDelimiter,
-                      String annotationName,
-                      String annotationValue,
-                      String clusterName,
-                      String clusterPrefix,
-                      final int minLineageSize,
-                      boolean isVerbose) {
+    public GrapevineSublineages(String treeFileName,
+                                String outputFileName,
+                                FormatType outputFormat,
+                                final int minSublineageSize,
+                                boolean isVerbose) {
 
-        super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
+        super(isVerbose);
 
         if (outputFormat != FormatType.NEXUS) {
             errorStream.println("Annotations are only compatible with NEXUS output format");
@@ -35,7 +28,7 @@ public class RaccoonDog extends Command {
 
         RootedTree tree = readTree(treeFileName);
 
-        clusterName = "del_lineage";
+        String clusterName = "del_lineage";
 
         Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, clusterName);
 
@@ -76,7 +69,7 @@ public class RaccoonDog extends Command {
         }
 
         labelLineages(tree, clusterName, "uk_lineage", clusterLineageMap);
-        clusterLineages(tree, tree.getRootNode(), "uk_lineage", null, "new_uk_lineage", clusterLineageMap);
+        clusterLineages(tree, tree.getRootNode(), "uk_lineage", null, "new_uk_lineage", minSublineageSize, clusterLineageMap);
 
         if (isVerbose) {
             outStream.println("Writing tree file, " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
@@ -111,10 +104,10 @@ public class RaccoonDog extends Command {
      * @param node
      * @param clusterLineageMap
      */
-    private void clusterLineages(RootedTree tree, Node node, String lineageName, String parentCluster, String newLineageName, Map<String, String> clusterLineageMap) {
+    private void clusterLineages(RootedTree tree, Node node, String lineageName, String parentCluster, String newLineageName, int minSublineageSize, Map<String, String> clusterLineageMap) {
         if (!tree.isExternal(node)) {
             for (Node child : tree.getChildren(node)) {
-                clusterLineages(tree, child, lineageName, null, newLineageName, clusterLineageMap);
+                clusterLineages(tree, child, lineageName, null, newLineageName, minSublineageSize, clusterLineageMap);
             }
 
             Map<String, Integer> lineages = new HashMap<>();
@@ -142,7 +135,6 @@ public class RaccoonDog extends Command {
                 }
                 childSizes.sort(Comparator.comparing(k -> -k.count));
 
-                int minSublineageSize = 50;
                 int bigSublineageCount = 0;
 
                 int totalSize = 0;

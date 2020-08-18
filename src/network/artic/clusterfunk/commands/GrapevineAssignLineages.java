@@ -3,28 +3,29 @@ package network.artic.clusterfunk.commands;
 import jebl.evolution.graphs.Node;
 import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
-import static java.util.stream.Collectors.*;
 
 import java.util.*;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  *
  */
-public class RaccoonDog extends Command {
+public class GrapevineAssignLineages extends Command {
 
-    public RaccoonDog(String treeFileName,
-                      String metadataFileName,
-                      String outputFileName,
-                      FormatType outputFormat,
-                      String indexColumn,
-                      int indexHeader,
-                      String headerDelimiter,
-                      String annotationName,
-                      String annotationValue,
-                      String clusterName,
-                      String clusterPrefix,
-                      final int minLineageSize,
-                      boolean isVerbose) {
+    public GrapevineAssignLineages(String treeFileName,
+                                   String metadataFileName,
+                                   String outputFileName,
+                                   FormatType outputFormat,
+                                   String outputMetadata,
+                                   String indexColumn,
+                                   int indexHeader,
+                                   String headerDelimiter,
+                                   String annotationName,
+                                   String annotationValue,
+                                   String clusterName,
+                                   String clusterPrefix,
+                                   boolean isVerbose) {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 

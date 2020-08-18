@@ -22,6 +22,8 @@ class ClusterFunk {
         SUBCLUSTER("subcluster", "split existing clusters into subclusters."),
         CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
         CONVERT("convert", "Convert tree from one format to another."),
+        GRAPEVINE_ASSIGN_LINEAGES("grapevine-assign-lineages", "Assign UK tips without lineages to a UK lineage."),
+        GRAPEVINE_SUBLINEAGES("grapevine-sublineages", "split existing UK lineages into sub-lineages."),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
         RACCOON_DOG("raccoon-dog", "CoG-UK lineage designations."),
         RECONSTRUCT("reconstruct", "Reconstruct internal node annotations."),
@@ -367,6 +369,23 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
                         break;
+                    case GRAPEVINE_ASSIGN_LINEAGES:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        break;
+                    case GRAPEVINE_SUBLINEAGES:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(MIN_CLUSTER_SIZE);
+                        break;
                     case PRUNE:
                         options.addOption(INPUT);
                         options.addOption(TAXON_FILE);
@@ -560,6 +579,30 @@ class ClusterFunk {
                         OrderType.UNCHANGED,
                         isVerbose);
                 break;
+            case GRAPEVINE_ASSIGN_LINEAGES:
+                new GrapevineAssignLineages(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        commandLine.getOptionValue("output-metadata"),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "|"),
+                        commandLine.getOptionValue("attribute"),
+                        commandLine.getOptionValue("value"),
+                        commandLine.getOptionValue("cluster-name"),
+                        commandLine.getOptionValue("cluster-prefix"),
+                        isVerbose);
+                break;
+            case GRAPEVINE_SUBLINEAGES:
+                new GrapevineSublineages(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        Integer.parseInt(commandLine.getOptionValue("min-size", "50")),
+                        isVerbose);
+                break;
             case PRUNE:
                 new Prune(
                         commandLine.getOptionValue("input"),
@@ -576,23 +619,23 @@ class ClusterFunk {
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
-            case RACCOON_DOG:
-                new RaccoonDog(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("metadata"),
-                        commandLine.getOptionValue("output"),
-                        format,
-                        commandLine.getOptionValue("output-metadata"),
-                        commandLine.getOptionValue("id-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "|"),
-                        commandLine.getOptionValue("attribute"),
-                        commandLine.getOptionValue("value"),
-                        commandLine.getOptionValue("cluster-name"),
-                        commandLine.getOptionValue("cluster-prefix"),
-                        Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
-                        isVerbose);
-                break;
+//            case RACCOON_DOG:
+//                new RaccoonDog(
+//                        commandLine.getOptionValue("input"),
+//                        commandLine.getOptionValue("metadata"),
+//                        commandLine.getOptionValue("output"),
+//                        format,
+//                        commandLine.getOptionValue("output-metadata"),
+//                        commandLine.getOptionValue("id-column", null),
+//                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+//                        commandLine.getOptionValue("field-delimeter", "|"),
+//                        commandLine.getOptionValue("attribute"),
+//                        commandLine.getOptionValue("value"),
+//                        commandLine.getOptionValue("cluster-name"),
+//                        commandLine.getOptionValue("cluster-prefix"),
+//                        Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
+//                        isVerbose);
+//                break;
             case RECONSTRUCT:
                 new Reconstruct(
                         commandLine.getOptionValue("input"),
