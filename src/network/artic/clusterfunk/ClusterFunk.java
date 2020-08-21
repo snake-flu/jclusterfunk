@@ -362,6 +362,7 @@ class ClusterFunk {
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(MAX_PARENT_LEVEL);
+                        options.addOption(MAX_CHILD_LEVEL);
                         options.addOption(IGNORE_MISSING);
                         break;
                     case CONVERT:

@@ -6,10 +6,14 @@ import jebl.evolution.trees.RootedSubtree;
 import jebl.evolution.trees.RootedTree;
 import jebl.evolution.trees.SimpleRootedTree;
 import network.artic.clusterfunk.FormatType;
+import org.apache.commons.csv.CSVRecord;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -77,10 +81,14 @@ public class Context extends Command {
         Map<Node, Subtree> subtreeMap = new HashMap<>();
 
         annotateContext(tree, targetTips, maxParentLevel);
-        collectSubtrees(tree, subtreeMap);
-        collapseSubtrees(tree, targetTips, maxChildLevel);
 
-        writeSubtrees(tree, subtreeMap, path, outputFileStem, false, outputFormat);
+        collectSubtrees(tree, tree.getRootNode(), false, subtreeMap);
+
+        for (Node node : subtreeMap.keySet()) {
+            collapseSubtrees(tree, node, 0, maxChildLevel);
+        }
+
+        writeSubtrees(tree, subtreeMap, path, outputFileStem, outputFormat);
     }
 
     private void annotateContext(RootedTree tree, Set<Node> targetTips, int maxParentLevel) {
@@ -97,39 +105,97 @@ public class Context extends Command {
         }
     }
 
-    private void collectSubtrees(RootedTree tree, Map<Node, Subtree> subtreeMap) {
-        collectSubtrees(tree, tree.getRootNode(), subtreeMap);
-    }
-
-    private void collectSubtrees(RootedTree tree, Node node, Map<Node, Subtree> subtreeMap) {
+    /**
+     * Finds the nodes which transition from not included to included as the root of a subtree.
+     * @param tree
+     * @param node
+     * @param parentIncluded
+     * @param subtreeMap
+     */
+    private void collectSubtrees(RootedTree tree, Node node, boolean parentIncluded, Map<Node, Subtree> subtreeMap) {
         if (!tree.isExternal(node)) {
-            if (node.getAttribute("include") == Boolean.TRUE) {
-                subtreeMap.put(node, new Subtree(node, "subtree_" + (subtreeMap.size() + 1)));
+            boolean included = node.getAttribute("include") == Boolean.TRUE;
+            if (!parentIncluded && included) {
+                String name = "subtree_" + (subtreeMap.size() + 1);
+                node.setAttribute("subtree", name);
+                subtreeMap.put(node, new Subtree(node, name));
             }
             for (Node child : tree.getChildren(node)) {
-                collectSubtrees(tree, child, subtreeMap);
+                collectSubtrees(tree, child, included, subtreeMap);
             }
         }
     }
 
-    private void collapseSubtrees(RootedTree tree, Set<Node> targetTips, int maxChildLevel) {
-        collapseSubtrees(tree, tree.getRootNode(), targetTips, 0, maxChildLevel);
-    }
-
-    private void collapseSubtrees(RootedTree tree, Node node, Set<Node> targetTips, int childLevel, int maxChildLevel) {
-        if (tree.isExternal(node)) {
-            if (targetTips.contains(node)) {
-
-            }
-        } else {
+    private void collapseSubtrees(RootedTree tree, Node node, int childLevel, int maxChildLevel) {
+        if (!tree.isExternal(node)) {
             if (childLevel <= maxChildLevel) {
                 for (Node child : tree.getChildren(node)) {
-                    collapseSubtrees(tree, child, targetTips, childLevel + 1, maxChildLevel);
+                    if (child.getAttribute("include") == Boolean.TRUE) {
+                        // this child has a target tip in it so should not be collapsed - reset the child level count
+                        collapseSubtrees(tree, child, 0, maxChildLevel);
+                    } else {
+                        collapseSubtrees(tree, child, childLevel + 1, maxChildLevel);
+                    }
                 }
             } else {
+                Set<String> content = new TreeSet<>();
+                for (Node child : tree.getChildren(node)) {
+                    content.addAll(collectContent(tree, child));
+                }
                 // collapse the node
-                node.setAttribute("include", false);
+                node.setAttribute("content", content);
             }
+        }
+    }
+
+//    private void collapsePolytomies(RootedTree tree, Node node, int maxChildren) {
+//        if (!tree.isExternal(node)) {
+//            for (Node child : tree.getChildren(node)) {
+//                if (child.getAttribute("include") == Boolean.TRUE) {
+//                    // this child has a target tip in it so should not be collapsed
+//                    collapsePolytomies(tree, child, 0, maxChildLevel, maxChildren);
+//                } else {
+//                    collapsePolytomies(tree, child, childLevel + 1, maxChildLevel, maxChildren);
+//                }
+//            }
+//
+//            if (tree.getChildren(node).size() > maxChildren) {
+//                Set<String> content = new TreeSet<>();
+//            } else {
+//                for (Node child : tree.getChildren(node)) {
+//                    content.addAll(collectContent(tree, child));
+//                }
+//                // collapse the node
+//                node.setAttribute("content", content);
+//            }
+//        }
+//    }
+
+
+
+    /**
+     * Collects all the taxa subtended by a node into a set - if a child is a subtree then it just adds
+     * that label.
+     * @param tree
+     * @param node
+     * @return
+     */
+    private Set<String> collectContent(RootedTree tree, Node node) {
+        if (!tree.isExternal(node)) {
+            Set<String> content = new TreeSet<>();
+
+            for (Node child : tree.getChildren(node)) {
+                String subtree = (String)child.getAttribute("subtree");
+                if (subtree != null) {
+                    content.add(subtree);
+                } else {
+                    content.addAll(collectContent(tree, child));
+                }
+            }
+
+            return content;
+        } else {
+            return Collections.singleton(tree.getTaxon(node).getName());
         }
     }
 
@@ -137,22 +203,93 @@ public class Context extends Command {
      * When ever a change in the value of a given attribute occurs at a node, writes out a subtree from that node
      */
     void writeSubtrees(RootedTree tree, Map<Node, Subtree> subtreeMap,
-                       String outputPath, String outputFileStem, boolean labelWithValue, FormatType outputFormat) {
+                       String outputPath, String outputFileStem, FormatType outputFormat) {
+
+        Map<String, Set<String>> collapsedNodeMap = new HashMap<>();
 
         for (Node key : subtreeMap.keySet()) {
             Subtree subtree = subtreeMap.get(key);
 
             SimpleRootedTree newTree = new SimpleRootedTree();
-            newTree.createNodes(tree, subtree.root);
+            createNodes(tree, subtree.root, newTree, collapsedNodeMap);
 
             String fileName = outputPath + outputFileStem + subtree.name + "." + outputFormat.name().toLowerCase();
             if (isVerbose) {
                 outStream.println("Writing subtree file: " + fileName);
             }
             writeTreeFile(newTree, fileName, outputFormat);
-
         }
+
+        String fileName = outputPath + outputFileStem + "collapsed_nodes.csv";
+        try {
+            PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(fileName)));
+
+            writer.println("name\tcount\tcontent");
+
+
+            for (String collapsedNode : collapsedNodeMap.keySet()) {
+                Set<String> content = collapsedNodeMap.get(collapsedNode);
+                writer.print(collapsedNode);
+                writer.print(",");
+                writer.print(content.size());
+                writer.print(",[");
+                writer.print(String.join(" ", content));
+                writer.println("]");
+            }
+
+            writer.close();
+        } catch (IOException e) {
+            errorStream.println("Error writing metadata file: " + e.getMessage());
+            System.exit(1);
+        }
+
     }
+
+    /**
+     * Clones the entire tree structure from the given RootedTree.
+     * @param tree
+     * @param node
+     * @return
+     */
+    private Node createNodes(RootedTree tree, Node node, SimpleRootedTree newTree, Map<String, Set<String>> collapsedNodeMap) {
+
+        Node newNode;
+        if (tree.isExternal(node)) {
+            newNode = newTree.createExternalNode(tree.getTaxon(node));
+        } else {
+            List<Node> children = new ArrayList<Node>();
+            for (Node child : tree.getChildren(node)) {
+                String subtree = (String)child.getAttribute("subtree");
+                Set<String> contentSet = (Set<String>)child.getAttribute("content");
+
+                if (subtree != null) {
+                    // is the root of a subtree - replace with a tip labelled as the subtree
+                    Node newChild = newTree.createExternalNode(Taxon.getTaxon(subtree));
+                    children.add(newChild);
+                    newTree.setHeight(newChild, tree.getHeight(child));
+                } else if (contentSet != null) {
+                    // this child has been collapsed so replace it with a content set
+                    String label = "collapsed_" + (collapsedNodeMap.size() + 1);
+                    collapsedNodeMap.put(label, contentSet);
+                    Node newChild = newTree.createExternalNode(Taxon.getTaxon(label));
+                    children.add(newChild);
+                    newTree.setHeight(newChild, tree.getHeight(child));
+                } else {
+                    children.add(createNodes(tree, child, newTree, collapsedNodeMap));
+                }
+            }
+            newNode = newTree.createInternalNode(children);
+        }
+
+        for( Map.Entry<String, Object> e : node.getAttributeMap().entrySet() ) {
+            newNode.setAttribute(e.getKey(), e.getValue());
+        }
+
+        newTree.setHeight(newNode, tree.getHeight(node));
+
+        return newNode;
+    }
+
 
     private static class Subtree {
         public Subtree(Node root, String name) {
