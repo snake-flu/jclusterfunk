@@ -220,7 +220,15 @@ class ClusterFunk {
             .argName("level")
             .hasArg()
             .required(false)
-            .desc( "maximum level of children to include in subtrees (default = 1)" )
+            .desc( "maximum level of children to include in subtrees (default = unlimited)" )
+            .type(Integer.class).build();
+
+    private final static Option MAX_SIBLING = Option.builder(  )
+            .longOpt("max-siblings")
+            .argName("level")
+            .hasArg()
+            .required(false)
+            .desc( "maximum number of siblings to include in subtrees (default = unlimited)" )
             .type(Integer.class).build();
 
     private final static Option MIN_CLUSTER_SIZE = Option.builder(  )
@@ -363,6 +371,7 @@ class ClusterFunk {
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(MAX_PARENT_LEVEL);
                         options.addOption(MAX_CHILD_LEVEL);
+                        options.addOption(MAX_SIBLING);
                         options.addOption(IGNORE_MISSING);
                         break;
                     case CONVERT:
@@ -569,6 +578,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("field-delimeter", "|"),
                         Integer.parseInt(commandLine.getOptionValue("max-parent", "1")),
                         Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
+                        Integer.parseInt(commandLine.getOptionValue("max-siblings", "0")),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
