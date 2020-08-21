@@ -327,7 +327,7 @@ class ClusterFunk {
         if (args.length > 0 && !args[0].startsWith("-")) {
             try {
                 command = Command.getCommand(args[0]);
-                
+
                 options.addOption("v","verbose", false, "write analysis details to console");
 
                 switch (command) {
@@ -533,6 +533,13 @@ class ClusterFunk {
 
         long startTime = System.currentTimeMillis();
 
+        if (commandLine.hasOption("id-field") &&
+                Integer.parseInt(commandLine.getOptionValue("id-field")) < 1) {
+            System.out.println("Option '--id-field' requires a field number starting from 1\n");
+            printHelp(command, options);
+            return;
+        }
+
         switch (command) {
 
             case ANNOTATE:
@@ -543,7 +550,7 @@ class ClusterFunk {
                         format,
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "|"),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
                         commandLine.getOptionValues("label-fields"),
                         commandLine.getOptionValues("tip-attributes"),
                         commandLine.hasOption("replace"),
