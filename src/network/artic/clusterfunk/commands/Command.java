@@ -295,6 +295,28 @@ abstract class Command {
         return taxonMap;
     }
 
+
+    final Map<String, Node> getTipMap(RootedTree tree) {
+        Map<String, Node> tipMap = new HashMap<>();
+
+        for (Node tip : tree.getExternalNodes()) {
+            Taxon taxon = tree.getTaxon(tip);
+            String index = taxon.getName();
+            if (indexHeader > 0) { // index header indexed from 1
+                // if an index header field has been specified then split it out (otherwise use the entire name)
+                String[] headers = taxon.getName().split(headerDelimiter);
+                if (indexHeader > headers.length) {
+                    errorStream.println("Tip name, " + taxon.getName() + ", doesn't have enough fields (index-header = " + indexHeader + ")");
+                    System.exit(1);
+                }
+                index = headers[indexHeader - 1];
+            }
+            tipMap.put(index, tip);
+        }
+
+        return tipMap;
+    }
+
     static void clearExternalAttributes(RootedTree tree) {
         for (Node node : tree.getExternalNodes()) {
             Set<String> attributeNames = new HashSet<>(node.getAttributeNames());

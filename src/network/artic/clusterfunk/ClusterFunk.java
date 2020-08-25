@@ -22,6 +22,7 @@ class ClusterFunk {
         SUBCLUSTER("subcluster", "split existing clusters into subclusters."),
         CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
         CONVERT("convert", "Convert tree from one format to another."),
+        INSERT("insert", "Insert tips into the tree."),
         GRAPEVINE_ASSIGN_LINEAGES("grapevine-assign-lineages", "Assign UK tips without lineages to a UK lineage."),
         GRAPEVINE_SUBLINEAGES("grapevine-sublineages", "split existing UK lineages into sub-lineages."),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
@@ -281,6 +282,12 @@ class ClusterFunk {
             .desc( "ignore any missing matches in annotations table (default false)" )
             .type(String.class).build();
 
+    private final static Option UNIQUE_ONLY =  Option.builder( )
+            .longOpt("unique-only")
+            .required(false)
+            .desc( "only place tips that have an unique position (default false)" )
+            .type(String.class).build();
+
     private final static Option KEEP_TAXA =  Option.builder( "k" )
             .longOpt("keep-taxa")
             .required(false)
@@ -327,7 +334,7 @@ class ClusterFunk {
         if (args.length > 0 && !args[0].startsWith("-")) {
             try {
                 command = Command.getCommand(args[0]);
-
+                
                 options.addOption("v","verbose", false, "write analysis details to console");
 
                 switch (command) {
@@ -395,6 +402,17 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(MIN_CLUSTER_SIZE);
+                        break;
+                    case INSERT:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(UNIQUE_ONLY);
+                        options.addOption(IGNORE_MISSING);
                         break;
                     case PRUNE:
                         options.addOption(INPUT);
@@ -533,13 +551,6 @@ class ClusterFunk {
 
         long startTime = System.currentTimeMillis();
 
-        if (commandLine.hasOption("id-field") &&
-                Integer.parseInt(commandLine.getOptionValue("id-field")) < 1) {
-            System.out.println("Option '--id-field' requires a field number starting from 1\n");
-            printHelp(command, options);
-            return;
-        }
-
         switch (command) {
 
             case ANNOTATE:
@@ -582,7 +593,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "|"),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
                         Integer.parseInt(commandLine.getOptionValue("max-parent", "1")),
                         Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
                         Integer.parseInt(commandLine.getOptionValue("max-siblings", "0")),
@@ -597,6 +608,19 @@ class ClusterFunk {
                         OrderType.UNCHANGED,
                         isVerbose);
                 break;
+            case INSERT:
+                new Graft(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.hasOption("unique-only"),
+                        commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
             case GRAPEVINE_ASSIGN_LINEAGES:
                 new GrapevineAssignLineages(
                         commandLine.getOptionValue("input"),
@@ -606,7 +630,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "|"),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
                         commandLine.getOptionValue("attribute"),
                         commandLine.getOptionValue("value"),
                         commandLine.getOptionValue("cluster-name"),
@@ -632,7 +656,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "|"),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
                         commandLine.hasOption("keep-taxa"),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
@@ -646,7 +670,7 @@ class ClusterFunk {
 //                        commandLine.getOptionValue("output-metadata"),
 //                        commandLine.getOptionValue("id-column", null),
 //                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-//                        commandLine.getOptionValue("field-delimeter", "|"),
+//                        commandLine.getOptionValue("field-delimeter", "\\|"),
 //                        commandLine.getOptionValue("attribute"),
 //                        commandLine.getOptionValue("value"),
 //                        commandLine.getOptionValue("cluster-name"),
@@ -678,7 +702,7 @@ class ClusterFunk {
 //                        commandLine.getOptionValue("output"),
 //                        format,
 //                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
-//                        commandLine.getOptionValue("field-delimeter", "|"),
+//                        commandLine.getOptionValue("field-delimeter", "\\|"),
 //                        rootType,
 //                        commandLine.getOptionValues("outgroups"),
 //                        isVerbose);
@@ -693,7 +717,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "|"),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
                         commandLine.getOptionValue("attribute"),
                         isVerbose);
                 break;
