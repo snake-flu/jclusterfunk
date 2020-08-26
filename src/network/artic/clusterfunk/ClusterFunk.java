@@ -609,7 +609,7 @@ class ClusterFunk {
                         isVerbose);
                 break;
             case INSERT:
-                new Graft(
+                new Insert(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
                         commandLine.getOptionValue("output"),
