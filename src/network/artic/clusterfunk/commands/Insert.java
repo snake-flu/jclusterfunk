@@ -40,8 +40,6 @@ public class Insert extends Command {
 
         Map<String, List<Taxon>> insertionLocationMap = new HashMap<>();
 
-        int totalCount = 0;
-        int uniqueCount = 0;
         for (String key : metadata.keySet()) {
             Node tip = tipMap.get(key);
 
@@ -50,10 +48,6 @@ public class Insert extends Command {
 
             if (tip != null) {
                 List<String> insertionList = Arrays.asList(insertions);
-                totalCount += insertionList.size();
-                if (insertionList.size() == 1) {
-                    uniqueCount += 1;
-                }
 
                 Taxon locationTaxon = tree.getTaxon(tip);
 
@@ -82,10 +76,26 @@ public class Insert extends Command {
                 (uniqueOnly ? InsertMode.UNIQUE_ONLY : InsertMode.DUPLICATES), insertionMap, insertionLocationMap);
 
         if (isVerbose) {
-            outStream.println("      Number of tips added: " + insertionLocationMap.keySet().size());
-            outStream.println("Tips with unique locations: " + uniqueCount);
-            outStream.println("      Final number of tips: " + outTree.getExternalNodes().size());
-            outStream.println();
+            int uniqueLocationCount = 0;
+
+            for (String key : insertionLocationMap.keySet()) {
+                List<Taxon> locations = insertionLocationMap.get(key);
+if (locations.size() == 1) {
+    uniqueLocationCount += 1;
+}
+            }
+
+            if (uniqueOnly) {
+                outStream.println("Only adding taxa that have a single location");
+                outStream.println("Number of taxa added: " + uniqueLocationCount);
+                outStream.println("Final number of tips: " + outTree.getExternalNodes().size());
+                outStream.println();
+            } else {
+                outStream.println("           Number of taxa added: " + insertionLocationMap.keySet().size());
+                outStream.println("Taxa added to a single location: " + uniqueLocationCount);
+                outStream.println("           Final number of tips: " + outTree.getExternalNodes().size());
+                outStream.println();
+            }
         }
 
 

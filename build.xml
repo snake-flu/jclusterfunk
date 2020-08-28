@@ -5,7 +5,7 @@
         Build file for JClusterFunk
     </description>
 
-    <property name="version" value="0.0.3" />
+    <property name="version" value="0.0.4pre" />
     <property name="release_dir" value="release" />
     <property name="name" value="jclusterfunk" />
     <property name="package_dir" value="${release_dir}/${name}_v${version}" />
