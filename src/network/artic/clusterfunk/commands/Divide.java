@@ -102,9 +102,11 @@ public class Divide extends Command {
             createNodes(tree, subtree.root, newTree);
             subtree.tree = newTree;
 
-            Map<Taxon, Integer> tips = findRootRepresentative(tree, tree.getRootNode(), 0);
+            Map<Integer, List<Taxon>> tipMap = findRootRepresentative(tree, subtree.root, 0);
 
-
+            int distance = tipMap.keySet().iterator().next();
+            subtree.rootRepresentitive = tipMap.get(distance).get(0);
+            subtree.rootLength = distance;
         }
     }
 
@@ -114,18 +116,20 @@ public class Divide extends Command {
      * @param node
      * @return
      */
-    private Map<Taxon, Integer> findRootRepresentative(RootedTree tree, Node node, int distance) {
-        Map<Taxon, Integer> tips  = new HashMap<>();
+    private Map<Integer, List<Taxon>> findRootRepresentative(RootedTree tree, Node node, int distance) {
+        Map<Integer, List<Taxon>> tipMap  = new TreeMap<>();
         
         for (Node child: tree.getChildren(node)) {
             if (tree.isExternal(child)) {
-                tips.put(tree.getTaxon(child), distance);
+                List<Taxon> taxa = tipMap.getOrDefault(distance, new ArrayList<Taxon>());
+                taxa.add(tree.getTaxon(child));
+                tipMap.put(distance, taxa);
             } else {
-                findRootRepresentative(tree, node, distance + 1);
+                tipMap.putAll(findRootRepresentative(tree, child, distance + 1));
             }
         }
 
-        return tips;
+        return tipMap;
     }
 
     /**
@@ -188,13 +192,16 @@ public class Divide extends Command {
      */
     void writeSubtreeRoots(Map<Node, Subtree> subtreeMap,  String outputPath, String outputFileStem) {
 
-
         String fileName = outputPath + outputFileStem + "subtrees.csv";
+
+        if (isVerbose) {
+            outStream.println("Writing subtree description file: " + fileName);
+        }
+
         try {
             PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(fileName)));
 
             writer.println("name,count,root_representitive,root_length");
-
 
             for (Node key : subtreeMap.keySet()) {
                 Subtree subtree = subtreeMap.get(key);
@@ -204,7 +211,7 @@ public class Divide extends Command {
                 writer.print(",");
                 writer.print(subtree.rootRepresentitive);
                 writer.print(",");
-                writer.print(subtree.rootLength);
+                writer.println(subtree.rootLength);
             }
 
             writer.close();
@@ -225,7 +232,7 @@ public class Divide extends Command {
         int count;
         String name;
         SimpleRootedTree tree;
-        String rootRepresentitive;
+        Taxon rootRepresentitive;
         double rootLength;
     }
 }

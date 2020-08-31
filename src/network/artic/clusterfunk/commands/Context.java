@@ -33,6 +33,7 @@ public class Context extends Command {
                    int maxParentLevel,
                    int maxChildLevel,
                    int maxSiblingCount,
+                   int tipBudget,
                    boolean ignoreMissing,
                    boolean isVerbose) {
 
@@ -85,7 +86,7 @@ public class Context extends Command {
         collectSubtrees(tree, tree.getRootNode(), false, subtreeMap);
 
         for (Node node : subtreeMap.keySet()) {
-            collapseSubtrees(tree, node, 0, maxChildLevel);
+            collapseSubtrees(tree, node, 0, maxChildLevel, tipBudget);
         }
 
         Map<String, Set<String>> collapsedNodeMap = new HashMap<>();
@@ -132,7 +133,7 @@ public class Context extends Command {
         }
     }
 
-    private void collapseSubtrees(RootedTree tree, Node node, int childLevel, int maxChildLevel) {
+    private void collapseSubtrees(RootedTree tree, Node node, int childLevel, int maxChildLevel, int maxTreeSize) {
         if (!tree.isExternal(node)) {
             if (maxChildLevel > 0 && childLevel > maxChildLevel) {
                 Set<String> content = new TreeSet<>();
@@ -145,9 +146,9 @@ public class Context extends Command {
                 for (Node child : tree.getChildren(node)) {
                     if (child.getAttribute("include") == Boolean.TRUE) {
                         // this child has a target tip in it so should not be collapsed - reset the child level count
-                        collapseSubtrees(tree, child, 0, maxChildLevel);
+                        collapseSubtrees(tree, child, 0, maxChildLevel, maxTreeSize);
                     } else {
-                        collapseSubtrees(tree, child, childLevel + 1, maxChildLevel);
+                        collapseSubtrees(tree, child, childLevel + 1, maxChildLevel, maxTreeSize);
                     }
                 }
             }

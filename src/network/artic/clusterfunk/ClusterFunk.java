@@ -330,6 +330,7 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("max-parent", "1")),
                         Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
                         Integer.parseInt(commandLine.getOptionValue("max-siblings", "0")),
+                        Integer.parseInt(commandLine.getOptionValue("tip-budget", "0")),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
