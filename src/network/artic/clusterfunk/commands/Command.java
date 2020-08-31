@@ -389,6 +389,32 @@ abstract class Command {
     }
 
     /**
+     * Collects all the taxa subtended by a node into a set - if a child is a subtree then it just adds
+     * that label.
+     * @param tree
+     * @param node
+     * @return
+     */
+    static Set<String> collectContent(RootedTree tree, Node node) {
+        if (!tree.isExternal(node)) {
+            Set<String> content = new TreeSet<>();
+
+            for (Node child : tree.getChildren(node)) {
+                String subtree = (String)child.getAttribute("subtree");
+                if (subtree != null) {
+                    content.add(subtree);
+                } else {
+                    content.addAll(collectContent(tree, child));
+                }
+            }
+
+            return content;
+        } else {
+            return Collections.singleton(tree.getTaxon(node).getName());
+        }
+    }
+
+    /**
      * collects all the values for a given attribute in a map with a list of tips nodes for each
      * @param tree
      * @param attributeName

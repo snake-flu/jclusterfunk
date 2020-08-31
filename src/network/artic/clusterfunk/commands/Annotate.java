@@ -9,7 +9,8 @@ import org.apache.commons.csv.CSVRecord;
 import java.util.*;
 
 /**
- *
+ * Adds tip annotations from a metadata file. These can either be added to the tip labels or as NEXUS
+ * metadata comments for the tips.
  */
 public class Annotate extends Command {
     public Annotate(String treeFileName,

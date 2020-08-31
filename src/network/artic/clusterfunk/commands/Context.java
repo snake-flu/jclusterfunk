@@ -27,7 +27,6 @@ public class Context extends Command {
                    String outputPath,
                    String outputFileStem,
                    FormatType outputFormat,
-                   String outputMetadataFileName,
                    String indexColumn,
                    int indexHeader,
                    String headerDelimiter,
@@ -156,32 +155,6 @@ public class Context extends Command {
     }
 
     /**
-     * Collects all the taxa subtended by a node into a set - if a child is a subtree then it just adds
-     * that label.
-     * @param tree
-     * @param node
-     * @return
-     */
-    private Set<String> collectContent(RootedTree tree, Node node) {
-        if (!tree.isExternal(node)) {
-            Set<String> content = new TreeSet<>();
-
-            for (Node child : tree.getChildren(node)) {
-                String subtree = (String)child.getAttribute("subtree");
-                if (subtree != null) {
-                    content.add(subtree);
-                } else {
-                    content.addAll(collectContent(tree, child));
-                }
-            }
-
-            return content;
-        } else {
-            return Collections.singleton(tree.getTaxon(node).getName());
-        }
-    }
-
-    /**
      * When ever a change in the value of a given attribute occurs at a node, writes out a subtree from that node
      */
     void createSubtrees(RootedTree tree, Map<Node, Subtree> subtreeMap, int maxPolytomySize, Map<String, Set<String>> collapsedNodeMap) {
@@ -291,7 +264,7 @@ public class Context extends Command {
         try {
             PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(fileName)));
 
-            writer.println("name\tcount\tcontent");
+            writer.println("name,count,content");
 
 
             for (String collapsedNode : collapsedNodeMap.keySet()) {
