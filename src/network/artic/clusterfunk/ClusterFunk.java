@@ -78,6 +78,17 @@ class ClusterFunk {
                         options.addOption(REPLACE);
                         options.addOption(IGNORE_MISSING);
                         break;
+                    case ASSIGN:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(ATTRIBUTE);
+                        break;
                     case CLUSTER:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_FILE);
@@ -299,6 +310,21 @@ class ClusterFunk {
                         commandLine.getOptionValues("label-fields"),
                         commandLine.getOptionValues("tip-attributes"),
                         commandLine.hasOption("replace"),
+                        commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
+            case ASSIGN:
+                new Assign(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        commandLine.getOptionValue("output-metadata"),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("attribute"),
+                        true,
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;

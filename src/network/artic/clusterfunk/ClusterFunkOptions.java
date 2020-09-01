@@ -11,6 +11,7 @@ class ClusterFunkOptions {
     enum Command {
         NONE("", ""),
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
+        ASSIGN("assign", "Clean and assign lineage annotations."),
         CLUSTER("cluster", "label clusters by number based on node attributes."),
         SUBCLUSTER("subcluster", "split existing clusters into subclusters."),
         CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
