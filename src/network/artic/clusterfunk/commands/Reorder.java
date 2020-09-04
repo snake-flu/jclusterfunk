@@ -10,12 +10,17 @@ import network.artic.clusterfunk.OrderType;
  */
 public class Reorder extends Command {
     public Reorder(String treeFileName,
-            String outputPath,
-            FormatType outputFormat,
-            OrderType orderType,
-            boolean isVerbose) {
+                   String metadataFileName,
+                   String outputPath,
+                   FormatType outputFormat,
+                   String indexColumn,
+                   int indexHeader,
+                   String headerDelimiter,
+                   OrderType orderType,
+                   String[] sortColumns,
+                   boolean isVerbose) {
 
-        super(null, null, null, 0, null, isVerbose);
+        super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
         RootedTree tree = readTree(treeFileName);
 

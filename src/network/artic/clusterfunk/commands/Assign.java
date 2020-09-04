@@ -37,7 +37,7 @@ public class Assign extends Command {
 
         Map<Taxon, String> taxonMap = getTaxonMap(tree);
 
-        annotateTips(tree, taxonMap, metadata, lineageName, ignoreMissing);
+        annotateTips(tree, taxonMap, lineageName, ignoreMissing);
 
         assignNodeLineages(tree, tree.getRootNode(), lineageName);
 
@@ -67,40 +67,6 @@ public class Assign extends Command {
 
 
     }
-
-    /**
-     *
-     *
-     *
-     * Annotates the tips of a tree with a set of columns from the metadata table
-     * @param tree
-     * @param taxonMap
-     * @param metadata
-     * @param columnName
-     * @param ignoreMissing
-     */
-    private void annotateTips(RootedTree tree,
-                              Map<Taxon, String> taxonMap,
-                              Map<String, CSVRecord> metadata,
-                              String columnName,
-                              boolean ignoreMissing) {
-
-        for (Node tip : tree.getExternalNodes()) {
-            String key = taxonMap.get(tree.getTaxon(tip));
-            CSVRecord record = metadata.get(key);
-            if (record == null) {
-                if (!ignoreMissing) {
-                    errorStream.println("Tip index, " + key + ", not found in metadata table");
-                    System.exit(1);
-                }
-            } else {
-                if (!record.get(columnName).isEmpty()) {
-                    tip.setAttribute(columnName, record.get(columnName));
-                }
-            }
-        }
-    }
-
 
     private Map<String, Integer> assignNodeLineages(RootedTree tree, Node node, String lineageName) {
         if (tree.isExternal(node)) {
