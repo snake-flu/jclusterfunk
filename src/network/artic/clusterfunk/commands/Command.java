@@ -364,6 +364,41 @@ abstract class Command {
         }
     }
 
+    /**
+     * Annotates the tips of a tree with a set of columns from the metadata table
+     * @param tree
+     * @param taxonMap
+     * @param columnName
+     * @param ignoreMissing
+     */
+     void annotateTips(RootedTree tree,
+                              Map<Taxon, String> taxonMap,
+                              String columnName,
+                              boolean ignoreMissing) {
+
+        for (Node tip : tree.getExternalNodes()) {
+            String key = taxonMap.get(tree.getTaxon(tip));
+            String value = getTipAnnotation(key, columnName, ignoreMissing);
+            if (value != null) {
+                tip.setAttribute(columnName, value);
+            }
+        }
+    }
+
+     String getTipAnnotation(String tipIndex, String columnName, boolean ignoreMissing) {
+        CSVRecord record = metadata.get(tipIndex);
+        if (record != null) {
+            if (!record.get(columnName).isEmpty()) {
+                return record.get(columnName);
+            }
+        } else if (!ignoreMissing) {
+            errorStream.println("Tip index, " + tipIndex + ", not found in metadata table");
+            System.exit(1);
+        }
+
+        return null;
+    }
+
     static int countTips(RootedTree tree, Node node) {
         if (tree.isExternal(node)) {
             return 1;

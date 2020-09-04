@@ -59,7 +59,7 @@ class ClusterFunk {
         if (args.length > 0 && !args[0].startsWith("-")) {
             try {
                 command = Command.getCommand(args[0]);
-                
+
                 options.addOption("v","verbose", false, "write analysis details to console");
 
                 switch (command) {
@@ -120,6 +120,14 @@ class ClusterFunk {
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
+                        break;
+                    case DISCOVER:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(IGNORE_MISSING);
                         break;
                     case DIVIDE:
                         options.addOption(INPUT);
@@ -192,11 +200,16 @@ class ClusterFunk {
                         break;
                     case REORDER:
                         options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
                         OptionGroup orderGroup = new OptionGroup();
                         orderGroup.addOption(INCREASING);
                         orderGroup.addOption(DECREASING);
+                        orderGroup.addOption(SORT_COLUMNS);
                         options.addOptionGroup(orderGroup);
                         break;
 //                    case REROOT:
@@ -363,9 +376,24 @@ class ClusterFunk {
             case CONVERT:
                 new Reorder(
                         commandLine.getOptionValue("input"),
+                        null,
                         commandLine.getOptionValue("output"),
                         format,
+                        null,
+                        0,
+                        null,
                         OrderType.UNCHANGED,
+                        null,
+                        isVerbose);
+                break;
+            case DISCOVER:
+                new Discover(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
             case DIVIDE:
@@ -457,12 +485,19 @@ class ClusterFunk {
                         isVerbose);
                 break;
             case REORDER:
-                OrderType orderType = commandLine.hasOption("increasing") ? OrderType.INCREASING : OrderType.DECREASING;
+                OrderType orderType = (commandLine.hasOption("increasing") ?
+                        OrderType.INCREASING :
+                        (commandLine.hasOption("decreasing") ? OrderType.DECREASING : OrderType.UNCHANGED));
                 new Reorder(
                         commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
                         commandLine.getOptionValue("output"),
                         format,
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
                         orderType,
+                        commandLine.getOptionValues("sort-by"),
                         isVerbose);
                 break;
 //            case REROOT:

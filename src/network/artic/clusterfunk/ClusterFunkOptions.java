@@ -16,6 +16,7 @@ class ClusterFunkOptions {
         SUBCLUSTER("subcluster", "split existing clusters into subclusters."),
         CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
         CONVERT("convert", "Convert tree from one format to another."),
+        DISCOVER("discover", "Find new clusters and outbreaks"),
         DIVIDE("divide", "Divide tree into approximately equal sized subtrees."),
         INSERT("insert", "Insert tips into the tree."),
         GRAPEVINE_ASSIGN_LINEAGES("grapevine-assign-lineages", "Assign UK tips without lineages to a UK lineage."),
@@ -273,6 +274,14 @@ class ClusterFunkOptions {
     final static Option DECREASING = Option.builder()
             .longOpt("decreasing")
             .desc("order nodes by decreasing clade size")
+            .type(String.class).build();
+
+    final static Option SORT_COLUMNS = Option.builder()
+            .longOpt("sort-by")
+            .argName("columns")
+            .hasArgs()
+            .required(false)
+            .desc("a list of metadata columns to sort by (prefix by ^ to reverse order)")
             .type(String.class).build();
 
     final static Option REPLACE = Option.builder("r")
