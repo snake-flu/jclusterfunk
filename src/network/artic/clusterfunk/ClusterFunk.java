@@ -124,6 +124,7 @@ class ClusterFunk {
                     case DISCOVER:
                         options.addOption(INPUT);
                         options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
@@ -390,6 +391,7 @@ class ClusterFunk {
                 new Discover(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),

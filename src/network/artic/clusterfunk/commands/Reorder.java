@@ -26,6 +26,10 @@ public class Reorder extends Command {
 
         RootedTree outTree = tree;
 
+        if (sortColumns != null) {
+            throw new UnsupportedOperationException("sort by metadata columns not impemented yet");
+        }
+        
         if (orderType != OrderType.UNCHANGED) {
             if (isVerbose) {
                 outStream.println("Reordering branches by " + orderType.name().toLowerCase() + " node density");

@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class Discover extends Command {
     public Discover(String treeFileName,
                     String metadataFileName,
+                    String outputMetadataFileName,
                     String indexColumn,
                     int indexHeader,
                     String headerDelimiter,
@@ -53,35 +54,38 @@ public class Discover extends Command {
 
         internalNodeStats.sort(Comparator.comparing(Stats::getMostRecentDate));
 
-        for (Stats stats : internalNodeStats) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(stats.getMostRecentDate().toString()).append("\t");
-            sb.append(stats.tipCount).append("\t");
-            sb.append(stats.admin0.size()).append("\t");
-            sb.append(stats.admin1.size()).append("\t");
-            sb.append(stats.admin2.size());
-            outStream.println(sb.toString());
-        }
-
-//        if (outputMetadataFileName != null) {
-//            try {
-//                PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputMetadataFileName)));
-//
-//                writer.println("sequence_name," + lineageName);
-//
-//                for (Node node : tree.getExternalNodes()) {
-//                    writer.print(tree.getTaxon(node).getName());
-//                    writer.print(",");
-//                    writer.print(node.getAttribute("new_lineage"));
-//                    writer.println();
-//                }
-//
-//                writer.close();
-//            } catch (IOException e) {
-//                errorStream.println("Error writing metadata file: " + e.getMessage());
-//                System.exit(1);
-//            }
+//        for (Stats stats : internalNodeStats) {
+//            StringBuilder sb = new StringBuilder();
+//            sb.append(stats.getMostRecentDate().toString()).append("\t");
+//            sb.append(stats.tipCount).append("\t");
+//            sb.append(stats.admin0.size()).append("\t");
+//            sb.append(stats.admin1.size()).append("\t");
+//            sb.append(stats.admin2.size());
+//            outStream.println(sb.toString());
 //        }
+
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        if (outputMetadataFileName != null) {
+            try {
+                PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputMetadataFileName)));
+
+                writer.println("most_recent_tip,tip_count,admin0_count,admin1_count,admin2_count,tips");
+
+                for (Stats stats : internalNodeStats) {
+                    writer.print(format.format(stats.getMostRecentDate()) + "," +
+                            stats.tipCount + "," +
+                            stats.admin0.size() + "," +
+                            stats.admin1.size() + "," +
+                            stats.admin2.size() + ",");
+                    writer.println(String.join("|", stats.tipSet));
+                }
+
+                writer.close();
+            } catch (IOException e) {
+                errorStream.println("Error writing metadata file: " + e.getMessage());
+                System.exit(1);
+            }
+        }
         
     }
 
@@ -91,6 +95,7 @@ public class Discover extends Command {
 
         if (tree.isExternal(node)) {
             stats = new Stats(node,
+                    tree.getTaxon(node).getName(),
                     (String)node.getAttribute("sample_date"),
                     (String)node.getAttribute("country"),
                     (String)node.getAttribute("adm1"),
@@ -112,7 +117,7 @@ public class Discover extends Command {
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     class Stats {
-        public Stats(Node node, String date, String admin0, String admin1, String admin2) {
+        public Stats(Node node, String tip, String date, String admin0, String admin1, String admin2) {
             this.node = node;
             try {
                 dates.add(dateFormat.parse(date));
@@ -126,12 +131,12 @@ public class Discover extends Command {
                 this.admin2.put(admin2 != null ? admin2 : "", 1);
             }
 
+            tipSet.add(tip);
             tipCount = 1;
         }
 
         public Stats(Node node, Collection<Stats> stats) {
             this.node = node;
-            int count = 0;
             for (Stats s: stats) {
                 dates.addAll(s.dates);
                 for (String admin0 : s.admin0.keySet()) {
@@ -143,11 +148,11 @@ public class Discover extends Command {
                 for (String admin2 : s.admin2.keySet()) {
                     this.admin2.put(admin2, this.admin2.getOrDefault(admin2, 0) + s.admin2.get(admin2));
                 }
-                count += s.tipCount;
+                tipSet.addAll(s.tipSet);
             }
             dates.sort(Collections.reverseOrder());
 
-            tipCount = count;
+            tipCount = tipSet.size();
         }
 
         Date getMostRecentDate() {
@@ -160,6 +165,7 @@ public class Discover extends Command {
         final Map<String, Integer> admin1 = new TreeMap<>();
         final Map<String, Integer> admin2 = new TreeMap<>();
         final int tipCount;
+        final Set<String> tipSet = new HashSet<>();
     }
 }
 

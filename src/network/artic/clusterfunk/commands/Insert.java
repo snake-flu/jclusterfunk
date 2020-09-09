@@ -80,9 +80,9 @@ public class Insert extends Command {
 
             for (String key : insertionLocationMap.keySet()) {
                 List<Taxon> locations = insertionLocationMap.get(key);
-if (locations.size() == 1) {
-    uniqueLocationCount += 1;
-}
+                if (locations.size() == 1) {
+                    uniqueLocationCount += 1;
+                }
             }
 
             if (uniqueOnly) {
