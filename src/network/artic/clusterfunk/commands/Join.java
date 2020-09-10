@@ -100,8 +100,13 @@ public class Join extends Command {
             }
         }
 
-        RootedTree superTree = subtreeMap.get(rootTreeName).tree;
+        RootedTree superTree = new SimpleRootedTree(subtreeMap.get(rootTreeName).tree);
 
+        if (isVerbose) {
+            outStream.println("Writing tree file: " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
+            outStream.println("       Total tips: " + superTree.getExternalNodes().size());
+            outStream.println();
+        }
         writeTreeFile(superTree, outputFileName, outputFormat);
     }
 
@@ -129,77 +134,6 @@ public class Join extends Command {
                 findSubtrees(parentSubtree, tree, child, rootTaxonMap, subtreeMap);
             }
         }
-    }
-
-    /**
-     * Finds the nodes which transition from not included to included as the root of a subtree.
-     * @param tree
-     * @param node
-     * @param subtreeMap
-     */
-//    private void createSupertree(MutableRootedTree tree, Node node, Map<String, Subtree> subtreeMap) {
-//        if (tree.isExternal(node)) {
-//            String name = tree.getTaxon(node).getName();
-//            if (rootTaxonMap.containsValue(name)) {
-////            if (rootTaxonMap.containsKey(name)) {
-////                String subtreeName = rootTaxonMap.get(name);
-////                Subtree subtree = subtreeMap.get(subtreeName);
-//                Subtree subtree = subtreeMap.get(name);
-//                if (subtree.tree != tree) {
-//                    subtree.parentTree = tree;
-////                    subtree.parentTip = node;
-//
-//                    tree.addChild(subtree.tree.getRootNode(), tree.getParent(node));
-//                    tree.setLength(subtree.tree.getRootNode(), subtree.rootLength);
-//                    tree.removeChild(node, tree.getParent(node));
-//                }
-//            }
-//        } else {
-//            for (Node child : tree.getChildren(node)) {
-//                createSupertree(tree, child, rootTaxonMap, subtreeMap);
-//            }
-//        }
-//    }
-
-
-
-    /**
-     * Clones the entire tree structure from the given RootedTree.
-     * @param tree
-     * @param node
-     * @return
-     */
-    private Node createNodes(RootedTree tree, Node node, SimpleRootedTree newTree) {
-
-        Node newNode;
-        if (tree.isExternal(node)) {
-            newNode = newTree.createExternalNode(tree.getTaxon(node));
-        } else {
-            List<Node> children = new ArrayList<Node>();
-
-            for (Node child : tree.getChildren(node)) {
-                String subtree = (String)child.getAttribute("subtree");
-
-                if (subtree != null) {
-                    // is the root of a subtree - replace with a tip labelled as the subtree
-                    Node newChild = newTree.createExternalNode(Taxon.getTaxon(subtree));
-                    children.add(newChild);
-                    newTree.setHeight(newChild, tree.getHeight(child));
-                } else {
-                    children.add(createNodes(tree, child, newTree));
-                }
-            }
-
-            newNode = newTree.createInternalNode(children);
-        }
-
-        for( Map.Entry<String, Object> e : node.getAttributeMap().entrySet() ) {
-            newNode.setAttribute(e.getKey(), e.getValue());
-        }
-
-        newTree.setHeight(newNode, tree.getHeight(node));
-
-        return newNode;
     }
 
     private static class Subtree {
