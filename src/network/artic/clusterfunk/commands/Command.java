@@ -126,7 +126,7 @@ abstract class Command {
         List<RootedTree> trees = new ArrayList<>();
 
         if (isVerbose) {
-            outStream.println("  Reading treefile: " + treeFileName);
+            outStream.println("Reading treefile: " + treeFileName);
         }
 
         try {
@@ -157,9 +157,9 @@ abstract class Command {
 
         if (isVerbose) {
             if (trees.size() > 1) {
-                outStream.println("Number of trees: " + trees.size());
+                outStream.println(" Number of trees: " + trees.size());
             }
-            outStream.println(" Number of tips: " + trees.get(0).getExternalNodes().size());
+            outStream.println("  Number of tips: " + trees.get(0).getExternalNodes().size());
             outStream.println();
         }
 
@@ -371,10 +371,10 @@ abstract class Command {
      * @param columnName
      * @param ignoreMissing
      */
-     void annotateTips(RootedTree tree,
-                              Map<Taxon, String> taxonMap,
-                              String columnName,
-                              boolean ignoreMissing) {
+    void annotateTips(RootedTree tree,
+                      Map<Taxon, String> taxonMap,
+                      String columnName,
+                      boolean ignoreMissing) {
 
         for (Node tip : tree.getExternalNodes()) {
             String key = taxonMap.get(tree.getTaxon(tip));
@@ -385,7 +385,7 @@ abstract class Command {
         }
     }
 
-     String getTipAnnotation(String tipIndex, String columnName, boolean ignoreMissing) {
+    String getTipAnnotation(String tipIndex, String columnName, boolean ignoreMissing) {
         CSVRecord record = metadata.get(tipIndex);
         if (record != null) {
             if (!record.get(columnName).isEmpty()) {
@@ -698,6 +698,24 @@ abstract class Command {
 
         return outputPath.endsWith("/") ? outputPath : outputPath + "/";
     }
+
+    protected String getFileWithExtension(String filenameStem, String[] extensions) {
+        for (String extension: extensions) {
+            File file = new File(filenameStem + extension);
+            if (Files.exists(file.toPath())) {
+                return file.toString();
+            }
+        }
+
+        errorStream.println("No file found with an appropriate extension for filename stem: " + filenameStem);
+        System.exit(1);
+
+        return null;
+    }
+
+
+
+
 
     public static class Pair {
         public Pair(Node node, int count) {

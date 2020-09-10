@@ -78,8 +78,8 @@ public class Divide extends Command {
                 count += collectSubtrees(tree, child, maxSubtreeSize, subtreeMap);
             }
 
-            if (count > maxSubtreeSize) {
-                String name = "subtree_" + (subtreeMap.size() + 1);
+            if (count > maxSubtreeSize || tree.isRoot(node)) {
+                String name = "subtree_" + (tree.isRoot(node) ? 0 : (subtreeMap.size() + 1));
                 node.setAttribute("subtree", name);
 
                 subtreeMap.put(node, new Subtree(node, name, count));
@@ -98,15 +98,20 @@ public class Divide extends Command {
         for (Node key : subtreeMap.keySet()) {
             Subtree subtree = subtreeMap.get(key);
 
+            if (!tree.isRoot(subtree.root)) {
+                Map<Integer, List<Taxon>> tipMap = findRootRepresentative(tree, subtree.root, 0);
+                int distance = tipMap.keySet().iterator().next();
+                subtree.rootRepresentitive = tipMap.get(distance).get(0);
+                subtree.rootLength = distance;
+            }
+        }
+
+        for (Node key : subtreeMap.keySet()) {
+            Subtree subtree = subtreeMap.get(key);
+
             SimpleRootedTree newTree = new SimpleRootedTree();
             createNodes(tree, subtree.root, newTree);
             subtree.tree = newTree;
-
-            Map<Integer, List<Taxon>> tipMap = findRootRepresentative(tree, subtree.root, 0);
-
-            int distance = tipMap.keySet().iterator().next();
-            subtree.rootRepresentitive = tipMap.get(distance).get(0);
-            subtree.rootLength = distance;
         }
     }
 
@@ -209,7 +214,7 @@ public class Divide extends Command {
                 writer.print(",");
                 writer.print(subtree.count);
                 writer.print(",");
-                writer.print(subtree.rootRepresentitive);
+                writer.print(subtree.rootRepresentitive != null ? subtree.rootRepresentitive : "");
                 writer.print(",");
                 writer.println(subtree.rootLength);
             }
@@ -232,8 +237,8 @@ public class Divide extends Command {
         int count;
         String name;
         SimpleRootedTree tree;
-        Taxon rootRepresentitive;
-        double rootLength;
+        Taxon rootRepresentitive = null;
+        double rootLength = 0.0;
     }
 }
 

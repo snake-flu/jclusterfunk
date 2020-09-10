@@ -168,6 +168,11 @@ class ClusterFunk {
                         options.addOption(UNIQUE_ONLY);
                         options.addOption(IGNORE_MISSING);
                         break;
+                    case JOIN:
+                        options.addOption(INPUT_PATH);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        break;
                     case PRUNE:
                         options.addOption(INPUT);
                         options.addOption(TAXON_FILE);
@@ -419,6 +424,13 @@ class ClusterFunk {
                         commandLine.getOptionValue("field-delimeter", "\\|"),
                         commandLine.hasOption("unique-only"),
                         commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
+            case JOIN:
+                new Join(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
                         isVerbose);
                 break;
             case GRAPEVINE_ASSIGN_LINEAGES:
