@@ -17,6 +17,8 @@ import java.util.*;
  *
  */
 public class Discover extends Command {
+    private final static double GENOME_LENGTH = 29903;
+
     private final static DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public Discover(String treeFileName,
@@ -79,23 +81,31 @@ public class Discover extends Command {
                 PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputMetadataFileName)));
 
                 if (outputMetadataFileName.endsWith("csv")) {
-                    writer.println("node_number,parent_number,most_recent_tip,recency,age,tip_count,proportion_uk,admin0_count,admin1_count,admin2_count,mean_tip_divergence,stem_length,day_range,admin1_entropy,admin2_entropy,tips");
+                    writer.println("node_number,parent_number,most_recent_tip,day_range,recency,age," +
+                            "tip_count,divergence_ratio,mean_tip_divergence,stem_length," +
+                            "proportion_uk,admin0_count,admin1_count,admin2_count," +
+                            "admin0_mode,admin1_mode,admin2_mode," +
+                            "admin1_entropy,admin2_entropy,tips");
                     for (Stats stats : internalNodeStats) {
                         if (stats.tipCount >= minSize && stats.getAge() < maxAge && stats.ukProportion >= minUKProportion) {
                             writer.print(
                                     stats.node.getAttribute("number") + "," +
                                             (stats.parent != null ? stats.parent.getAttribute("number") : "root") + "," +
                                             dateFormat.format(stats.getMostRecentDate()) + "," +
+                                            stats.dateRange + "," +
                                             stats.getRecency() + "," +
                                             stats.getAge() + "," +
                                             stats.tipCount + "," +
+                                            stats.divergenceRatio + "," +
+                                            stats.meanTipDivergence + "," +
+                                            stats.stemLength + "," +
                                             stats.ukProportion + "," +
                                             stats.admin0.size() + "," +
                                             stats.admin1.size() + "," +
                                             stats.admin2.size() + "," +
-                                            stats.meanTipDivergence + "," +
-                                            stats.stemLength + "," +
-                                            stats.dateRange + "," +
+                                            stats.modalAdmin0 + "," +
+                                            stats.modalAdmin1 + "," +
+                                            stats.modalAdmin2 + "," +
                                             stats.admin1Entropy + "," +
                                             stats.admin2Entropy + ",");
                             writer.println(String.join("|", stats.tipSet));
@@ -119,16 +129,20 @@ public class Discover extends Command {
                                     "\"node_number\": \"" + stats.node.getAttribute("number") + "\", " +
                                     "\"parent_number\": \"" + (stats.parent != null ? stats.parent.getAttribute("number") : "root") + "\", " +
                                     "\"most_recent_tip\": \"" + dateFormat.format(stats.getMostRecentDate()) + "\", " +
+                                    "\"day_range\": \"" + stats.dateRange + "\", " +
                                     "\"recency\": \"" + stats.getRecency() + "\", " +
                                     "\"age\": \"" + stats.getAge() + "\", " +
                                     "\"tip_count\": \"" + stats.tipCount + "\", " +
+                                    "\"stem_length\": \"" + stats.stemLength + "\", " +
+                                    "\"mean_tip_divergence\": \"" + stats.meanTipDivergence + "\", " +
+                                    "\"divergence_ratio\": \"" + stats.divergenceRatio + "\", " +
                                     "\"proportion_uk\": \"" + stats.ukProportion + "\", " +
                                     "\"admin0_count\": \"" + stats.admin0.size() + "\", " +
                                     "\"admin1_count\": \"" + stats.admin1.size() + "\", " +
                                     "\"admin2_count\": \"" + stats.admin2.size() + "\", " +
-                                    "\"mean_tip_divergence\": \"" + stats.meanTipDivergence + "\", " +
-                                    "\"stem_length\": \"" + stats.stemLength + "\", " +
-                                    "\"day_range\": \"" + stats.dateRange + "\", " +
+                                    "\"admin0_mode\": \"" + stats.modalAdmin0 + "\", " +
+                                    "\"admin1_mode\": \"" + stats.modalAdmin1 + "\", " +
+                                    "\"admin2_mode\": \"" + stats.modalAdmin2 + "\", " +
                                     "\"admin1_entropy\": \"" + stats.admin1Entropy + "\", " +
                                     "\"admin2_entropy\": \"" + stats.admin2Entropy + "\", ");
                             List<String> tips = new ArrayList<>();
@@ -154,9 +168,12 @@ public class Discover extends Command {
     private Stats calculateStatistics(RootedTree tree, Node node, double divergence, Map<Node, Stats> nodeStatsMap) {
         Stats stats;
 
-        double length = tree.getLength(node);
+        double length = tree.getLength(node) * GENOME_LENGTH;
         Node parent = tree.getParent(node);
         if (tree.isExternal(node)) {
+//            if (tree.getTaxon(node).getName().contains("QEUH-96DABF")) {
+//                System.out.println("QEUH-96DABF");
+//            }
             stats = new Stats(node,
                     parent,
                     divergence,
@@ -171,7 +188,7 @@ public class Discover extends Command {
             for (Node child : tree.getChildren(node)) {
                 statsList.add(calculateStatistics(tree, child, divergence + length, nodeStatsMap));
             }
-            stats = new Stats(node, parent, divergence, length, statsList);
+            stats = new Stats(node, parent, divergence + length, length, statsList);
         }
 
         nodeStatsMap.put(node, stats);
@@ -183,10 +200,15 @@ public class Discover extends Command {
         public Stats(Node node, Node parent, double divergence, double length, String tip, String date, String admin0, String admin1, String admin2) {
             this.node = node;
             this.parent = parent;
+
             this.divergence = divergence;
             this.stemLength = length;
             this.divergences.add(divergence);
+            this.meanTipDivergence = 0;
+            this.divergenceRatio = 0.0;
+
             dates.add(LocalDate.parse(date, dateFormat));
+            dateRange = 0;
 
             this.admin0.put(admin0 != null ? admin0 : "", 1);
             if (admin0.equalsIgnoreCase("UK")) {
@@ -198,14 +220,15 @@ public class Discover extends Command {
                 ukCount = 0;
                 ukProportion = 0.0;
             }
+            this.modalAdmin0 = null;
+            this.modalAdmin1 = null;
+            this.modalAdmin2 = null;
+            admin1Entropy = 0;
+            admin2Entropy = 0;
 
             tipSet.add(tip);
             tipCount = 1;
 
-            meanTipDivergence = 0;
-            dateRange = 0;
-            admin1Entropy = 0;
-            admin2Entropy = 0;
         }
 
         public Stats(Node node, Node parent, double divergence, double stemLength, Collection<Stats> stats) {
@@ -231,16 +254,32 @@ public class Discover extends Command {
                 tipSet.addAll(s.tipSet);
             }
             dates.sort(Collections.reverseOrder());
+            this.modalAdmin0 = getModal(admin0);
+            this.modalAdmin1 = getModal(admin1);
+            this.modalAdmin2 = getModal(admin2);
 
             tipCount = tipSet.size();
             this.ukCount = ukCount;
             this.ukProportion = ((double)ukCount) / tipCount;
 
             meanTipDivergence = meanDivergence();
+            divergenceRatio = stemLength / meanTipDivergence;
+
             dateRange = (double)ChronoUnit.DAYS.between(getLeastRecentDate(), getMostRecentDate());
             admin1Entropy = entropy(admin1);
             admin2Entropy = entropy(admin2);
+        }
 
+        String getModal(Map<String, Integer> countMap) {
+            int maxCount = 0;
+            String modalKey = "";
+            for (String key : countMap.keySet()) {
+                if (countMap.get(key) > maxCount) {
+                    maxCount = countMap.get(key);
+                    modalKey = key;
+                }
+            }
+            return modalKey;
         }
 
         int getAge() {
@@ -286,6 +325,7 @@ public class Discover extends Command {
         final Node parent;
         final double divergence;
         final double meanTipDivergence;
+        final double divergenceRatio;
         final double stemLength;
         final List<LocalDate> dates = new ArrayList<>();
         final List<Double> divergences = new ArrayList<>();
@@ -294,6 +334,9 @@ public class Discover extends Command {
         final Map<String, Integer> admin0 = new TreeMap<>();
         final Map<String, Integer> admin1 = new TreeMap<>();
         final Map<String, Integer> admin2 = new TreeMap<>();
+        final String modalAdmin0;
+        final String modalAdmin1;
+        final String modalAdmin2;
         final int tipCount;
         final Set<String> tipSet = new HashSet<>();
         final double dateRange;
