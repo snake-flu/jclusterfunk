@@ -16,19 +16,19 @@ import java.util.*;
 /**
  *
  */
-public class Discover extends Command {
+public class GrapevineClusterStats extends Command {
     private final static double GENOME_LENGTH = 29903;
 
     private final static DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public Discover(String treeFileName,
-                    String metadataFileName,
-                    String outputMetadataFileName,
-                    String indexColumn,
-                    int indexHeader,
-                    String headerDelimiter,
-                    boolean ignoreMissing,
-                    boolean isVerbose) {
+    public GrapevineClusterStats(String treeFileName,
+                                 String metadataFileName,
+                                 String outputMetadataFileName,
+                                 String indexColumn,
+                                 int indexHeader,
+                                 String headerDelimiter,
+                                 boolean ignoreMissing,
+                                 boolean isVerbose) {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 

@@ -27,6 +27,7 @@ public class Assign extends Command {
                   int indexHeader,
                   String headerDelimiter,
                   String lineageName,
+                  String outputLineageName,
                   boolean cleanSublineages,
                   boolean ignoreMissing,
                   boolean isVerbose) {
@@ -41,7 +42,7 @@ public class Assign extends Command {
 
         assignNodeLineages(tree, tree.getRootNode(), lineageName);
 
-        assignLineages(tree, tree.getRootNode(), lineageName, null, "new_lineage");
+        assignLineages(tree, tree.getRootNode(), lineageName, null, outputLineageName);
         
         writeTreeFile(tree, outputFileName, outputFormat);
 
@@ -49,12 +50,12 @@ public class Assign extends Command {
             try {
                 PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputMetadataFileName)));
 
-                writer.println("sequence_name," + lineageName);
+                writer.println("sequence_name," + outputLineageName);
 
                 for (Node node : tree.getExternalNodes()) {
                     writer.print(tree.getTaxon(node).getName());
                     writer.print(",");
-                    writer.print(node.getAttribute("new_lineage"));
+                    writer.print(node.getAttribute(outputLineageName));
                     writer.println();
                 }
 

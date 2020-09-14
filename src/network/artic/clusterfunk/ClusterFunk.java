@@ -88,6 +88,7 @@ class ClusterFunk {
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(ATTRIBUTE);
+                        options.addOption(OUT_ATTRIBUTE);
                         break;
                     case CLUSTER:
                         options.addOption(INPUT);
@@ -121,15 +122,6 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
                         break;
-                    case DISCOVER:
-                        options.addOption(INPUT);
-                        options.addOption(METADATA);
-                        options.addOption(OUTPUT_FILE);
-                        options.addOption(INDEX_COLUMN);
-                        options.addOption(INDEX_FIELD);
-                        options.addOption(HEADER_DELIMITER);
-                        options.addOption(IGNORE_MISSING);
-                        break;
                     case DIVIDE:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
@@ -149,6 +141,15 @@ class ClusterFunk {
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
+                        break;
+                    case GRAPEVINE_CLUSTER_STATS:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(IGNORE_MISSING);
                         break;
                     case GRAPEVINE_SUBLINEAGES:
                         options.addOption(INPUT);
@@ -185,18 +186,6 @@ class ClusterFunk {
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(KEEP_TAXA);
-                        break;
-                    case RACCOON_DOG:
-                        options.addOption(INPUT);
-                        options.addOption(METADATA);
-                        options.addOption(OUTPUT_FILE);
-                        options.addOption(OUTPUT_FORMAT);
-                        options.addOption(OUTPUT_METADATA);
-//                        options.addOption(ATTRIBUTE);
-//                        options.addOption(VALUE);
-//                        options.addOption(CLUSTER_NAME);
-//                        options.addOption(CLUSTER_PREFIX);
-//                        options.addOption(MAX_CHILD_LEVEL);
                         break;
                     case RECONSTRUCT:
                         options.addOption(INPUT);
@@ -343,6 +332,7 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
                         commandLine.getOptionValue("attribute"),
+                        commandLine.getOptionValue("out-attribute"),
                         true,
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
@@ -392,17 +382,6 @@ class ClusterFunk {
                         null,
                         isVerbose);
                 break;
-            case DISCOVER:
-                new Discover(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("metadata"),
-                        commandLine.getOptionValue("output"),
-                        commandLine.getOptionValue("id-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
-                        commandLine.hasOption("ignore-missing"),
-                        isVerbose);
-                break;
             case DIVIDE:
                 new Divide(
                         commandLine.getOptionValue("input"),
@@ -447,6 +426,17 @@ class ClusterFunk {
                         commandLine.getOptionValue("value"),
                         commandLine.getOptionValue("cluster-name"),
                         commandLine.getOptionValue("cluster-prefix"),
+                        isVerbose);
+                break;
+            case GRAPEVINE_CLUSTER_STATS:
+                new GrapevineClusterStats(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
             case GRAPEVINE_SUBLINEAGES:

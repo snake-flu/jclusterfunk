@@ -16,14 +16,13 @@ class ClusterFunkOptions {
         SUBCLUSTER("subcluster", "split existing clusters into subclusters."),
         CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
         CONVERT("convert", "Convert tree from one format to another."),
-        DISCOVER("discover", "Find new clusters and outbreaks"),
         DIVIDE("divide", "Divide tree into approximately equal sized subtrees."),
         INSERT("insert", "Insert tips into the tree."),
         JOIN("join", "Join up previously divided subtrees."),
         GRAPEVINE_ASSIGN_LINEAGES("grapevine-assign-lineages", "Assign UK tips without lineages to a UK lineage."),
+        GRAPEVINE_CLUSTER_STATS("grapevine-cluster-stats", "Write out stats for all clusters"),
         GRAPEVINE_SUBLINEAGES("grapevine-sublineages", "split existing UK lineages into sub-lineages."),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
-        RACCOON_DOG("raccoon-dog", "CoG-UK lineage designations."),
         RECONSTRUCT("reconstruct", "Reconstruct internal node annotations."),
         REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
         //        REROOT("reroot", "Re-root the tree using an outgroup."),
@@ -196,6 +195,15 @@ class ClusterFunkOptions {
             .required(false)
             .desc("the cluster prefix (default = just a number)")
             .type(String.class).build();
+
+    final static Option OUT_ATTRIBUTE = Option.builder()
+            .longOpt("out-attribute")
+            .argName("name")
+            .hasArg()
+            .required(true)
+            .desc("the new attribute name in output")
+            .type(String.class).build();
+
 
     final static Option LABEL_FIELDS = Option.builder()
             .longOpt("label-fields")
