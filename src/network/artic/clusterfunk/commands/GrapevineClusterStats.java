@@ -32,15 +32,15 @@ public class GrapevineClusterStats extends Command {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
-        int minSize = 4;
-        int maxAge = 60;
+        int minSize = 10;
+        int maxAge = 1000;
         double minUKProportion = 0.95;
 
         RootedTree tree = readTree(treeFileName);
 
         Map<Taxon, String> taxonMap = getTaxonMap(tree);
 
-        String[] annotationColumns = new String[] { "sample_date", "country", "adm1", "adm2" };
+        String[] annotationColumns = new String[] { "sample_date", "country", "adm1", "adm2", "lineage", "uk_lineage" };
 
         for (String columnName: annotationColumns) {
             annotateTips(tree, taxonMap, columnName, ignoreMissing);
@@ -83,7 +83,7 @@ public class GrapevineClusterStats extends Command {
                 if (outputMetadataFileName.endsWith("csv")) {
                     writer.println("node_number,parent_number,most_recent_tip,day_range,recency,age," +
                             "tip_count,divergence_ratio,mean_tip_divergence,stem_length," +
-                            "proportion_uk,admin0_count,admin1_count,admin2_count," +
+                            "lineage,uk_lineage,proportion_uk,admin0_count,admin1_count,admin2_count," +
                             "admin0_mode,admin1_mode,admin2_mode," +
                             "admin1_entropy,admin2_entropy,tips");
                     for (Stats stats : internalNodeStats) {
@@ -99,6 +99,8 @@ public class GrapevineClusterStats extends Command {
                                             stats.divergenceRatio + "," +
                                             stats.meanTipDivergence + "," +
                                             stats.stemLength + "," +
+                                            stats.modalLineage + "," +
+                                            stats.modalUKLineage + "," +
                                             stats.ukProportion + "," +
                                             stats.admin0.size() + "," +
                                             stats.admin1.size() + "," +
@@ -136,6 +138,8 @@ public class GrapevineClusterStats extends Command {
                                     "\"stem_length\": \"" + stats.stemLength + "\", " +
                                     "\"mean_tip_divergence\": \"" + stats.meanTipDivergence + "\", " +
                                     "\"divergence_ratio\": \"" + stats.divergenceRatio + "\", " +
+                                    "\"lineage\": \"" + stats.modalLineage + "\", " +
+                                    "\"uk_lineage\": \"" + stats.modalUKLineage + "\", " +
                                     "\"proportion_uk\": \"" + stats.ukProportion + "\", " +
                                     "\"admin0_count\": \"" + stats.admin0.size() + "\", " +
                                     "\"admin1_count\": \"" + stats.admin1.size() + "\", " +
@@ -182,7 +186,10 @@ public class GrapevineClusterStats extends Command {
                     (String)node.getAttribute("sample_date"),
                     (String)node.getAttribute("country"),
                     (String)node.getAttribute("adm1"),
-                    (String)node.getAttribute("adm2"));
+                    (String)node.getAttribute("adm2"),
+                    (String)node.getAttribute("lineage"),
+                    (String)node.getAttribute("uk_lineage")
+            );
         } else {
             List<Stats> statsList = new ArrayList<>();
             for (Node child : tree.getChildren(node)) {
@@ -197,7 +204,8 @@ public class GrapevineClusterStats extends Command {
     }
 
     class Stats {
-        public Stats(Node node, Node parent, double divergence, double length, String tip, String date, String admin0, String admin1, String admin2) {
+        public Stats(Node node, Node parent, double divergence, double length, String tip, String date,
+                     String admin0, String admin1, String admin2, String lineage, String ukLineage) {
             this.node = node;
             this.parent = parent;
 
@@ -211,11 +219,13 @@ public class GrapevineClusterStats extends Command {
             dateRange = 0;
 
             this.admin0.put(admin0 != null ? admin0 : "", 1);
+            this.lineage.put(lineage != null ? lineage : "", 1);
             if (admin0.equalsIgnoreCase("UK")) {
                 ukCount = 1;
                 ukProportion = 1.0;
                 this.admin1.put(admin1 != null ? admin1 : "", 1);
                 this.admin2.put(admin2 != null ? admin2 : "", 1);
+                this.ukLineage.put(ukLineage != null ? ukLineage : "", 1);
             } else {
                 ukCount = 0;
                 ukProportion = 0.0;
@@ -223,6 +233,8 @@ public class GrapevineClusterStats extends Command {
             this.modalAdmin0 = null;
             this.modalAdmin1 = null;
             this.modalAdmin2 = null;
+            this.modalLineage = null;
+            this.modalUKLineage = null;
             admin1Entropy = 0;
             admin2Entropy = 0;
 
@@ -251,20 +263,30 @@ public class GrapevineClusterStats extends Command {
                 for (String admin2 : s.admin2.keySet()) {
                     this.admin2.put(admin2, this.admin2.getOrDefault(admin2, 0) + s.admin2.get(admin2));
                 }
+                for (String lineage : s.lineage.keySet()) {
+                    this.lineage.put(lineage, this.lineage.getOrDefault(lineage, 0) + s.lineage.get(lineage));
+                }
+                for (String ukLineage : s.ukLineage.keySet()) {
+                    this.ukLineage.put(ukLineage, this.ukLineage.getOrDefault(ukLineage, 0) + s.ukLineage.get(ukLineage));
+                }
                 tipSet.addAll(s.tipSet);
             }
             dates.sort(Collections.reverseOrder());
             this.modalAdmin0 = getModal(admin0);
             this.modalAdmin1 = getModal(admin1);
             this.modalAdmin2 = getModal(admin2);
+            this.modalLineage = getModal(lineage);
+            this.modalUKLineage = getModal(ukLineage);
 
             tipCount = tipSet.size();
             this.ukCount = ukCount;
             this.ukProportion = ((double)ukCount) / tipCount;
 
             meanTipDivergence = meanDivergence();
-            divergenceRatio = stemLength / meanTipDivergence;
-
+            divergenceRatio = stemLength / (meanTipDivergence + 1);
+            if (Double.isInfinite(divergenceRatio)) {
+                System.out.println("inf");
+            }
             dateRange = (double)ChronoUnit.DAYS.between(getLeastRecentDate(), getMostRecentDate());
             admin1Entropy = entropy(admin1);
             admin2Entropy = entropy(admin2);
@@ -334,9 +356,13 @@ public class GrapevineClusterStats extends Command {
         final Map<String, Integer> admin0 = new TreeMap<>();
         final Map<String, Integer> admin1 = new TreeMap<>();
         final Map<String, Integer> admin2 = new TreeMap<>();
+        final Map<String, Integer> lineage = new TreeMap<>();
+        final Map<String, Integer> ukLineage = new TreeMap<>();
         final String modalAdmin0;
         final String modalAdmin1;
         final String modalAdmin2;
+        final String modalLineage;
+        final String modalUKLineage;
         final int tipCount;
         final Set<String> tipSet = new HashSet<>();
         final double dateRange;
