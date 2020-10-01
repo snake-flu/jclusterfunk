@@ -164,6 +164,12 @@ class ClusterFunkOptions {
             .desc("output a metadata file to match the output tree")
             .type(String.class).build();
 
+    final static Option OUTPUT_TAXA = Option.builder()
+            .longOpt("output-taxa")
+            .required(false)
+            .desc("output a text file of taxon names to match each output tree")
+            .type(String.class).build();
+
     final static Option ATTRIBUTE = Option.builder()
             .longOpt("attribute")
             .argName("attribute_name")
@@ -219,6 +225,12 @@ class ClusterFunkOptions {
             .hasArgs()
             .required(false)
             .desc("a list of metadata columns to add as tip attributes")
+            .type(String.class).build();
+
+    final static Option MRCA = Option.builder()
+            .longOpt("mrca")
+            .required(false)
+            .desc("include the entire clade from the MRCA of the target taxa")
             .type(String.class).build();
 
     final static Option MAX_PARENT_LEVEL = Option.builder()

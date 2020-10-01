@@ -4,6 +4,7 @@ import jebl.evolution.graphs.Node;
 import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.RootedSubtree;
 import jebl.evolution.trees.RootedTree;
+import jebl.evolution.trees.RootedTreeUtils;
 import jebl.evolution.trees.SimpleRootedTree;
 import network.artic.clusterfunk.FormatType;
 import org.apache.commons.csv.CSVRecord;
@@ -27,9 +28,11 @@ public class Context extends Command {
                    String outputPath,
                    String outputFileStem,
                    FormatType outputFormat,
+                   boolean outputTaxa,
                    String indexColumn,
                    int indexHeader,
                    String headerDelimiter,
+                   boolean mrca,
                    int maxParentLevel,
                    int maxChildLevel,
                    int maxSiblingCount,
@@ -52,14 +55,12 @@ public class Context extends Command {
         String path = checkOutputPath(outputPath);
 
         if (!ignoreMissing && taxa != null) {
-            if (taxa != null) {
                 for (String key : taxa) {
                     if (!taxonMap.containsValue(key)) {
                         errorStream.println("Taxon, " + key + ", not found in tree");
                         System.exit(1);
                     }
                 }
-            }
 
             for (String key : targetTaxaList) {
                 if (!taxonMap.containsValue(key)) {
@@ -81,7 +82,12 @@ public class Context extends Command {
 
         Map<Node, Subtree> subtreeMap = new HashMap<>();
 
-        annotateContext(tree, targetTips, maxParentLevel);
+        if (!mrca) {
+            annotateContext(tree, targetTips, maxParentLevel);
+        } else {
+            Node node = RootedTreeUtils.getCommonAncestorNode(tree, targetTips);
+            node.setAttribute("include", true);
+        }
 
         collectSubtrees(tree, tree.getRootNode(), false, subtreeMap);
 
@@ -93,7 +99,7 @@ public class Context extends Command {
 
         createSubtrees(tree, subtreeMap, maxSiblingCount, collapsedNodeMap);
 
-        writeSubtrees(subtreeMap, path, outputFileStem, outputFormat);
+        writeSubtrees(subtreeMap, path, outputFileStem, outputFormat, outputTaxa);
 
         writeCollapsedNodes(collapsedNodeMap, path, outputFileStem);
     }
@@ -241,7 +247,8 @@ public class Context extends Command {
     /**
      * Write all the subtrees...
      */
-    void writeSubtrees(Map<Node, Subtree> subtreeMap, String outputPath, String outputFileStem, FormatType outputFormat) {
+    void writeSubtrees(Map<Node, Subtree> subtreeMap, String outputPath, String outputFileStem, FormatType outputFormat,
+                       boolean outputTaxa) {
 
 
         for (Node key : subtreeMap.keySet()) {
@@ -251,7 +258,18 @@ public class Context extends Command {
             if (isVerbose) {
                 outStream.println("Writing subtree file: " + fileName);
             }
+
             writeTreeFile(subtree.tree, fileName, outputFormat);
+
+            if (outputTaxa) {
+                List<String> taxa = new ArrayList<>();
+
+                for (Taxon taxon : subtree.tree.getTaxa()) {
+                    taxa.add(taxon.getName());
+                }
+                String metadataFileName = outputPath + outputFileStem + subtree.name + ".csv";
+                writeTextFile(taxa, metadataFileName);
+            }
         }
     }
 
