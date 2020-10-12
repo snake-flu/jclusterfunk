@@ -66,16 +66,6 @@ public class GrapevineClusterStats extends Command {
 
         internalNodeStats.sort(Comparator.comparing(Stats::getMostRecentDate));
 
-//        for (Stats stats : internalNodeStats) {
-//            StringBuilder sb = new StringBuilder();
-//            sb.append(stats.getMostRecentDate().toString()).append("\t");
-//            sb.append(stats.tipCount).append("\t");
-//            sb.append(stats.admin0.size()).append("\t");
-//            sb.append(stats.admin1.size()).append("\t");
-//            sb.append(stats.admin2.size());
-//            outStream.println(sb.toString());
-//        }
-
         if (outputMetadataFileName != null) {
             try {
                 PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputMetadataFileName)));
@@ -284,9 +274,6 @@ public class GrapevineClusterStats extends Command {
 
             meanTipDivergence = meanDivergence();
             divergenceRatio = stemLength / (meanTipDivergence + 1);
-            if (Double.isInfinite(divergenceRatio)) {
-                System.out.println("inf");
-            }
             dateRange = (double)ChronoUnit.DAYS.between(getLeastRecentDate(), getMostRecentDate());
             admin1Entropy = entropy(admin1);
             admin2Entropy = entropy(admin2);
