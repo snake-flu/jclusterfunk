@@ -109,9 +109,11 @@ class ClusterFunk {
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_TAXA);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
+                        options.addOption(MRCA);
                         options.addOption(MAX_PARENT_LEVEL);
                         options.addOption(MAX_CHILD_LEVEL);
                         options.addOption(MAX_SIBLING);
@@ -359,9 +361,11 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("prefix"),
                         format,
+                        commandLine.hasOption("output-taxa"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.hasOption("mrca"),
                         Integer.parseInt(commandLine.getOptionValue("max-parent", "1")),
                         Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
                         Integer.parseInt(commandLine.getOptionValue("max-siblings", "0")),
@@ -436,6 +440,11 @@ class ClusterFunk {
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
+                        10,
+                        90,
+                        0,
+                        GrapevineClusterStats.Criterion.RECENCY,
+                        false,
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;

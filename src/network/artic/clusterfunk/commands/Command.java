@@ -626,6 +626,27 @@ abstract class Command {
     }
 
     /**
+     * Writes a text file
+     * @param lines
+     * @param fileName
+     */
+     static void writeTextFile(List<String> lines, String fileName) {
+        try {
+            PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(fileName)));
+
+            for (String line : lines) {
+                writer.println(line);
+            }
+
+            writer.close();
+        } catch (IOException e) {
+            errorStream.println("Error writing text file: " + e.getMessage());
+            System.exit(1);
+        }
+
+    }
+
+    /**
      * When ever a change in the value of a given attribute occurs at a node, writes out a subtree from that node
      * @param tree
      * @param attributeName
