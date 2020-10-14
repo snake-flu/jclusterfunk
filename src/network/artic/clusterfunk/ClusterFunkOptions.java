@@ -265,6 +265,14 @@ class ClusterFunkOptions {
             .desc("minimum number of tips in a subcluster (default = 10)")
             .type(Integer.class).build();
 
+    final static Option MAX_CLUSTER_SIZE = Option.builder()
+            .longOpt("max-size")
+            .argName("size")
+            .hasArg()
+            .required(false)
+            .desc("maximum number of tips in a subcluster (default = none)")
+            .type(Integer.class).build();
+
     final static Option MIN_SUBTREE_SIZE = Option.builder()
             .longOpt("min-size")
             .argName("size")
@@ -280,6 +288,38 @@ class ClusterFunkOptions {
             .required(false)
             .desc("maximum number of subtrees")
             .type(Integer.class).build();
+
+    final static Option MAX_CLUSTER_AGE = Option.builder()
+            .longOpt("max-age")
+            .argName("days")
+            .hasArg()
+            .required(false)
+            .desc("maximum age of a cluster")
+            .type(Integer.class).build();
+
+    final static Option MAX_CLUSTER_RECENCY = Option.builder()
+            .longOpt("max-recency")
+            .argName("days")
+            .hasArg()
+            .required(false)
+            .desc("maximum recency of a cluster")
+            .type(Integer.class).build();
+
+    final static Option MIN_UK = Option.builder()
+            .longOpt("min-UK")
+            .argName("proportion")
+            .hasArg()
+            .required(false)
+            .desc("minimum proportion of UK tips")
+            .type(Integer.class).build();
+
+    final static Option CRITERION = Option.builder()
+            .longOpt("criterion")
+            .argName("name")
+            .hasArg()
+            .required(false)
+            .desc("optimization criterion")
+            .type(String.class).build();
 
     final static Option MIDPOINT = Option.builder()
             .longOpt("midpoint")

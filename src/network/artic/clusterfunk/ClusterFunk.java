@@ -151,6 +151,11 @@ class ClusterFunk {
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
+                        options.addOption(MIN_CLUSTER_SIZE);
+//                        options.addOption(MAX_CLUSTER_SIZE);
+                        options.addOption(MAX_CLUSTER_AGE);
+                        options.addOption(MAX_CLUSTER_RECENCY);
+                        options.addOption(MIN_UK);
                         options.addOption(IGNORE_MISSING);
                         break;
                     case GRAPEVINE_SUBLINEAGES:
@@ -440,11 +445,12 @@ class ClusterFunk {
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
-                        10,
-                        90,
-                        0,
-                        GrapevineClusterStats.Criterion.RECENCY,
-                        false,
+                        Integer.parseInt(commandLine.getOptionValue("min-size", "10")),
+                        Integer.parseInt(commandLine.getOptionValue("max-age", "90")),
+                        Integer.parseInt(commandLine.getOptionValue("max-recency", "0")),
+                        Integer.parseInt(commandLine.getOptionValue("min-UK", "0.5")),
+                        GrapevineClusterStats.Criterion.GROWTH_RATE,
+                        GrapevineClusterStats.Optimization.NONE,
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
