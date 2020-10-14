@@ -144,6 +144,16 @@ class ClusterFunk {
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         break;
+                    case GRAPEVINE_ASSIGN_HAPLOTYPES:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(IGNORE_MISSING);
+                        break;
                     case GRAPEVINE_CLUSTER_STATS:
                         options.addOption(INPUT);
                         options.addOption(METADATA);
@@ -435,6 +445,19 @@ class ClusterFunk {
                         commandLine.getOptionValue("value"),
                         commandLine.getOptionValue("cluster-name"),
                         commandLine.getOptionValue("cluster-prefix"),
+                        isVerbose);
+                break;
+            case GRAPEVINE_ASSIGN_HAPLOTYPES:
+                new GrapevineAssignHaplotypes(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("attribute"),
+                        commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
             case GRAPEVINE_CLUSTER_STATS:
