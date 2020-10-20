@@ -137,9 +137,9 @@ class ClusterFunk {
                     case GRAPEVINE_ASSIGN_LINEAGES:
                         options.addOption(INPUT);
                         options.addOption(METADATA);
-                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
-                        options.addOption(OUTPUT_METADATA);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
@@ -148,6 +148,7 @@ class ClusterFunk {
                         options.addOption(INPUT);
                         options.addOption(METADATA);
                         options.addOption(OUTPUT_FILE);
+                        options.addOption(MIN_CLUSTER_SIZE);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
@@ -155,9 +156,10 @@ class ClusterFunk {
                         break;
                     case GRAPEVINE_SUBLINEAGES:
                         options.addOption(INPUT);
-                        options.addOption(METADATA);
-                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
                         options.addOption(MIN_CLUSTER_SIZE);
                         break;
                     case INSERT:
@@ -440,7 +442,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
-                        10,
+                        Integer.parseInt(commandLine.getOptionValue("min-size", "5")),
                         90,
                         0,
                         GrapevineClusterStats.Criterion.RECENCY,
@@ -452,6 +454,7 @@ class ClusterFunk {
                 new GrapevineSublineages(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("prefix"),
                         format,
                         Integer.parseInt(commandLine.getOptionValue("min-size", "50")),
                         isVerbose);

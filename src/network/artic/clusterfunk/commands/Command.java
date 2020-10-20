@@ -459,14 +459,31 @@ abstract class Command {
         for (Node tip : tree.getExternalNodes()) {
             Object value = tip.getAttribute(attributeName);
             if (value != null) {
-                Set<Node> tips = attributeValues.computeIfAbsent(value, k -> new HashSet<>());
+                Set<Node> tips = attributeValues.getOrDefault(value, new HashSet<>());
                 tips.add(tip);
             }
         }
         return attributeValues;
     }
 
-
+    static Map<Object, Integer> getTipAttributes(RootedTree tree, Node node, String attributeName) {
+        Set<Node> tips = collectTips(tree, node);
+        Map<Object, Integer> attributeCounts = new HashMap<>();
+        for (Node tip: tips) {
+            String lineage = (String)tip.getAttribute(attributeName);
+            if (lineage != null) {
+                int count = attributeCounts.getOrDefault(lineage, 0);
+                attributeCounts.put(lineage, count + 1);
+            }
+        }
+        Map<Object, Integer> sortedCounts = attributeCounts
+                .entrySet()
+                .stream()
+                .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                .collect(
+                        toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
+        return sortedCounts;
+    }
 
     static String getMostCommonAttribute(RootedTree tree, Node node, String attributeName) {
         Set<Node> tips = collectTips(tree, node);
