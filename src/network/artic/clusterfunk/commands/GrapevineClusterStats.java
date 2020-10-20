@@ -97,6 +97,9 @@ public class GrapevineClusterStats extends Command {
         Set<Node> optimumCriterionNodes = new HashSet<>();
 
         if (optimization != Optimization.NONE) {
+            if (isVerbose) {
+                outStream.println("Optimising for criterion: " + criterion.toString());
+            }
             for (Node tip : tree.getExternalNodes()) {
                 Node node = tree.getParent(tip);
                 double optimumCriterion = (optimization == Optimization.MINIMUM ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY);
