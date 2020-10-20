@@ -6,6 +6,7 @@ import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -32,20 +33,28 @@ public class GrapevineAssignHaplotypes extends Command {
         if (outputFormat != FormatType.NEXUS) {
             errorStream.println("Annotations are only compatible with NEXUS output format");
             System.exit(1);
-        }
+        }                                                           
 
         RootedTree tree = readTree(treeFileName);
 
-        annotateTips(tree, getTaxonMap(tree), annotationName,ignoreMissing);
+        if (annotationName == null) {
+            annotationName = "sequence_hash";
+        }
+        
+        annotateTips(tree, getTaxonMap(tree), annotationName, ignoreMissing);
 
         if (isVerbose) {
             outStream.println("Attribute: " + annotationName);
             outStream.println();
         }
 
-        labelInternalNodes(tree, annotationName);
+        int labelledCount = labelInternalNodes(tree, annotationName);
 
         if (isVerbose) {
+            outStream.println("Internal nodes: " + tree.getInternalNodes().size());
+            outStream.println("Labelled with haplotype: " + labelledCount);
+            outStream.println();
+
             outStream.println("Writing tree file, " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
             outStream.println();
         }
@@ -59,25 +68,38 @@ public class GrapevineAssignHaplotypes extends Command {
      * @param tree
      * @param attributeName
      */
-    private void labelInternalNodes(RootedTree tree, String attributeName) {
+    private int labelInternalNodes(RootedTree tree, String attributeName) {
+        int count = 0;
         for (Node node : tree.getInternalNodes()) {
-            Set<String> haplotypeSet = new HashSet<>();
+            Map<String, Integer> haplotypes = new HashMap<>();
             for (Node child : tree.getChildren(node)) {
                 if (tree.isExternal(child)) {
                     if (tree.getLength(child) < ZERO_BRANCH_THRESHOLD) {
-                        haplotypeSet.add( (String)node.getAttribute(attributeName));
+                        String hap = (String)child.getAttribute(attributeName);
+                        haplotypes.put(hap, haplotypes.getOrDefault(hap, 0) + 1);
                     }
                 }
             }
 
-            if (haplotypeSet.size() > 0) {
-                String haplotypeHash = haplotypeSet.iterator().next();
-                if (haplotypeSet.size() > 1) {
-                    errorStream.println("multiple haplotypes on internal node");
-                }
+            // order by frequency
+            LinkedHashMap<String, Integer> reversed = new LinkedHashMap<>();
+            haplotypes.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                    .forEachOrdered(x -> reversed.put(x.getKey(), x.getValue()));
+
+
+            if (haplotypes.size() > 0) {
+                // get the most frequent
+                String haplotypeHash = reversed.keySet().iterator().next();
+//                if (haplotypes.size() > 1) {
+//                    errorStream.println("multiple haplotypes on internal node");
+//                }
                 node.setAttribute(attributeName, haplotypeHash);
+                count += 1;
             }
         }
+        return count;
     }
 
     /**

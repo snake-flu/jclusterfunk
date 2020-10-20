@@ -153,6 +153,7 @@ class ClusterFunk {
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(IGNORE_MISSING);
+                        options.addOption(ATTRIBUTE);
                         break;
                     case GRAPEVINE_CLUSTER_STATS:
                         options.addOption(INPUT);
