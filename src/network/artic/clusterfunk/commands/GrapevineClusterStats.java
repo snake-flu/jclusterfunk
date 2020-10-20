@@ -80,6 +80,12 @@ public class GrapevineClusterStats extends Command {
             i += 1;
         }
 
+        if (isVerbose) {
+            outStream.println("   Min cluster size: " + minSize);
+            outStream.println("    Max cluster age: " + maxAge);
+            outStream.println("Max cluster recency: " + maxRecency);
+            outStream.println("  Min UK proportion: " + minUKProportion);
+        }
 
         Map<Node, Stats> nodeStatsMap = new HashMap<>();
 

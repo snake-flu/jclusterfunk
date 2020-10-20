@@ -474,7 +474,7 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("min-size", "10")),
                         Integer.parseInt(commandLine.getOptionValue("max-age", "90")),
                         Integer.parseInt(commandLine.getOptionValue("max-recency", "0")),
-                        Integer.parseInt(commandLine.getOptionValue("min-UK", "0.5")),
+                        Double.parseDouble(commandLine.getOptionValue("min-UK", "0.5")),
                         GrapevineClusterStats.Criterion.GROWTH_RATE,
                         GrapevineClusterStats.Optimization.NONE,
                         commandLine.hasOption("ignore-missing"),
