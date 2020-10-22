@@ -469,6 +469,10 @@ class ClusterFunk {
             case POLECAT:
                 Polecat.Optimization optimization = Polecat.Optimization.MAXIMUM;
                 Polecat.Criterion optimizationCriterion = Polecat.Criterion.getValue(commandLine.getOptionValue("optimize-by", "growth-rate"));
+                if (optimizationCriterion == null) {
+                    System.err.println("Unrecognized optimize-by criterion: " + commandLine.getOptionValue("optimize-by"));
+                    System.exit(1);
+                }
                 Polecat.Optimization ranking = Polecat.Optimization.MAXIMUM;
                 String rankBy = commandLine.getOptionValue("rank-by", "^recency");
                 if (rankBy.startsWith("^")) {
@@ -476,6 +480,10 @@ class ClusterFunk {
                     rankBy = rankBy.substring(1);
                 }
                 Polecat.Criterion rankCiterion = Polecat.Criterion.getValue(rankBy);
+                if (rankCiterion == null) {
+                    System.err.println("Unrecognized rank-by criterion: " + commandLine.getOptionValue("rank-by"));
+                    System.exit(1);
+                }
 
                 new Polecat(
                         commandLine.getOptionValue("input"),
