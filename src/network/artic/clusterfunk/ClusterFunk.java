@@ -14,7 +14,7 @@ import static network.artic.clusterfunk.ClusterFunkOptions.*;
 class ClusterFunk {
 
     private final static String NAME = "jclusterfunk";
-    private static final String VERSION = "v0.0.4";
+    private static final String VERSION = "v0.0.5";
     private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
@@ -155,21 +155,6 @@ class ClusterFunk {
                         options.addOption(IGNORE_MISSING);
                         options.addOption(ATTRIBUTE);
                         break;
-                    case GRAPEVINE_CLUSTER_STATS:
-                        options.addOption(INPUT);
-                        options.addOption(METADATA);
-                        options.addOption(OUTPUT_FILE);
-                        options.addOption(MIN_CLUSTER_SIZE);
-                        options.addOption(INDEX_COLUMN);
-                        options.addOption(INDEX_FIELD);
-                        options.addOption(HEADER_DELIMITER);
-                        options.addOption(MIN_CLUSTER_SIZE);
-//                        options.addOption(MAX_CLUSTER_SIZE);
-                        options.addOption(MAX_CLUSTER_AGE);
-                        options.addOption(MAX_CLUSTER_RECENCY);
-                        options.addOption(MIN_UK);
-                        options.addOption(IGNORE_MISSING);
-                        break;
                     case GRAPEVINE_SUBLINEAGES:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
@@ -193,6 +178,24 @@ class ClusterFunk {
                         options.addOption(INPUT_PATH);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
+                        break;
+                    case POLECAT:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(MIN_CLUSTER_SIZE);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(MIN_CLUSTER_SIZE);
+                        options.addOption(MAX_CLUSTER_SIZE);
+                        options.addOption(MAX_CLUSTER_AGE);
+                        options.addOption(MAX_CLUSTER_RECENCY);
+                        options.addOption(MIN_UK);
+                        options.addOption(OPTIMIZE_BY);
+                        options.addOption(RANK_BY);
+                        options.addOption(MAX_CLUSTER_COUNT);
+                        options.addOption(IGNORE_MISSING);
                         break;
                     case PRUNE:
                         options.addOption(INPUT);
@@ -463,8 +466,18 @@ class ClusterFunk {
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
-            case GRAPEVINE_CLUSTER_STATS:
-                new GrapevineClusterStats(
+            case POLECAT:
+                Polecat.Optimization optimization = Polecat.Optimization.MAXIMUM;
+                Polecat.Criterion optimizationCriterion = Polecat.Criterion.getValue(commandLine.getOptionValue("optimize-by", "growth-rate"));
+                Polecat.Optimization ranking = Polecat.Optimization.MAXIMUM;
+                String rankBy = commandLine.getOptionValue("rank-by", "^recency");
+                if (rankBy.startsWith("^")) {
+                    ranking = Polecat.Optimization.MINIMUM;
+                    rankBy = rankBy.substring(1);
+                }
+                Polecat.Criterion rankCiterion = Polecat.Criterion.getValue(rankBy);
+
+                new Polecat(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
                         commandLine.getOptionValue("output"),
@@ -472,11 +485,15 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
                         Integer.parseInt(commandLine.getOptionValue("min-size", "10")),
+                        Integer.parseInt(commandLine.getOptionValue("max-size", "-1")),
                         Integer.parseInt(commandLine.getOptionValue("max-age", "90")),
                         Integer.parseInt(commandLine.getOptionValue("max-recency", "-1")),
                         Double.parseDouble(commandLine.getOptionValue("min-UK", "0.5")),
-                        GrapevineClusterStats.Criterion.GROWTH_RATE,
-                        GrapevineClusterStats.Optimization.MAXIMUM,
+                        optimization,
+                        optimizationCriterion,
+                        ranking,
+                        rankCiterion,
+                        Integer.parseInt(commandLine.getOptionValue("max-count", "-1")),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;

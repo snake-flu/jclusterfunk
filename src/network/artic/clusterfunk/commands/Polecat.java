@@ -16,7 +16,7 @@ import java.util.*;
 /**
  *
  */
-public class GrapevineClusterStats extends Command {
+public class Polecat extends Command {
     public enum Optimization {
         MAXIMUM,
         MINIMUM,
@@ -30,12 +30,35 @@ public class GrapevineClusterStats extends Command {
         ADMIN1_COUNT("region-count"),
         ADMIN2_ENTROPY("location-entropy"),
         ADMIN2_COUNT("location-count"),
-        DATE_RANGE("span"),
+        DATE_SPAN("date-span"),
         RECENCY("recency"),
         AGE("age");
 
         Criterion(String name) {
             this.name = name;
+        }
+
+        public static Criterion getValue(String label) {
+            for (Criterion criterion : Criterion.values()) {
+                if (criterion.name.equals(label.toLowerCase())) {
+                    return criterion;
+                }
+            }
+            return null;
+        }
+
+        public static String getValuesString() {
+            StringBuilder sb = new StringBuilder();
+            boolean first = true;
+            for (Criterion criterion : Criterion.values()) {
+                if (!first) {
+                    sb.append(',');
+                } else {
+                    first = false;
+                }
+                sb.append(criterion.name);
+            }
+            return sb.toString();
         }
 
         final String name;
@@ -47,20 +70,24 @@ public class GrapevineClusterStats extends Command {
 
     private final static DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public GrapevineClusterStats(String treeFileName,
-                                 String metadataFileName,
-                                 String outputMetadataFileName,
-                                 String indexColumn,
-                                 int indexHeader,
-                                 String headerDelimiter,
-                                 int minSize,
-                                 int maxAge,
-                                 int maxRecency,
-                                 double minUKProportion,
-                                 Criterion criterion,
-                                 Optimization optimization,
-                                 boolean ignoreMissing,
-                                 boolean isVerbose) {
+    public Polecat(String treeFileName,
+                   String metadataFileName,
+                   String outputMetadataFileName,
+                   String indexColumn,
+                   int indexHeader,
+                   String headerDelimiter,
+                   int minSize,
+                   int maxSize,
+                   int maxAge,
+                   int maxRecency,
+                   double minUKProportion,
+                   Optimization optimization,
+                   Criterion optimizationCriterion,
+                   Optimization ranking,
+                   Criterion rankCiterion,
+                   int maxClusterCount,
+                   boolean ignoreMissing,
+                   boolean isVerbose) {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
@@ -100,11 +127,12 @@ public class GrapevineClusterStats extends Command {
 //
 //        internalNodeStats.sort(Comparator.comparing(Stats::getMostRecentDate));
 
-        Set<Node> optimumCriterionNodes = new HashSet<>();
+        Set<Node> includeNodes = new HashSet<>();
 
         if (optimization != Optimization.NONE) {
             if (isVerbose) {
-                outStream.println("Optimising for criterion: " + criterion.toString());
+                outStream.println();
+                outStream.println("Optimising for criterion: " + optimizationCriterion.name);
             }
             for (Node tip : tree.getExternalNodes()) {
                 Node node = tree.getParent(tip);
@@ -113,7 +141,7 @@ public class GrapevineClusterStats extends Command {
                 while (node != null) {
                     Stats stats = nodeStatsMap.get(node);
                     double crit = 0.0;
-                    switch (criterion) {
+                    switch (optimizationCriterion) {
                         case GROWTH_RATE:
                             crit = stats.growthRate;
                             break;
@@ -132,7 +160,7 @@ public class GrapevineClusterStats extends Command {
                         case ADMIN2_COUNT:
                             crit = stats.admin2.size();
                             break;
-                        case DATE_RANGE:
+                        case DATE_SPAN:
                             crit = stats.dateRange;
                             break;
                         case RECENCY:
@@ -142,7 +170,7 @@ public class GrapevineClusterStats extends Command {
                             crit = stats.getAge();
                             break;
                         default:
-                            throw new IllegalStateException("Unexpected value: " + criterion);
+                            throw new IllegalStateException("Unexpected value: " + optimizationCriterion);
                     }
                     if ((optimization == Optimization.MAXIMUM && crit >= optimumCriterion) || (optimization == Optimization.MINIMUM && crit <= optimumCriterion)) {
                         optimumCriterion = crit;
@@ -154,133 +182,123 @@ public class GrapevineClusterStats extends Command {
                 }
 
                 if (optimumNode != null) {
-                    optimumCriterionNodes.add(optimumNode);
+                    includeNodes.add(optimumNode);
                 }
             }
+        } else {
+            includeNodes.addAll(nodeStatsMap.keySet());
         }
 
         List<Stats> nodeStats = new ArrayList<>();
-        if (optimization == Optimization.NONE) {
-            for (Node key : nodeStatsMap.keySet()) {
-                nodeStats.add(nodeStatsMap.get(key));
-            }
-
-        } else {
-            for (Node key : optimumCriterionNodes) {
-                nodeStats.add(nodeStatsMap.get(key));
-            }
+        for (Node key : includeNodes) {
+            nodeStats.add(nodeStatsMap.get(key));
         }
 
-        nodeStats.sort(Comparator.comparing(Stats::getMostRecentDate));
+        Comparator<Stats> comparator;
+        if (ranking != Optimization.NONE) {
+            if (isVerbose) {
+                outStream.println();
+                outStream.println("Ranking by criterion: " + rankCiterion.name);
+            }
+            switch (rankCiterion) {
+                case GROWTH_RATE:
+                    comparator = Comparator.comparing(Stats::getGrowthRate);
+                    break;
+                case IDENTICAL_COUNT:
+                    comparator = Comparator.comparing(Stats::getIdenticalCount);
+                    break;
+                case ADMIN1_ENTROPY:
+                    comparator = Comparator.comparing(Stats::getAdmin1Entropy);
+                    break;
+                case ADMIN1_COUNT:
+                    comparator = Comparator.comparing(Stats::getAdmin1Count);
+                    break;
+                case ADMIN2_ENTROPY:
+                    comparator = Comparator.comparing(Stats::getAdmin2Entropy);
+                    break;
+                case ADMIN2_COUNT:
+                    comparator = Comparator.comparing(Stats::getAdmin2Count);
+                    break;
+                case DATE_SPAN:
+                    comparator = Comparator.comparing(Stats::getDateRange);
+                    break;
+                case RECENCY:
+                    comparator = Comparator.comparing(Stats::getRecency);
+                    break;
+                case AGE:
+                    comparator = Comparator.comparing(Stats::getAge);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown enum value");
+            }
+
+            if (ranking == Optimization.MAXIMUM) {
+                comparator = comparator.reversed();
+            }
+        } else {
+            comparator = Comparator.comparing(Stats::getRecency);
+        }
+        nodeStats.sort(comparator);
 
         if (outputMetadataFileName != null) {
             try {
                 PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputMetadataFileName)));
 
                 if (isVerbose) {
+                    outStream.println();
                     outStream.println("   Writing stats for clusters to file: " + outputMetadataFileName);
                 }
-                if (outputMetadataFileName.endsWith("csv")) {
-                    writer.println("node_number,parent_number,most_recent_tip,least_recent_tip,day_range,recency,age," +
-                            "tip_count,uk_tip_count,uk_child_count,uk_chain_count,haplotype_count,haplotype,divergence_ratio,mean_tip_divergence,stem_length,growth_rate," +
-                            "lineage,uk_lineage,proportion_uk,admin0_count,admin1_count,admin2_count," +
-                            "admin0_mode,admin1_mode,admin2_mode," +
-                            "admin1_entropy,admin2_entropy,tips");
-                    int count = 0;
-                    for (Stats stats : nodeStats) {
-                        if (stats.tipCount >= minSize &&
-                                (maxAge < 0 || stats.getAge() < maxAge) &&
-                                (maxRecency < 0 || stats.getRecency() < maxRecency) &&
-                                stats.ukProportion >= minUKProportion) {
-                            writer.print(
-                                    stats.node.getAttribute("number") + "," +
-                                            (stats.parent != null ? stats.parent.getAttribute("number") : "root") + "," +
-                                            dateFormat.format(stats.getMostRecentDate()) + "," +
-                                            dateFormat.format(stats.getLeastRecentDate()) + "," +
-                                            stats.dateRange + "," +
-                                            stats.getRecency() + "," +
-                                            stats.getAge() + "," +
-                                            stats.tipCount + "," +
-                                            stats.ukCount + "," +
-                                            stats.ukChildCount + "," +
-                                            stats.ukChildChainCount + "," +
-                                            stats.haplotypeCount + "," +
-                                            stats.haplotypeHash + "," +
-                                            stats.divergenceRatio + "," +
-                                            stats.meanTipDivergence + "," +
-                                            stats.stemLength + "," +
-                                            stats.growthRate + "," +
-                                            stats.modalLineage + "," +
-                                            stats.modalUKLineage + "," +
-                                            stats.ukProportion + "," +
-                                            stats.admin0.size() + "," +
-                                            stats.admin1.size() + "," +
-                                            stats.admin2.size() + "," +
-                                            stats.modalAdmin0 + "," +
-                                            stats.modalAdmin1 + "," +
-                                            stats.modalAdmin2 + "," +
-                                            stats.admin1Entropy + "," +
-                                            stats.admin2Entropy + ",");
-                            writer.println(String.join("|", stats.tipSet));
-                            count += 1;
+                writer.println("node_number,parent_number,most_recent_tip,least_recent_tip,day_range,recency,age," +
+                        "tip_count,uk_tip_count,uk_child_count,uk_chain_count,identical_count,haplotype,divergence_ratio,mean_tip_divergence,stem_length,growth_rate," +
+                        "lineage,uk_lineage,proportion_uk,admin0_count,admin1_count,admin2_count," +
+                        "admin0_mode,admin1_mode,admin2_mode," +
+                        "admin1_entropy,admin2_entropy,tips");
+                int count = 0;
+                for (Stats stats : nodeStats) {
+                    if (stats.tipCount >= minSize &&
+                            (maxAge < 0 || stats.getAge() < maxAge) &&
+                            (maxRecency < 0 || stats.getRecency() < maxRecency) &&
+                            stats.ukProportion >= minUKProportion) {
+                        writer.print(
+                                stats.node.getAttribute("number") + "," +
+                                        (stats.parent != null ? stats.parent.getAttribute("number") : "root") + "," +
+                                        dateFormat.format(stats.getMostRecentDate()) + "," +
+                                        dateFormat.format(stats.getLeastRecentDate()) + "," +
+                                        stats.getDateRange() + "," +
+                                        stats.getRecency() + "," +
+                                        stats.getAge() + "," +
+                                        stats.getTipCount() + "," +
+                                        stats.getUkCount() + "," +
+                                        stats.getUkChildCount() + "," +
+                                        stats.getUkChildChainCount() + "," +
+                                        stats.getIdenticalCount() + "," +
+                                        stats.haplotypeHash + "," +
+                                        stats.getDivergenceRatio() + "," +
+                                        stats.getMeanTipDivergence() + "," +
+                                        stats.getStemLength() + "," +
+                                        stats.getGrowthRate() + "," +
+                                        stats.modalLineage + "," +
+                                        stats.modalUKLineage + "," +
+                                        stats.getUkProportion() + "," +
+                                        stats.admin0.size() + "," +
+                                        stats.getAdmin1Count() + "," +
+                                        stats.getAdmin2Count() + "," +
+                                        stats.modalAdmin0 + "," +
+                                        stats.modalAdmin1 + "," +
+                                        stats.modalAdmin2 + "," +
+                                        stats.getAdmin1Entropy() + "," +
+                                        stats.getAdmin2Entropy() + ",");
+                        writer.println(String.join("|", stats.tipSet));
+                        count += 1;
+
+                        if (maxClusterCount > 0 && count == maxClusterCount) {
+                            break;
                         }
                     }
+                }
 
-                    if (isVerbose) {
-                        outStream.println("   Clusters written: " + count);
-                    }
-
-                } else if (outputMetadataFileName.endsWith("json")) {
-
-                    writer.println("{");
-                    writer.println("  \"data\": {");
-                    writer.println("    \"values\": [");
-                    boolean first = true;
-                    for (Stats stats : nodeStats) {
-                        if (stats.tipCount >= minSize && stats.getAge() < maxAge && stats.ukProportion >= minUKProportion) {
-                            if (first) {
-                                first = false;
-                            } else {
-                                writer.println(",");
-                            }
-                            writer.print("      {" +
-                                    "\"node_number\": \"" + stats.node.getAttribute("number") + "\", " +
-                                    "\"parent_number\": \"" + (stats.parent != null ? stats.parent.getAttribute("number") : "root") + "\", " +
-                                    "\"most_recent_tip\": \"" + dateFormat.format(stats.getMostRecentDate()) + "\", " +
-                                    "\"least_recent_tip\": \"" + dateFormat.format(stats.getLeastRecentDate()) + "\", " +
-                                    "\"day_range\": \"" + stats.dateRange + "\", " +
-                                    "\"recency\": \"" + stats.getRecency() + "\", " +
-                                    "\"age\": \"" + stats.getAge() + "\", " +
-                                    "\"tip_count\": \"" + stats.tipCount + "\", " +
-                                    "\"uk_tip_count\": \"" + stats.ukCount + "\", " +
-                                    "\"uk_child_count\": \"" + stats.ukChildCount + "\", " +
-                                    "\"uk_child_chain_count\": \"" + stats.ukChildChainCount + "\", " +
-                                    "\"haplotype_count\": \"" + stats.haplotypeCount + "\", " +
-                                    "\"haplotype\": \"" + stats.haplotypeHash + "\", " +
-                                    "\"stem_length\": \"" + stats.stemLength + "\", " +
-                                    "\"mean_tip_divergence\": \"" + stats.meanTipDivergence + "\", " +
-                                    "\"divergence_ratio\": \"" + stats.divergenceRatio + "\", " +
-                                    "\"growth_rate\": \"" + stats.growthRate + "\", " +
-                                    "\"lineage\": \"" + stats.modalLineage + "\", " +
-                                    "\"uk_lineage\": \"" + stats.modalUKLineage + "\", " +
-                                    "\"proportion_uk\": \"" + stats.ukProportion + "\", " +
-                                    "\"admin0_count\": \"" + stats.admin0.size() + "\", " +
-                                    "\"admin1_count\": \"" + stats.admin1.size() + "\", " +
-                                    "\"admin2_count\": \"" + stats.admin2.size() + "\", " +
-                                    "\"admin0_mode\": \"" + stats.modalAdmin0 + "\", " +
-                                    "\"admin1_mode\": \"" + stats.modalAdmin1 + "\", " +
-                                    "\"admin2_mode\": \"" + stats.modalAdmin2 + "\", " +
-                                    "\"admin1_entropy\": \"" + stats.admin1Entropy + "\", " +
-                                    "\"admin2_entropy\": \"" + stats.admin2Entropy + "\", ");
-                            List<String> tips = new ArrayList<>();
-                            stats.tipSet.forEach (s -> tips.add("\"" + s + "\""));
-                            writer.print("\"tips\": [" + String.join(",", tips) + "]}");
-                        }
-                    }
-                    writer.println();
-                    writer.println("    ]");
-                    writer.println("  }");
-                    writer.println("}");
+                if (isVerbose) {
+                    outStream.println("   Clusters written: " + count);
                 }
 
                 writer.close();
@@ -484,6 +502,67 @@ public class GrapevineClusterStats extends Command {
             return dates.get(dates.size() - 1);
         }
 
+        public double getGrowthRate() {
+            return growthRate;
+        }
+
+        public double getMeanTipDivergence() {
+            return meanTipDivergence;
+        }
+
+        public double getDivergenceRatio() {
+            return divergenceRatio;
+        }
+
+        public double getStemLength() {
+            return stemLength;
+        }
+
+        public int getUkCount() {
+            return ukCount;
+        }
+
+        public double getUkProportion() {
+            return ukProportion;
+        }
+
+        public int getTipCount() {
+            return tipCount;
+        }
+
+        public int getIdenticalCount() {
+            return haplotypeCount;
+        }
+
+        public int getUkChildCount() {
+            return ukChildCount;
+        }
+
+        public int getUkChildChainCount() {
+            return ukChildChainCount;
+        }
+
+        public double getDateRange() {
+            return dateRange;
+        }
+
+        public double getAdmin1Entropy() {
+            return admin1Entropy;
+        }
+
+        public double getAdmin1Count() {
+            return admin1.size();
+        }
+
+        public double getAdmin2Entropy() {
+            return admin2Entropy;
+        }
+
+        public double getAdmin2Count() {
+            return admin1.size();
+        }
+
+
         double meanDivergence() {
             double sum = 0.0;
             for (double d : divergences) {
@@ -537,6 +616,7 @@ public class GrapevineClusterStats extends Command {
         final double dateRange;
         final double admin1Entropy;
         final double admin2Entropy;
+
     }
 }
 

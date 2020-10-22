@@ -1,5 +1,6 @@
 package network.artic.clusterfunk;
 
+import network.artic.clusterfunk.commands.Polecat;
 import org.apache.commons.cli.Option;
 
 /**
@@ -21,8 +22,8 @@ class ClusterFunkOptions {
         JOIN("join", "Join up previously divided subtrees."),
         GRAPEVINE_ASSIGN_LINEAGES("grapevine-assign-lineages", "Assign UK tips without lineages to a UK lineage."),
         GRAPEVINE_ASSIGN_HAPLOTYPES("grapevine-assign-haplotypes", "Assign haplotype names to internal nodes."),
-        GRAPEVINE_CLUSTER_STATS("grapevine-cluster-stats", "Write out stats for all clusters"),
         GRAPEVINE_SUBLINEAGES("grapevine-sublineages", "split existing UK lineages into sub-lineages."),
+        POLECAT("polecat", "Write out stats for all clusters"),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
         RECONSTRUCT("reconstruct", "Reconstruct internal node annotations."),
         REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
@@ -211,7 +212,6 @@ class ClusterFunkOptions {
             .desc("the new attribute name in output")
             .type(String.class).build();
 
-
     final static Option LABEL_FIELDS = Option.builder()
             .longOpt("label-fields")
             .argName("columns")
@@ -258,22 +258,6 @@ class ClusterFunkOptions {
             .desc("maximum number of siblings to include in subtrees (default = unlimited)")
             .type(Integer.class).build();
 
-    final static Option MIN_CLUSTER_SIZE = Option.builder()
-            .longOpt("min-size")
-            .argName("size")
-            .hasArg()
-            .required(false)
-            .desc("minimum number of tips in a subcluster (default = 10)")
-            .type(Integer.class).build();
-
-    final static Option MAX_CLUSTER_SIZE = Option.builder()
-            .longOpt("max-size")
-            .argName("size")
-            .hasArg()
-            .required(false)
-            .desc("maximum number of tips in a subcluster (default = none)")
-            .type(Integer.class).build();
-
     final static Option MIN_SUBTREE_SIZE = Option.builder()
             .longOpt("min-size")
             .argName("size")
@@ -289,38 +273,6 @@ class ClusterFunkOptions {
             .required(false)
             .desc("maximum number of subtrees")
             .type(Integer.class).build();
-
-    final static Option MAX_CLUSTER_AGE = Option.builder()
-            .longOpt("max-age")
-            .argName("days")
-            .hasArg()
-            .required(false)
-            .desc("maximum age of a cluster")
-            .type(Integer.class).build();
-
-    final static Option MAX_CLUSTER_RECENCY = Option.builder()
-            .longOpt("max-recency")
-            .argName("days")
-            .hasArg()
-            .required(false)
-            .desc("maximum recency of a cluster")
-            .type(Integer.class).build();
-
-    final static Option MIN_UK = Option.builder()
-            .longOpt("min-UK")
-            .argName("proportion")
-            .hasArg()
-            .required(false)
-            .desc("minimum proportion of UK tips")
-            .type(Integer.class).build();
-
-    final static Option CRITERION = Option.builder()
-            .longOpt("criterion")
-            .argName("name")
-            .hasArg()
-            .required(false)
-            .desc("optimization criterion")
-            .type(String.class).build();
 
     final static Option MIDPOINT = Option.builder()
             .longOpt("midpoint")
@@ -383,4 +335,70 @@ class ClusterFunkOptions {
             .required(false)
             .desc("keep only the taxa specifed (default false)")
             .type(String.class).build();
+
+    // polecat cluster stats options
+    final static Option MIN_CLUSTER_SIZE = Option.builder()
+            .longOpt("min-size")
+            .argName("size")
+            .hasArg()
+            .required(false)
+            .desc("minimum number of tips in a subcluster (default = 10)")
+            .type(Integer.class).build();
+
+    final static Option MAX_CLUSTER_SIZE = Option.builder()
+            .longOpt("max-size")
+            .argName("size")
+            .hasArg()
+            .required(false)
+            .desc("maximum number of tips in a subcluster (default = none)")
+            .type(Integer.class).build();
+
+    final static Option MAX_CLUSTER_AGE = Option.builder()
+            .longOpt("max-age")
+            .argName("days")
+            .hasArg()
+            .required(false)
+            .desc("maximum age of a cluster")
+            .type(Integer.class).build();
+
+    final static Option MAX_CLUSTER_RECENCY = Option.builder()
+            .longOpt("max-recency")
+            .argName("days")
+            .hasArg()
+            .required(false)
+            .desc("maximum recency of a cluster")
+            .type(Integer.class).build();
+
+    final static Option MIN_UK = Option.builder()
+            .longOpt("min-UK")
+            .argName("proportion")
+            .hasArg()
+            .required(false)
+            .desc("minimum proportion of UK tips")
+            .type(Integer.class).build();
+
+    final static Option OPTIMIZE_BY = Option.builder()
+            .longOpt("optimize-by")
+            .argName("statistic")
+            .hasArg()
+            .required(false)
+            .desc("Cluster statistic to optimize across ancestry by. Options: " + Polecat.Criterion.getValuesString())
+            .type(String.class).build();
+
+    final static Option RANK_BY = Option.builder()
+            .longOpt("rank-by")
+            .argName("statistic")
+            .hasArg()
+            .required(false)
+            .desc("cluster statistic to rank clusters by (append ^ to sort up). Options: " + Polecat.Criterion.getValuesString())
+            .type(String.class).build();
+
+    final static Option MAX_CLUSTER_COUNT = Option.builder()
+            .longOpt("max-count")
+            .argName("count")
+            .hasArg()
+            .required(false)
+            .desc("maximum number of clusters to report (default = all)")
+            .type(Integer.class).build();
 }
+
