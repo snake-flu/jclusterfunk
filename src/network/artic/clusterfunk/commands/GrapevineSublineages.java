@@ -36,58 +36,53 @@ public class GrapevineSublineages extends Command {
 
         RootedTree tree = readTree(treeFileName);
 
-//        String clusterName = "del_introduction";
-
-//        Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, clusterName);
-
-//        List<Object> keys = new ArrayList<>(attributeValues.keySet());
-//        keys.sort((o1, o2) -> (o1.toString().length() == o2.toString().length() ?
-//                o1.toString().compareTo(o2.toString()) :
-//                o1.toString().length() - o2.toString().length()));
-
-//        if (isVerbose) {
-//            outStream.println("Attribute: " + clusterName);
-//            if (attributeValues.size() > 20) {
-//                outStream.println("   Values:" + attributeValues.size());
-//            } else {
-//                outStream.println("Values (" + attributeValues.size() + "): " + String.join(", ", toString(attributeValues.keySet())));
-//            }
-//            outStream.println();
-//        }
-//
-//        Map<String, String> clusterLineageMap = new HashMap<>();
-//
-//        for (Object key : attributeValues.keySet()) {
-//            Set<Node> tips = attributeValues.get(key);
-//            Map<String, Integer> counts = new HashMap<>();
-//            for (Node tip: tips) {
-//                String ukLineage = (String)tip.getAttribute("uk_lineage");
-//                int count = counts.getOrDefault(ukLineage, 0);
-//                counts.put(ukLineage, count + 1);
-//            }
-//            Map<String, Integer> sortedCounts = counts
-//                    .entrySet()
-//                    .stream()
-//                    .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-//                    .collect(
-//                            toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
-
-//            if (counts.size() > 1) {
-//                errorStream.println("There is more than one uk_lineage associated with " + key);
-//                System.exit(1);
-//            }
-//
-//            if (clusterLineageMap.containsKey(key.toString())) {
-//                throw new RuntimeException("multiple instances of a lineage present");
-//            }
-//            clusterLineageMap.put(key.toString(), counts.keySet().iterator().next());
-//        }
-
-//        labelLineages(tree, clusterName, "uk_lineage", clusterLineageMap);
-
         Map<Node, String> nodeLineageMap = new HashMap<>();
 
         findClusterRoots(tree, tree.getRootNode(), false, nodeLineageMap);
+
+        // find cases where more than one node has the same lineage designation
+        Set<String> lineageSet = new HashSet<>();
+        Set<String> ambiguousLineageSet = new HashSet<>();
+        for (Node node : nodeLineageMap.keySet()) {
+            String lineage = nodeLineageMap.get(node);
+            if (lineageSet.contains(lineage)) {
+                ambiguousLineageSet.add(lineage);
+//                errorStream.println("Lineage " + lineage + " exists in more than one place");
+            }
+            lineageSet.add(lineage);
+        }
+
+        // get the set of nodes for each ambiguous lineage
+        Map<String, Set<Node>> ambiguousLineageMap = new HashMap<>();
+        for (Node node : nodeLineageMap.keySet()) {
+            String lineage = nodeLineageMap.get(node);
+            if (ambiguousLineageSet.contains(lineage)) {
+                Set<Node> nodeSet = ambiguousLineageMap.getOrDefault(lineage, new HashSet<>());
+                nodeSet.add(node);
+                ambiguousLineageMap.put(lineage, nodeSet);
+             }
+        }
+
+        // for each ambiguous lineage, find the largest node and remove the rest
+        for (String lineage : ambiguousLineageMap.keySet()) {
+            Set<Node> nodeSet = ambiguousLineageMap.get(lineage);
+            int maxSize = 0;
+            Node maxNode = null;
+            for (Node node : nodeSet) {
+                int size = countTips(tree, node);
+                if (size > maxSize) {
+                    maxSize = size;
+                    maxNode = node;
+                }
+            }
+
+            for (Node node : nodeSet) {
+                if (node != maxNode) {
+                    nodeLineageMap.put(node, "unassigned");
+                }
+            }
+
+        }
 
         Map<String, Node> lineageNodeMap = new HashMap<>();
 
@@ -143,15 +138,16 @@ public class GrapevineSublineages extends Command {
      * @param nodeLineageMap
      */
     private void findClusterRoots(RootedTree tree, Node node, boolean parentIsUK, Map<Node, String> nodeLineageMap) {
+        String delLineage = (String)node.getAttribute("del_lineage");
+        String delIntroduction = (String)node.getAttribute("del_introduction");
         boolean isUK = (Boolean)node.getAttribute("country_uk_deltran");
         if (Boolean.TRUE.equals(isUK) && !parentIsUK) {
             // start of a new lineage
             Map<Object, Integer> ukLineages = getTipAttributes(tree, node, "uk_lineage");
             String ukLineage = (String)ukLineages.keySet().iterator().next();
-//                if (lineageNodeMap.containsKey(ukLineage)) {
-//                    Node otherNode = lineageNodeMap.get(ukLineage);
-//                    throw new RuntimeException("multiple roots of a ukLineage present");
-//                }
+//            if (nodeLineageMap.containsValue(ukLineage)) {
+//                throw new RuntimeException("multiple roots of a ukLineage present");
+//            }
             if (ukLineages.size() > 1) {
                 throw new RuntimeException("ambiguous lineage");
             }
@@ -182,9 +178,12 @@ public class GrapevineSublineages extends Command {
                 Map<String, Integer> childLineages = new HashMap<>();
                 for (Node child : tree.getChildren(node)) {
                     String childLineage = nodeLineageMap.get(child);
-                    if (childLineage != null) {
+                    if (childLineage != null && !childLineage.equals("unassigned")) {
                         int count = childLineages.getOrDefault(childLineage, 0);
                         childLineages.put(childLineage, count + 1);
+                    }
+                    if ("del_trans_182".equals(child.getAttribute("del_lineage"))) {
+                        System.out.println("hi");
                     }
                 }
 
@@ -257,6 +256,10 @@ public class GrapevineSublineages extends Command {
                         }
                     }
                 }
+            } else {
+                lineageNodeMap.put(nodeLineage, node);
+                node.setAttribute(newLineageName, nodeLineage);
+                propagateAttribute(tree, node, "country_uk_deltran", true, newLineageName, nodeLineage);
             }
 
             // finally recurse down
@@ -293,6 +296,15 @@ public class GrapevineSublineages extends Command {
                 extractLineageHaplotypes(tree, child, lineageName, lineage, lineageHaplotypeMap);
             }
         }
+    }
+
+    class Cluster {
+        Node node;
+        String delTrans;
+        String haplotype;
+        String ukLineage;
+        int tipCount;
+        int ukTipCount;
     }
 }
 

@@ -177,14 +177,21 @@ public class GrapevineClusterStats extends Command {
             try {
                 PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputMetadataFileName)));
 
+                if (isVerbose) {
+                    outStream.println("   Writing stats for clusters to file: " + outputMetadataFileName);
+                }
                 if (outputMetadataFileName.endsWith("csv")) {
                     writer.println("node_number,parent_number,most_recent_tip,least_recent_tip,day_range,recency,age," +
-                            "tip_count,child_count,haplotype_count,haplotype,divergence_ratio,mean_tip_divergence,stem_length,growth_rate," +
+                            "tip_count,uk_tip_count,uk_child_count,uk_chain_count,haplotype_count,haplotype,divergence_ratio,mean_tip_divergence,stem_length,growth_rate," +
                             "lineage,uk_lineage,proportion_uk,admin0_count,admin1_count,admin2_count," +
                             "admin0_mode,admin1_mode,admin2_mode," +
                             "admin1_entropy,admin2_entropy,tips");
+                    int count = 0;
                     for (Stats stats : nodeStats) {
-                        if (stats.tipCount >= minSize && stats.getAge() < maxAge && stats.getRecency() < maxRecency && stats.ukProportion >= minUKProportion) {
+                        if (stats.tipCount >= minSize &&
+                                (maxAge < 0 || stats.getAge() < maxAge) &&
+                                (maxRecency < 0 || stats.getRecency() < maxRecency) &&
+                                stats.ukProportion >= minUKProportion) {
                             writer.print(
                                     stats.node.getAttribute("number") + "," +
                                             (stats.parent != null ? stats.parent.getAttribute("number") : "root") + "," +
@@ -194,7 +201,9 @@ public class GrapevineClusterStats extends Command {
                                             stats.getRecency() + "," +
                                             stats.getAge() + "," +
                                             stats.tipCount + "," +
-                                            stats.childCount + "," +
+                                            stats.ukCount + "," +
+                                            stats.ukChildCount + "," +
+                                            stats.ukChildChainCount + "," +
                                             stats.haplotypeCount + "," +
                                             stats.haplotypeHash + "," +
                                             stats.divergenceRatio + "," +
@@ -213,7 +222,12 @@ public class GrapevineClusterStats extends Command {
                                             stats.admin1Entropy + "," +
                                             stats.admin2Entropy + ",");
                             writer.println(String.join("|", stats.tipSet));
+                            count += 1;
                         }
+                    }
+
+                    if (isVerbose) {
+                        outStream.println("   Clusters written: " + count);
                     }
 
                 } else if (outputMetadataFileName.endsWith("json")) {
@@ -238,7 +252,9 @@ public class GrapevineClusterStats extends Command {
                                     "\"recency\": \"" + stats.getRecency() + "\", " +
                                     "\"age\": \"" + stats.getAge() + "\", " +
                                     "\"tip_count\": \"" + stats.tipCount + "\", " +
-                                    "\"child_count\": \"" + stats.childCount + "\", " +
+                                    "\"uk_tip_count\": \"" + stats.ukCount + "\", " +
+                                    "\"uk_child_count\": \"" + stats.ukChildCount + "\", " +
+                                    "\"uk_child_chain_count\": \"" + stats.ukChildChainCount + "\", " +
                                     "\"haplotype_count\": \"" + stats.haplotypeCount + "\", " +
                                     "\"haplotype\": \"" + stats.haplotypeHash + "\", " +
                                     "\"stem_length\": \"" + stats.stemLength + "\", " +
@@ -350,7 +366,8 @@ public class GrapevineClusterStats extends Command {
             tipSet.add(tip);
             tipCount = 1;
             haplotypeCount = 1;
-            childCount = 0;
+            ukChildCount = 0;
+            ukChildChainCount = 0;
             this.haplotypeHash = haplotypeHash;
         }
 
@@ -361,10 +378,15 @@ public class GrapevineClusterStats extends Command {
             this.stemLength = stemLength;
 
             int ukCount = 0;
+            int ukChildCount = 0;
+            int ukChildChainCount = 0;
             for (Stats s: stats) {
                 divergences.addAll(s.divergences);
                 dates.addAll(s.dates);
                 ukCount += s.ukCount;
+                ukChildCount += (s.ukCount > 0 ? 1 : 0);
+                ukChildChainCount += (s.ukCount > 1 ? 1 : 0);
+
                 for (String admin0 : s.admin0.keySet()) {
                     this.admin0.put(admin0, this.admin0.getOrDefault(admin0, 0) + s.admin0.get(admin0));
                 }
@@ -389,8 +411,12 @@ public class GrapevineClusterStats extends Command {
             this.modalLineage = getModal(lineage);
             this.modalUKLineage = getModal(ukLineage);
 
-            tipCount = tipSet.size();
-            childCount = tree.getChildren(node).size();
+            this.tipCount = tipSet.size();
+            this.ukChildCount = ukChildCount;
+            this.ukChildChainCount = ukChildChainCount;
+            this.ukCount = ukCount;
+            this.ukProportion = ((double)ukCount) / tipCount;
+
             int haplotypeCount = 0;
             Set<String> haplotypeSet = new HashSet<>();
             for (Node child : tree.getChildren(node)) {
@@ -402,6 +428,7 @@ public class GrapevineClusterStats extends Command {
                 }
             }
             this.haplotypeCount = haplotypeCount;
+
             if (haplotypeSet.size() > 0) {
                 this.haplotypeHash = haplotypeSet.iterator().next();
                 if (haplotypeSet.size() > 1) {
@@ -412,24 +439,21 @@ public class GrapevineClusterStats extends Command {
                 this.haplotypeHash = "";
             }
 
-            this.ukCount = ukCount;
-            this.ukProportion = ((double)ukCount) / tipCount;
-
-            meanTipDivergence = meanDivergence();
-            divergenceRatio = stemLength / (meanTipDivergence + 1);
+            this.meanTipDivergence = meanDivergence();
+            this.divergenceRatio = stemLength / (meanTipDivergence + 1);
             if (Double.isInfinite(divergenceRatio)) {
                 System.out.println("inf");
             }
 
-            dateRange = (double)ChronoUnit.DAYS.between(getLeastRecentDate(), getMostRecentDate());
+            this.dateRange = (double)ChronoUnit.DAYS.between(getLeastRecentDate(), getMostRecentDate());
 
 //            double tmrca = meanTipDivergence / (GENOME_LENGTH * EVOLUTIONARY_RATE);
 //            double tmrcaDays = 1.0 + (tmrca * 365);
 //            this.growthRate = ((double)tipCount) / tmrcaDays;
             this.growthRate = ((double)tipCount) / (1.0 + dateRange);
 
-            admin1Entropy = entropy(admin1);
-            admin2Entropy = entropy(admin2);
+            this.admin1Entropy = entropy(admin1);
+            this.admin2Entropy = entropy(admin2);
         }
 
         String getModal(Map<String, Integer> countMap) {
@@ -505,7 +529,8 @@ public class GrapevineClusterStats extends Command {
         final String modalLineage;
         final String modalUKLineage;
         final int tipCount;
-        final int childCount;
+        final int ukChildCount;
+        final int ukChildChainCount;
         final int haplotypeCount;
         final String haplotypeHash;
         final Set<String> tipSet = new HashSet<>();
