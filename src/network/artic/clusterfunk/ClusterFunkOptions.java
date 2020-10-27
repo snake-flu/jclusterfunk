@@ -258,6 +258,14 @@ class ClusterFunkOptions {
             .desc("maximum number of siblings to include in subtrees (default = unlimited)")
             .type(Integer.class).build();
 
+    final static Option COLLAPSE_BY = Option.builder()
+            .longOpt("collapse-by")
+            .argName("attribute_name")
+            .hasArg()
+            .required(true)
+            .desc("an attribute to collapse children by")
+            .type(String.class).build();
+
     final static Option MIN_SUBTREE_SIZE = Option.builder()
             .longOpt("min-size")
             .argName("size")

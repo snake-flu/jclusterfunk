@@ -117,6 +117,7 @@ class ClusterFunk {
                         options.addOption(MAX_PARENT_LEVEL);
                         options.addOption(MAX_CHILD_LEVEL);
                         options.addOption(MAX_SIBLING);
+                        options.addOption(COLLAPSE_BY);
                         options.addOption(IGNORE_MISSING);
                         break;
                     case CONVERT:
@@ -390,6 +391,7 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("max-parent", "1")),
                         Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
                         Integer.parseInt(commandLine.getOptionValue("max-siblings", "0")),
+                        commandLine.getOptionValue("collapse-by", null),
                         Integer.parseInt(commandLine.getOptionValue("tip-budget", "0")),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);

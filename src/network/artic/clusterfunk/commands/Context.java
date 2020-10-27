@@ -21,6 +21,10 @@ import java.util.*;
  *
  */
 public class Context extends Command {
+    private final static double GENOME_LENGTH = 29903;
+    private final static double EVOLUTIONARY_RATE = 0.001;
+    private final static double ZERO_BRANCH_THRESHOLD = (1.0 / GENOME_LENGTH) * 0.01; // 1% of a 1 SNP branch length
+
     public Context(String treeFileName,
                    String taxaFileName,
                    String[] targetTaxa,
@@ -36,6 +40,7 @@ public class Context extends Command {
                    int maxParentLevel,
                    int maxChildLevel,
                    int maxSiblingCount,
+                   String collapseBy,
                    int tipBudget,
                    boolean ignoreMissing,
                    boolean isVerbose) {
@@ -51,6 +56,10 @@ public class Context extends Command {
         RootedTree tree = readTree(treeFileName);
 
         Map<Taxon, String> taxonMap = getTaxonMap(tree);
+
+        if (collapseBy != null) {
+            annotateTips(tree, taxonMap, collapseBy, ignoreMissing);
+        }
 
         String path = checkOutputPath(outputPath);
 
@@ -97,7 +106,7 @@ public class Context extends Command {
 
         Map<String, Set<String>> collapsedNodeMap = new HashMap<>();
 
-        createSubtrees(tree, subtreeMap, maxSiblingCount, collapsedNodeMap);
+        createSubtrees(tree, subtreeMap, maxSiblingCount, collapseBy, collapsedNodeMap);
 
         writeSubtrees(subtreeMap, path, outputFileStem, outputFormat, outputTaxa);
 
@@ -164,13 +173,13 @@ public class Context extends Command {
     /**
      * When ever a change in the value of a given attribute occurs at a node, writes out a subtree from that node
      */
-    void createSubtrees(RootedTree tree, Map<Node, Subtree> subtreeMap, int maxPolytomySize, Map<String, Set<String>> collapsedNodeMap) {
+    void createSubtrees(RootedTree tree, Map<Node, Subtree> subtreeMap, int maxPolytomySize, String collapseBy, Map<String, Set<String>> collapsedNodeMap) {
 
         for (Node key : subtreeMap.keySet()) {
             Subtree subtree = subtreeMap.get(key);
 
             SimpleRootedTree newTree = new SimpleRootedTree();
-            createNodes(tree, subtree.root, newTree, maxPolytomySize, collapsedNodeMap);
+            createNodes(tree, subtree.root, newTree, maxPolytomySize, collapseBy, collapsedNodeMap);
             subtree.tree = newTree;
         }
 
@@ -182,7 +191,7 @@ public class Context extends Command {
      * @param node
      * @return
      */
-    private Node createNodes(RootedTree tree, Node node, SimpleRootedTree newTree, int maxPolytomySize, Map<String, Set<String>> collapsedNodeMap) {
+    private Node createNodes(RootedTree tree, Node node, SimpleRootedTree newTree, int maxPolytomySize, String collapseBy, Map<String, Set<String>> collapsedNodeMap) {
 
         Node newNode;
         if (tree.isExternal(node)) {
@@ -194,36 +203,72 @@ public class Context extends Command {
 
             Set<String> collapsedContentSet = new TreeSet<String>();
 
-            for (Node child : tree.getChildren(node)) {
-                String subtree = (String)child.getAttribute("subtree");
-                Set<String> contentSet = (Set<String>)child.getAttribute("content");
-                boolean include = child.getAttribute("include") == Boolean.TRUE;
-
-                if (subtree != null) {
-                    // is the root of a subtree - replace with a tip labelled as the subtree
-                    Node newChild = newTree.createExternalNode(Taxon.getTaxon(subtree));
-                    children.add(newChild);
-                    newTree.setHeight(newChild, tree.getHeight(child));
-                } else if (contentSet != null) {
-                    if (collapsePolytomy) {
-                        collapsedContentSet.addAll(contentSet);
-                    } else {
-                        // this child has been collapsed so replace it with a content set
-                        String label = "collapsed_" + (collapsedNodeMap.size() + 1);
-                        collapsedNodeMap.put(label, contentSet);
-                        Node newChild = newTree.createExternalNode(Taxon.getTaxon(label));
-                        children.add(newChild);
-                        newTree.setHeight(newChild, tree.getHeight(child));
-                    }
-                } else {
-                    if (include || !collapsePolytomy) {
-                        children.add(createNodes(tree, child, newTree, maxPolytomySize, collapsedNodeMap));
-                    } else {
-                        collapsedContentSet.addAll(collectContent(tree, child));
+            Map<String, Set<String>> collapseByValues = new HashMap<>();
+            if (collapseBy != null) {
+                for (Node child : tree.getChildren(node)) {
+                    if (tree.isExternal(child) && tree.getLength(child) < ZERO_BRANCH_THRESHOLD) {
+                        String collapseByValue = (String)child.getAttribute(collapseBy);
+                        if (collapseByValue != null) {
+                            Set<String> contents = collapseByValues.getOrDefault(collapseByValue, new HashSet<>());
+                            contents.add(tree.getTaxon(child).getName());
+                            collapseByValues.put(collapseByValue, contents);
+                        }
                     }
                 }
             }
 
+            Set<String> alreadyCollapsed = new HashSet<>();
+
+            for (Node child : tree.getChildren(node)) {
+                String subtree = (String) child.getAttribute("subtree");
+                String collapsedLabel = "collapsed_" + (collapsedNodeMap.size() + 1);
+                Set<String> contentSet = (Set<String>) child.getAttribute("content");
+                boolean include = child.getAttribute("include") == Boolean.TRUE;
+                String collapseByValue = collapseBy != null ? (String) child.getAttribute(collapseBy) : null;
+
+                boolean hide = false;
+
+                if (contentSet == null && collapseByValue != null) {
+                    // alreadyCollapsed contains the collapseByValues that have already been added
+                    if (!alreadyCollapsed.contains(collapseByValue)) {
+                        Set<String> contents = collapseByValues.get(collapseByValue);
+                        if (contents != null && contents.size() > 1 && contents.contains(tree.getTaxon(child).getName())) {
+                            contentSet = contents;
+                            collapsedLabel += "|" + collapseByValue + "-" + contentSet.size();
+                            alreadyCollapsed.add(collapseByValue);
+                        }
+                    } else {
+                        // if already added then just hide this tip
+                        hide = true;
+                    }
+                }
+
+                if (!hide) {
+                    if (subtree != null) {
+                        // is the root of a subtree - replace with a tip labelled as the subtree
+                        Node newChild = newTree.createExternalNode(Taxon.getTaxon(subtree));
+                        children.add(newChild);
+                        newTree.setHeight(newChild, tree.getHeight(child));
+                    } else if (contentSet != null) {
+                        if (collapsePolytomy) {
+                            collapsedContentSet.addAll(contentSet);
+                        } else {
+                            // this child has been collapsed so replace it with a content set
+                            collapsedNodeMap.put(collapsedLabel, contentSet);
+                            Node newChild = newTree.createExternalNode(Taxon.getTaxon(collapsedLabel));
+                            children.add(newChild);
+                            newTree.setHeight(newChild, tree.getHeight(child));
+                        }
+                    } else {
+                        if (include || !collapsePolytomy) {
+                            children.add(createNodes(tree, child, newTree, maxPolytomySize, collapseBy, collapsedNodeMap));
+                        } else {
+                            collapsedContentSet.addAll(collectContent(tree, child));
+                        }
+                    }
+                }
+            }
+            
             if (collapsedContentSet.size() > 0) {
                 String label = "collapsed_" + (collapsedNodeMap.size() + 1);
                 collapsedNodeMap.put(label, collapsedContentSet);
