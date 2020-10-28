@@ -411,6 +411,18 @@ abstract class Command {
         return count;
     }
 
+    static int countTips(RootedTree tree, Node node, String attributeName, Object value) {
+        if (tree.isExternal(node)) {
+            return value.equals(node.getAttribute(attributeName)) ? 1 : 0;
+        }
+
+        int count = 0;
+        for (Node child : tree.getChildren(node)) {
+            count += countTips(tree, child, attributeName, value);
+        }
+        return count;
+    }
+
     static Set<Node> collectTips(RootedTree tree, Node node) {
         if (tree.isExternal(node)) {
             return Collections.singleton(node);

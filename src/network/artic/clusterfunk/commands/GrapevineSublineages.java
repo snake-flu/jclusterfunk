@@ -17,6 +17,8 @@ import static java.util.stream.Collectors.toMap;
  * Bespoke function to split Grapevine UK_lineages into sublineages
  */
 public class GrapevineSublineages extends Command {
+    private final static double GENOME_LENGTH = 29903;
+    private final static double ZERO_BRANCH_THRESHOLD = (1.0 / GENOME_LENGTH) * 0.01; // 1% of a 1 SNP branch length
 
     public GrapevineSublineages(String treeFileName,
                                 String outputPath,
@@ -36,31 +38,31 @@ public class GrapevineSublineages extends Command {
 
         RootedTree tree = readTree(treeFileName);
 
-        Map<Node, String> nodeLineageMap = new HashMap<>();
+        Map<Node, Cluster> nodeClusterMap = new HashMap<>();
 
-        findClusterRoots(tree, tree.getRootNode(), false, nodeLineageMap);
+        findClusterRoots(tree, tree.getRootNode(), false, nodeClusterMap);
 
         // find cases where more than one node has the same lineage designation
         Set<String> lineageSet = new HashSet<>();
         Set<String> ambiguousLineageSet = new HashSet<>();
-        for (Node node : nodeLineageMap.keySet()) {
-            String lineage = nodeLineageMap.get(node);
-            if (lineageSet.contains(lineage)) {
-                ambiguousLineageSet.add(lineage);
+        for (Node node : nodeClusterMap.keySet()) {
+            Cluster cluster = nodeClusterMap.get(node);
+            if (lineageSet.contains(cluster.ukLineage)) {
+                ambiguousLineageSet.add(cluster.ukLineage);
 //                errorStream.println("Lineage " + lineage + " exists in more than one place");
             }
-            lineageSet.add(lineage);
+            lineageSet.add(cluster.ukLineage);
         }
 
         // get the set of nodes for each ambiguous lineage
         Map<String, Set<Node>> ambiguousLineageMap = new HashMap<>();
-        for (Node node : nodeLineageMap.keySet()) {
-            String lineage = nodeLineageMap.get(node);
-            if (ambiguousLineageSet.contains(lineage)) {
-                Set<Node> nodeSet = ambiguousLineageMap.getOrDefault(lineage, new HashSet<>());
+        for (Node node : nodeClusterMap.keySet()) {
+            Cluster cluster = nodeClusterMap.get(node);
+            if (ambiguousLineageSet.contains(cluster.ukLineage)) {
+                Set<Node> nodeSet = ambiguousLineageMap.getOrDefault(cluster.ukLineage, new HashSet<>());
                 nodeSet.add(node);
-                ambiguousLineageMap.put(lineage, nodeSet);
-             }
+                ambiguousLineageMap.put(cluster.ukLineage, nodeSet);
+            }
         }
 
         // for each ambiguous lineage, find the largest node and remove the rest
@@ -78,7 +80,7 @@ public class GrapevineSublineages extends Command {
 
             for (Node node : nodeSet) {
                 if (node != maxNode) {
-                    nodeLineageMap.put(node, "unassigned");
+                    nodeClusterMap.put(node, null);
                 }
             }
 
@@ -86,8 +88,8 @@ public class GrapevineSublineages extends Command {
 
         Map<String, Node> lineageNodeMap = new HashMap<>();
 
-        clusterLineages(tree, tree.getRootNode(), "uk_lineage", null,
-                "new_uk_lineage", minSublineageSize, nodeLineageMap, lineageNodeMap);
+//        clusterLineages(tree, tree.getRootNode(), "uk_lineage", null,
+//                "new_uk_lineage", minSublineageSize, nodeClusterMap, lineageNodeMap);
 
         String outputTreeFileName = path + outputPrefix + ".nexus";
         if (isVerbose) {
@@ -135,11 +137,9 @@ public class GrapevineSublineages extends Command {
      * recursive version
      * @param tree
      * @param node
-     * @param nodeLineageMap
+     * @param nodeClusterMap
      */
-    private void findClusterRoots(RootedTree tree, Node node, boolean parentIsUK, Map<Node, String> nodeLineageMap) {
-        String delLineage = (String)node.getAttribute("del_lineage");
-        String delIntroduction = (String)node.getAttribute("del_introduction");
+    private void findClusterRoots(RootedTree tree, Node node, boolean parentIsUK, Map<Node, Cluster> nodeClusterMap) {
         boolean isUK = (Boolean)node.getAttribute("country_uk_deltran");
         if (Boolean.TRUE.equals(isUK) && !parentIsUK) {
             // start of a new lineage
@@ -151,12 +151,13 @@ public class GrapevineSublineages extends Command {
             if (ukLineages.size() > 1) {
                 throw new RuntimeException("ambiguous lineage");
             }
-            nodeLineageMap.put(node, ukLineage);
+            Cluster cluster = createCluster(tree, node, ukLineage);
+            nodeClusterMap.put(node, cluster);
         }
         if (!tree.isExternal(node)) {
             // finally recurse down
             for (Node child : tree.getChildren(node)) {
-                findClusterRoots(tree, child, isUK, nodeLineageMap);
+                findClusterRoots(tree, child, isUK, nodeClusterMap);
             }
         }
     }
@@ -165,26 +166,27 @@ public class GrapevineSublineages extends Command {
      * recursive version
      * @param tree
      * @param node
-     * @param lineageNodeMap
+     * @param lineageClusterMap
      */
-    private void clusterLineages(RootedTree tree, Node node, String lineageName, String parentLineage,
+    private void clusterLineages(RootedTree tree, Node node,
                                  String newLineageName, int minSublineageSize,
-                                 Map<Node, String> nodeLineageMap,
-                                 Map<String, Node> lineageNodeMap) {
-        String nodeLineage = nodeLineageMap.get(node);
+                                 Map<Node, Cluster> nodeClusterMap,
+                                 Map<String, Cluster> lineageClusterMap) {
         if (!tree.isExternal(node)) {
-            if (nodeLineage == null) {
-
+            Cluster cluster = nodeClusterMap.get(node);
+            if (cluster == null) {
+                // no cluster allocation for this node yet - determine if clusters of children
+                // should be merged (all UK nodes that are direct children of this node).
                 Map<String, Integer> childLineages = new HashMap<>();
                 for (Node child : tree.getChildren(node)) {
-                    String childLineage = nodeLineageMap.get(child);
-                    if (childLineage != null && !childLineage.equals("unassigned")) {
-                        int count = childLineages.getOrDefault(childLineage, 0);
-                        childLineages.put(childLineage, count + 1);
+                    Cluster childCluster = nodeClusterMap.get(child);
+                    if (childCluster != null) {
+                        childLineages.put(childCluster.ukLineage,
+                                childLineages.getOrDefault(childCluster.ukLineage, 0) + 1);
                     }
-                    if ("del_trans_182".equals(child.getAttribute("del_lineage"))) {
-                        System.out.println("hi");
-                    }
+//                    if ("del_trans_182".equals(child.getAttribute("del_lineage"))) {
+//                        System.out.println("hi");
+//                    }
                 }
 
                 if (childLineages.size() > 0) {
@@ -198,7 +200,7 @@ public class GrapevineSublineages extends Command {
                     List<Pair> childSizes = new ArrayList<>();
                     // first count the size of children lineages and give everyone the base lineage designation
                     for (Node child : tree.getChildren(node)) {
-                        if (childLineage.equals(nodeLineageMap.get(child))) {
+                        if (childLineage.equals(nodeClusterMap.get(child).ukLineage)) {
                             int count = countTips(tree, child);
                             childSizes.add(new Pair(child, count));
                             if (count >= minSublineageSize) {
@@ -211,21 +213,20 @@ public class GrapevineSublineages extends Command {
 
                     childSizes.sort(Comparator.comparing(k -> -k.count));
 
+                    Cluster nodeCluster;
                     Node lineageNode;
                     if (childSizes.size() > 1) {
                         // there are multiple children of this lineage - merge them at this node
                         lineageNode = node;
-                        nodeLineage = childLineage;
-//                    } else {
-//                        lineageNode = childSizes.iterator().next().node;
-//                    }
-                        if (lineageNodeMap.containsKey(nodeLineage)) {
-                            Node otherNode = lineageNodeMap.get(nodeLineage);
+                        nodeCluster = createCluster(tree, node, childLineage);
+
+                        if (lineageClusterMap.containsKey(nodeCluster.ukLineage)) {
+                            Cluster otherCluster = lineageClusterMap.get(nodeCluster.ukLineage);
                             throw new RuntimeException("multiple roots of a lineage present");
                         }
-                        lineageNodeMap.put(nodeLineage, lineageNode);
-                        lineageNode.setAttribute(newLineageName, nodeLineage);
-                        propagateAttribute(tree, lineageNode, "country_uk_deltran", true, newLineageName, nodeLineage);
+                        lineageClusterMap.put(nodeCluster.ukLineage, nodeCluster);
+                        lineageNode.setAttribute(newLineageName, nodeCluster.ukLineage);
+                        propagateAttribute(tree, lineageNode, "country_uk_deltran", true, newLineageName, nodeCluster.ukLineage);
 
                         // now label large sublineages if there are two or more
                         int sublineageSize = 0;
@@ -234,16 +235,16 @@ public class GrapevineSublineages extends Command {
                             for (Pair pair : childSizes) {
                                 // then give children larger than minSublineageSize a sublineage designation
                                 if (pair.count >= minSublineageSize) {
-                                    String sublineage = nodeLineage + "." + sublineageNumber;
+                                    String sublineage = nodeCluster.ukLineage + "." + sublineageNumber;
                                     pair.node.setAttribute(newLineageName, sublineage);
                                     propagateAttribute(tree, pair.node, "country_uk_deltran", true, newLineageName, sublineage);
                                     sublineageNumber += 1;
                                     sublineageSize += pair.count;
 
-                                    if (lineageNodeMap.containsKey(sublineage)) {
+                                    if (lineageClusterMap.containsKey(sublineage)) {
                                         throw new RuntimeException("multiple roots of a sublineage present");
                                     }
-                                    lineageNodeMap.put(sublineage, pair.node);
+//                                    lineageClusterMap.put(sublineage, pair.node);
 
                                     if (isVerbose) {
                                         outStream.println("Creating sublineage: " + sublineage + " [" + pair.count + " taxa]");
@@ -252,29 +253,72 @@ public class GrapevineSublineages extends Command {
                             }
                         }
                         if (isVerbose) {
-                            outStream.println("Creating lineage: " + nodeLineage + " [" + (totalSize - sublineageSize) + " taxa]");
+//                            outStream.println("Creating lineage: " + nodeLineage + " [" + (totalSize - sublineageSize) + " taxa]");
                         }
                     }
                 }
             } else {
-                lineageNodeMap.put(nodeLineage, node);
-                node.setAttribute(newLineageName, nodeLineage);
-                propagateAttribute(tree, node, "country_uk_deltran", true, newLineageName, nodeLineage);
+//                lineageNodeMap.put(cluster.ukLineage, node);
+                node.setAttribute(newLineageName, cluster.ukLineage);
+                propagateAttribute(tree, node, "country_uk_deltran", true, newLineageName, cluster.ukLineage);
             }
 
             // finally recurse down
             for (Node child : tree.getChildren(node)) {
-                clusterLineages(tree, child, lineageName, nodeLineage, newLineageName, minSublineageSize, nodeLineageMap, lineageNodeMap);
+//                clusterLineages(tree, child, newLineageName, minSublineageSize, nodeClusterMap, lineageNodeMap);
             }
         } else {
-            if (nodeLineage != null) {
-                lineageNodeMap.put(nodeLineage, node);
-                node.setAttribute(newLineageName, nodeLineage);
-                if (isVerbose) {
-                    outStream.println("Creating lineage: " + nodeLineage + " [1 taxon]");
+//            if (nodeLineage != null) {
+//                lineageNodeMap.put(nodeLineage, node);
+//                node.setAttribute(newLineageName, nodeLineage);
+//                if (isVerbose) {
+//                    outStream.println("Creating lineage: " + nodeLineage + " [1 taxon]");
+//                }
+//            }
+        }
+    }
+
+    private Cluster createCluster(RootedTree tree, Node node, String ukLineage) {
+        String delLineage = (String)node.getAttribute("del_lineage");
+        int tipCount = countTips(tree, node);
+        int ukTipCount = countTips(tree, node, "country_uk_deltran", true);
+        String haplotype = getHaplotype(tree, node);
+        return new Cluster(node, delLineage, haplotype, ukLineage, tipCount, ukTipCount);
+    }
+
+    /**
+     * recursive version
+     * @param tree
+     * @param node
+     */
+    private String getHaplotype(RootedTree tree, Node node) {
+        Map<String, Integer> haplotypes = new HashMap<>();
+        for (Node child : tree.getChildren(node)) {
+            if (tree.isExternal(child)) {
+                if (tree.getLength(child) < ZERO_BRANCH_THRESHOLD) {
+                    String hap = (String)child.getAttribute("sequence_hash");
+                    haplotypes.put(hap, haplotypes.getOrDefault(hap, 0) + 1);
                 }
             }
         }
+
+        // order by frequency
+        LinkedHashMap<String, Integer> reversed = new LinkedHashMap<>();
+        haplotypes.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .forEachOrdered(x -> reversed.put(x.getKey(), x.getValue()));
+
+
+        if (haplotypes.size() > 0) {
+            // get the most frequent
+            String haplotypeHash = reversed.keySet().iterator().next();
+            if (haplotypes.size() > 1) {
+                errorStream.println("multiple haplotypes on internal node");
+            }
+            return haplotypeHash;
+        }
+        return null;
     }
 
     /**
@@ -299,6 +343,15 @@ public class GrapevineSublineages extends Command {
     }
 
     class Cluster {
+        public Cluster(Node node, String delTrans, String haplotype, String ukLineage, int tipCount, int ukTipCount) {
+            this.node = node;
+            this.delTrans = delTrans;
+            this.haplotype = haplotype;
+            this.ukLineage = ukLineage;
+            this.tipCount = tipCount;
+            this.ukTipCount = ukTipCount;
+        }
+
         Node node;
         String delTrans;
         String haplotype;
