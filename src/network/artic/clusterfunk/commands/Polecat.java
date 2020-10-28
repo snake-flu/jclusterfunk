@@ -31,6 +31,7 @@ public class Polecat extends Command {
         ADMIN2_ENTROPY("location-entropy"),
         ADMIN2_COUNT("location-count"),
         DATE_SPAN("date-span"),
+        PERSISTENCE("persistence"),
         RECENCY("recency"),
         AGE("age");
 
@@ -70,6 +71,8 @@ public class Polecat extends Command {
 
     private final static DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    private final double maxBaseDivergence;
+
     public Polecat(String treeFileName,
                    String metadataFileName,
                    String outputMetadataFileName,
@@ -86,10 +89,13 @@ public class Polecat extends Command {
                    Optimization ranking,
                    Criterion rankCiterion,
                    int maxClusterCount,
+                   double maxBaseDivergence,
                    boolean ignoreMissing,
                    boolean isVerbose) {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
+
+        this.maxBaseDivergence = maxBaseDivergence;
 
         RootedTree tree = readTree(treeFileName);
 
@@ -161,6 +167,9 @@ public class Polecat extends Command {
                             crit = stats.admin2.size();
                             break;
                         case DATE_SPAN:
+                            crit = stats.dateRangeBase;
+                            break;
+                        case PERSISTENCE:
                             crit = stats.dateRange;
                             break;
                         case RECENCY:
@@ -248,14 +257,15 @@ public class Polecat extends Command {
                     outStream.println();
                     outStream.println("   Writing stats for clusters to file: " + outputMetadataFileName);
                 }
-                writer.println("node_number,parent_number,most_recent_tip,least_recent_tip,day_range,recency,age," +
-                        "tip_count,uk_tip_count,uk_child_count,uk_chain_count,identical_count,haplotype,divergence_ratio,mean_tip_divergence,stem_length,growth_rate," +
+                writer.println("node_number,parent_number,most_recent_tip,least_recent_tip,day_range,persistence,recency,age," +
+                        "tip_count,uk_tip_count,uk_child_count,uk_chain_count,identical_count," + // haplotype,
+                        "divergence_ratio,mean_tip_divergence,stem_length,growth_rate," +
                         "lineage,uk_lineage,proportion_uk,admin0_count,admin1_count,admin2_count," +
                         "admin0_mode,admin1_mode,admin2_mode," +
                         "admin1_entropy,admin2_entropy,tips");
                 int count = 0;
                 for (Stats stats : nodeStats) {
-                    if (stats.tipCount >= minSize &&
+                    if (stats.ukCount >= minSize &&
                             (maxAge < 0 || stats.getAge() < maxAge) &&
                             (maxRecency < 0 || stats.getRecency() < maxRecency) &&
                             stats.ukProportion >= minUKProportion) {
@@ -264,6 +274,7 @@ public class Polecat extends Command {
                                         (stats.parent != null ? stats.parent.getAttribute("number") : "root") + "," +
                                         dateFormat.format(stats.getMostRecentDate()) + "," +
                                         dateFormat.format(stats.getLeastRecentDate()) + "," +
+                                        stats.getDateRangeBase() + "," +
                                         stats.getDateRange() + "," +
                                         stats.getRecency() + "," +
                                         stats.getAge() + "," +
@@ -272,7 +283,7 @@ public class Polecat extends Command {
                                         stats.getUkChildCount() + "," +
                                         stats.getUkChildChainCount() + "," +
                                         stats.getIdenticalCount() + "," +
-                                        stats.haplotypeHash + "," +
+//                                        stats.haplotypeHash + "," +
                                         stats.getDivergenceRatio() + "," +
                                         stats.getMeanTipDivergence() + "," +
                                         stats.getStemLength() + "," +
@@ -321,7 +332,7 @@ public class Polecat extends Command {
 //            }
             stats = new Stats(node,
                     parent,
-                    divergence,
+                    divergence + length,
                     length,
                     tree.getTaxon(node).getName(),
                     (String)node.getAttribute("sample_date"),
@@ -354,12 +365,11 @@ public class Polecat extends Command {
             this.divergence = divergence;
             this.stemLength = length;
             this.divergences.add(divergence);
-            this.meanTipDivergence = 0.0;
+            this.meanTipDivergence = length;
+            this.maxTipDivergence = length;
+            this.minTipDivergence = length;
             this.growthRate = 0.0;
             this.divergenceRatio = 0.0;
-
-            dates.add(LocalDate.parse(date, dateFormat));
-            dateRange = 0;
 
             this.admin0.put(admin0 != null ? admin0 : "", 1);
             this.lineage.put(lineage != null ? lineage : "", 1);
@@ -373,6 +383,14 @@ public class Polecat extends Command {
                 ukCount = 0;
                 ukProportion = 0.0;
             }
+
+            if (ukCount > 0) {
+                dates.add(LocalDate.parse(date, dateFormat));
+            }
+
+            dateRange = 0;
+            dateRangeBase = 0;
+
             this.modalAdmin0 = null;
             this.modalAdmin1 = null;
             this.modalAdmin2 = null;
@@ -401,6 +419,10 @@ public class Polecat extends Command {
             for (Stats s: stats) {
                 divergences.addAll(s.divergences);
                 dates.addAll(s.dates);
+
+                if (s.minTipDivergence < maxBaseDivergence && s.dates.size() > 0) {
+                    baseDates.addAll(s.dates);
+                }
                 ukCount += s.ukCount;
                 ukChildCount += (s.ukCount > 0 ? 1 : 0);
                 ukChildChainCount += (s.ukCount > 1 ? 1 : 0);
@@ -423,6 +445,8 @@ public class Polecat extends Command {
                 tipSet.addAll(s.tipSet);
             }
             dates.sort(Collections.reverseOrder());
+            baseDates.sort(Collections.reverseOrder());
+
             this.modalAdmin0 = getModal(admin0);
             this.modalAdmin1 = getModal(admin1);
             this.modalAdmin2 = getModal(admin2);
@@ -457,18 +481,33 @@ public class Polecat extends Command {
                 this.haplotypeHash = "";
             }
 
+            divergences.sort(Double::compareTo);
             this.meanTipDivergence = meanDivergence();
+            this.maxTipDivergence = maxDivergence();
+            this.minTipDivergence = minDivergence();
             this.divergenceRatio = stemLength / (meanTipDivergence + 1);
             if (Double.isInfinite(divergenceRatio)) {
                 System.out.println("inf");
             }
 
-            this.dateRange = (double)ChronoUnit.DAYS.between(getLeastRecentDate(), getMostRecentDate());
+            if ((Integer)this.node.getAttribute("number") == 5108) {
+                System.err.println("er");
+            }
+            if (this.dates.size() > 0) {
+                this.dateRange = (double) ChronoUnit.DAYS.between(getLeastRecentDate(), getMostRecentDate());
+            } else {
+                this.dateRange = 0;
+            }
+            if (this.baseDates.size() > 0) {
+                this.dateRangeBase = (double) ChronoUnit.DAYS.between(getLeastRecentBaseDate(), getMostRecentBaseDate());
+            } else {
+                this.dateRangeBase = 0;
+            }
 
 //            double tmrca = meanTipDivergence / (GENOME_LENGTH * EVOLUTIONARY_RATE);
 //            double tmrcaDays = 1.0 + (tmrca * 365);
 //            this.growthRate = ((double)tipCount) / tmrcaDays;
-            this.growthRate = ((double)tipCount) / (1.0 + dateRange);
+            this.growthRate = ((double)ukCount) / (1.0 + dateRangeBase);
 
             this.admin1Entropy = entropy(admin1);
             this.admin2Entropy = entropy(admin2);
@@ -499,7 +538,18 @@ public class Polecat extends Command {
         }
 
         LocalDate getLeastRecentDate() {
+            if (dates.size() == 0) {
+                throw new IllegalArgumentException("zero size dates array");
+            }
             return dates.get(dates.size() - 1);
+        }
+
+        LocalDate getMostRecentBaseDate() {
+            return baseDates.get(0);
+        }
+
+        LocalDate getLeastRecentBaseDate() {
+            return baseDates.get(baseDates.size() - 1);
         }
 
         public double getGrowthRate() {
@@ -546,6 +596,10 @@ public class Polecat extends Command {
             return dateRange;
         }
 
+        public double getDateRangeBase() {
+            return dateRangeBase;
+        }
+
         public double getAdmin1Entropy() {
             return admin1Entropy;
         }
@@ -559,16 +613,35 @@ public class Polecat extends Command {
         }
 
         public double getAdmin2Count() {
-            return admin1.size();
+            return admin2.size();
         }
 
-
+        /**
+         * mean tip divergence relative to this node
+         * @return
+         */
         double meanDivergence() {
             double sum = 0.0;
             for (double d : divergences) {
                 sum += (d - divergence);
             }
             return sum / divergences.size();
+        }
+
+        /**
+         * maximum tip divergence relative to this node
+         * @return
+         */
+        double maxDivergence() {
+            return divergences.get(divergences.size() - 1) - divergence;
+        }
+
+        /**
+         * minimum tip divergence relative to this node
+         * @return
+         */
+        double minDivergence() {
+            return divergences.get(0) - divergence;
         }
 
         double entropy(Map<String, Integer> counts) {
@@ -590,10 +663,13 @@ public class Polecat extends Command {
         final Node parent;
         final double divergence;
         final double meanTipDivergence;
+        final double maxTipDivergence;
+        final double minTipDivergence;
         final double growthRate;
         final double divergenceRatio;
         final double stemLength;
         final List<LocalDate> dates = new ArrayList<>();
+        final List<LocalDate> baseDates = new ArrayList<>();
         final List<Double> divergences = new ArrayList<>();
         final int ukCount;
         final double ukProportion;
@@ -614,6 +690,7 @@ public class Polecat extends Command {
         final String haplotypeHash;
         final Set<String> tipSet = new HashSet<>();
         final double dateRange;
+        final double dateRangeBase;
         final double admin1Entropy;
         final double admin2Entropy;
 

@@ -262,7 +262,7 @@ class ClusterFunkOptions {
             .longOpt("collapse-by")
             .argName("attribute_name")
             .hasArg()
-            .required(true)
+            .required(false)
             .desc("an attribute to collapse children by")
             .type(String.class).build();
 
@@ -408,5 +408,13 @@ class ClusterFunkOptions {
             .required(false)
             .desc("maximum number of clusters to report (default = all)")
             .type(Integer.class).build();
+
+    final static Option MAX_DIVERGENCE = Option.builder()
+            .longOpt("max-divergence")
+            .argName("divergence")
+            .hasArg()
+            .required(false)
+            .desc("maximum divergence to include in counts/stats (default = 1.5)")
+            .type(Double.class).build();
 }
 

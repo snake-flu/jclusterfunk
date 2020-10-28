@@ -14,7 +14,7 @@ import static network.artic.clusterfunk.ClusterFunkOptions.*;
 class ClusterFunk {
 
     private final static String NAME = "jclusterfunk";
-    private static final String VERSION = "v0.0.5";
+    private static final String VERSION = "v0.0.7";
     private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
@@ -196,6 +196,7 @@ class ClusterFunk {
                         options.addOption(OPTIMIZE_BY);
                         options.addOption(RANK_BY);
                         options.addOption(MAX_CLUSTER_COUNT);
+                        options.addOption(MAX_DIVERGENCE);
                         options.addOption(IGNORE_MISSING);
                         break;
                     case PRUNE:
@@ -504,6 +505,7 @@ class ClusterFunk {
                         ranking,
                         rankCiterion,
                         Integer.parseInt(commandLine.getOptionValue("max-count", "-1")),
+                        Double.parseDouble(commandLine.getOptionValue("max-divergence", "1.5")),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
