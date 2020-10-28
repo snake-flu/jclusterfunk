@@ -501,7 +501,7 @@ public class Polecat extends Command {
             if (this.baseDates.size() > 0) {
                 this.dateRangeBase = (double) ChronoUnit.DAYS.between(getLeastRecentBaseDate(), getMostRecentBaseDate());
             } else {
-                this.dateRangeBase = 0;
+                this.dateRangeBase = Integer.MAX_VALUE;
             }
 
 //            double tmrca = meanTipDivergence / (GENOME_LENGTH * EVOLUTIONARY_RATE);
