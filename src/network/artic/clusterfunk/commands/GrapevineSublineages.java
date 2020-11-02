@@ -40,77 +40,102 @@ public class GrapevineSublineages extends Command {
 
         Map<Node, Cluster> nodeClusterMap = new HashMap<>();
 
-        findClusterRoots(tree, tree.getRootNode(), false, nodeClusterMap);
+//        String clusterAttribute = "country_uk_acctran";
+        String clusterAttribute = "country_uk_deltran";
 
-        // find cases where more than one node has the same lineage designation
-        Set<String> lineageSet = new HashSet<>();
-        Set<String> ambiguousLineageSet = new HashSet<>();
+        findClusterRoots(tree, tree.getRootNode(), clusterAttribute, false, nodeClusterMap);
+
+        int bigClusters = 0;
+        int smallClusters = 0;
+        int singletons = 0;
         for (Node node : nodeClusterMap.keySet()) {
             Cluster cluster = nodeClusterMap.get(node);
-            if (lineageSet.contains(cluster.ukLineage)) {
-                ambiguousLineageSet.add(cluster.ukLineage);
-//                errorStream.println("Lineage " + lineage + " exists in more than one place");
-            }
-            lineageSet.add(cluster.ukLineage);
-        }
-
-        // get the set of nodes for each ambiguous lineage
-        Map<String, Set<Node>> ambiguousLineageMap = new HashMap<>();
-        for (Node node : nodeClusterMap.keySet()) {
-            Cluster cluster = nodeClusterMap.get(node);
-            if (ambiguousLineageSet.contains(cluster.ukLineage)) {
-                Set<Node> nodeSet = ambiguousLineageMap.getOrDefault(cluster.ukLineage, new HashSet<>());
-                nodeSet.add(node);
-                ambiguousLineageMap.put(cluster.ukLineage, nodeSet);
+            if (cluster.ukTipCount >= 50) {
+                bigClusters += 1;
+            } else if (cluster.ukTipCount > 1) {
+                smallClusters += 1;
+            } else {
+                singletons += 1;
             }
         }
 
-        // for each ambiguous lineage, find the largest node and remove the rest
-        for (String lineage : ambiguousLineageMap.keySet()) {
-            Set<Node> nodeSet = ambiguousLineageMap.get(lineage);
-            int maxSize = 0;
-            Node maxNode = null;
-            for (Node node : nodeSet) {
-                int size = countTips(tree, node);
-                if (size > maxSize) {
-                    maxSize = size;
-                    maxNode = node;
-                }
-            }
-
-            for (Node node : nodeSet) {
-                if (node != maxNode) {
-                    nodeClusterMap.put(node, null);
-                }
-            }
-
+        if (isVerbose) {
+            outStream.println("Found " + nodeClusterMap.size() + " clusters with " + clusterAttribute);
+            outStream.println("Large (>=50): " + bigClusters);
+            outStream.println(" Small (<50): " + smallClusters);
+            outStream.println("  Singletons: " + singletons);
+            outStream.println();
         }
 
-        Map<String, Node> lineageNodeMap = new HashMap<>();
 
+//        // find cases where more than one node has the same lineage designation
+//        Set<String> lineageSet = new HashSet<>();
+//        Set<String> ambiguousLineageSet = new HashSet<>();
+//        for (Node node : nodeClusterMap.keySet()) {
+//            Cluster cluster = nodeClusterMap.get(node);
+//            if (lineageSet.contains(cluster.ukLineage)) {
+//                ambiguousLineageSet.add(cluster.ukLineage);
+////                errorStream.println("Lineage " + lineage + " exists in more than one place");
+//            }
+//            lineageSet.add(cluster.ukLineage);
+//        }
+//
+//        // get the set of nodes for each ambiguous lineage
+//        Map<String, Set<Node>> ambiguousLineageMap = new HashMap<>();
+//        for (Node node : nodeClusterMap.keySet()) {
+//            Cluster cluster = nodeClusterMap.get(node);
+//            if (ambiguousLineageSet.contains(cluster.ukLineage)) {
+//                Set<Node> nodeSet = ambiguousLineageMap.getOrDefault(cluster.ukLineage, new HashSet<>());
+//                nodeSet.add(node);
+//                ambiguousLineageMap.put(cluster.ukLineage, nodeSet);
+//            }
+//        }
+//
+//        // for each ambiguous lineage, find the largest node and remove the rest
+//        for (String lineage : ambiguousLineageMap.keySet()) {
+//            Set<Node> nodeSet = ambiguousLineageMap.get(lineage);
+//            int maxSize = 0;
+//            Node maxNode = null;
+//            for (Node node : nodeSet) {
+//                int size = countTips(tree, node);
+//                if (size > maxSize) {
+//                    maxSize = size;
+//                    maxNode = node;
+//                }
+//            }
+//
+//            for (Node node : nodeSet) {
+//                if (node != maxNode) {
+//                    nodeClusterMap.put(node, null);
+//                }
+//            }
+//
+//        }
+
+//        Map<String, Node> lineageNodeMap = new HashMap<>();
 //        clusterLineages(tree, tree.getRootNode(), "uk_lineage", null,
 //                "new_uk_lineage", minSublineageSize, nodeClusterMap, lineageNodeMap);
 
         String outputTreeFileName = path + outputPrefix + ".nexus";
         if (isVerbose) {
-            outStream.println("Writing tree file, " + treeFileName + ", in " + outputFormat.name().toLowerCase() + " format");
+            outStream.println("Writing tree file, " + outputTreeFileName + ", in " + outputFormat.name().toLowerCase() + " format");
             outStream.println();
         }
 
         writeTreeFile(tree, outputTreeFileName, outputFormat);
 
-        Map<String, String> lineageHaplotypeMap = new HashMap<>();
-
-        extractLineageHaplotypes(tree, tree.getRootNode(), "new_uk_lineage", null, lineageHaplotypeMap);
+//        Map<String, String> lineageHaplotypeMap = new HashMap<>();
+//
+//        extractLineageHaplotypes(tree, tree.getRootNode(), "new_uk_lineage", null, lineageHaplotypeMap);
 
         try {
-            String outputFileName = path + outputPrefix + "_lineages.csv";
+            String outputFileName = path + outputPrefix + "_clusters.csv";
             PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputFileName)));
 
-            writer.println("new_uk_lineage,sequence_hash");
-            for (String haplotype : lineageHaplotypeMap.keySet()) {
-                String lineage = lineageHaplotypeMap.get(haplotype);
-                writer.println(lineage + "," + haplotype);
+            writer.println("new_uk_lineage,sequence_hash,del_trans,uk_tip_count");
+            for (Node node : nodeClusterMap.keySet()) {
+                Cluster cluster = nodeClusterMap.get(node);
+                writer.println(cluster.ukLineage + "," + cluster.haplotype + "," + cluster.delTrans + "," + cluster.ukTipCount);
             }
 
             writer.close();
@@ -139,8 +164,8 @@ public class GrapevineSublineages extends Command {
      * @param node
      * @param nodeClusterMap
      */
-    private void findClusterRoots(RootedTree tree, Node node, boolean parentIsUK, Map<Node, Cluster> nodeClusterMap) {
-        boolean isUK = (Boolean)node.getAttribute("country_uk_deltran");
+    private void findClusterRoots(RootedTree tree, Node node, String clusterAttribute, boolean parentIsUK, Map<Node, Cluster> nodeClusterMap) {
+        boolean isUK = (Boolean)node.getAttribute(clusterAttribute);
         if (Boolean.TRUE.equals(isUK) && !parentIsUK) {
             // start of a new lineage
             Map<Object, Integer> ukLineages = getTipAttributes(tree, node, "uk_lineage");
@@ -148,6 +173,9 @@ public class GrapevineSublineages extends Command {
 //            if (nodeLineageMap.containsValue(ukLineage)) {
 //                throw new RuntimeException("multiple roots of a ukLineage present");
 //            }
+            if (ukLineage.equals("UK2461")) {
+                System.err.println("UK2461");
+            }
             if (ukLineages.size() > 1) {
                 throw new RuntimeException("ambiguous lineage");
             }
@@ -157,7 +185,7 @@ public class GrapevineSublineages extends Command {
         if (!tree.isExternal(node)) {
             // finally recurse down
             for (Node child : tree.getChildren(node)) {
-                findClusterRoots(tree, child, isUK, nodeClusterMap);
+                findClusterRoots(tree, child, clusterAttribute, isUK, nodeClusterMap);
             }
         }
     }
@@ -282,43 +310,8 @@ public class GrapevineSublineages extends Command {
         String delLineage = (String)node.getAttribute("del_lineage");
         int tipCount = countTips(tree, node);
         int ukTipCount = countTips(tree, node, "country_uk_deltran", true);
-        String haplotype = getHaplotype(tree, node);
+        String haplotype = (String)node.getAttribute("sequence_hash");
         return new Cluster(node, delLineage, haplotype, ukLineage, tipCount, ukTipCount);
-    }
-
-    /**
-     * recursive version
-     * @param tree
-     * @param node
-     */
-    private String getHaplotype(RootedTree tree, Node node) {
-        Map<String, Integer> haplotypes = new HashMap<>();
-        for (Node child : tree.getChildren(node)) {
-            if (tree.isExternal(child)) {
-                if (tree.getLength(child) < ZERO_BRANCH_THRESHOLD) {
-                    String hap = (String)child.getAttribute("sequence_hash");
-                    haplotypes.put(hap, haplotypes.getOrDefault(hap, 0) + 1);
-                }
-            }
-        }
-
-        // order by frequency
-        LinkedHashMap<String, Integer> reversed = new LinkedHashMap<>();
-        haplotypes.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .forEachOrdered(x -> reversed.put(x.getKey(), x.getValue()));
-
-
-        if (haplotypes.size() > 0) {
-            // get the most frequent
-            String haplotypeHash = reversed.keySet().iterator().next();
-            if (haplotypes.size() > 1) {
-                errorStream.println("multiple haplotypes on internal node");
-            }
-            return haplotypeHash;
-        }
-        return null;
     }
 
     /**
