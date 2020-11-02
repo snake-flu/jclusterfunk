@@ -109,8 +109,12 @@ public class Divide extends Command {
         for (Node key : subtreeMap.keySet()) {
             Subtree subtree = subtreeMap.get(key);
 
+            if (isVerbose) {
+                outStream.println("Creating subtree " + subtree.name);
+            }
+
             SimpleRootedTree newTree = new SimpleRootedTree();
-            createNodes(tree, subtree.root, newTree);
+            createNodes(tree, subtree.root, subtreeMap, newTree);
             subtree.tree = newTree;
         }
     }
@@ -143,7 +147,7 @@ public class Divide extends Command {
      * @param node
      * @return
      */
-    private Node createNodes(RootedTree tree, Node node, SimpleRootedTree newTree) {
+    private Node createNodes(RootedTree tree, Node node, Map<Node, Subtree> subtreeMap, SimpleRootedTree newTree) {
 
         Node newNode;
         if (tree.isExternal(node)) {
@@ -152,15 +156,23 @@ public class Divide extends Command {
             List<Node> children = new ArrayList<Node>();
 
             for (Node child : tree.getChildren(node)) {
-                String subtree = (String)child.getAttribute("subtree");
+                String subtreeName = (String)child.getAttribute("subtree");
 
-                if (subtree != null) {
+                if (subtreeName != null) {
                     // is the root of a subtree - replace with a tip labelled as the subtree
-                    Node newChild = newTree.createExternalNode(Taxon.getTaxon(subtree));
+//                    Taxon taxon = Taxon.getTaxon(subtreeName);
+
+                    Taxon taxon = subtreeMap.get(child).rootRepresentitive;
+
+                    if (isVerbose) {
+                        outStream.println("  Creating subtree representitive: " + taxon.getName() + " for subtree " + subtreeName);
+                    }
+
+                    Node newChild = newTree.createExternalNode(taxon);
                     children.add(newChild);
                     newTree.setHeight(newChild, tree.getHeight(child));
                 } else {
-                    children.add(createNodes(tree, child, newTree));
+                    children.add(createNodes(tree, child, subtreeMap, newTree));
                 }
             }
 
