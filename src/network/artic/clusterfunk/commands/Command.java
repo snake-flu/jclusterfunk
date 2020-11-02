@@ -533,7 +533,7 @@ abstract class Command {
         return strings;
     }
 
-    private Map<String, CSVRecord> readCSV(String fileName, String indexColumn) {
+    protected Map<String, CSVRecord> readCSV(String fileName, String indexColumn) {
         Map<String, CSVRecord> csv = new HashMap<>();
         try {
             Reader in = new FileReader(fileName);
@@ -552,7 +552,12 @@ abstract class Command {
                         }
                         first = false;
                     }
-                    csv.put(record.get(indexColumn), record);
+                    String key = record.get(indexColumn);
+                    if (csv.containsKey(key)) {
+                        errorStream.println("Duplicate index value, " + key + " in metadata table");
+                        System.exit(1);
+                    }
+                    csv.put(key, record);
                 }
             } else {
                 // key the records against the first column
@@ -562,7 +567,12 @@ abstract class Command {
                         headerRecord = record;
                         first = false;
                     }
-                    csv.put(record.get(0), record);
+                    String key = record.get(0);
+                    if (csv.containsKey(key)) {
+                        errorStream.println("Duplicate index value, " + key + " in metadata table");
+                        System.exit(1);
+                    }
+                    csv.put(key, record);
                 }
             }
         } catch (IOException e) {

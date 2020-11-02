@@ -3,10 +3,9 @@ package network.artic.clusterfunk.commands;
 import jebl.evolution.graphs.Node;
 import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
+import org.apache.commons.csv.CSVRecord;
 
 import java.util.*;
-
-import static java.util.stream.Collectors.toMap;
 
 /**
  *
@@ -14,8 +13,9 @@ import static java.util.stream.Collectors.toMap;
 public class GrapevineAssignLineages extends Command {
 
     public GrapevineAssignLineages(String treeFileName,
-                                   String metadataFileName,
-                                   String outputFileName,
+                                   String clusterFileName,
+                                   String outputPath,
+                                   String outputPrefix,
                                    FormatType outputFormat,
                                    String outputMetadata,
                                    String indexColumn,
@@ -27,7 +27,9 @@ public class GrapevineAssignLineages extends Command {
                                    String clusterPrefix,
                                    boolean isVerbose) {
 
-        super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
+        super(isVerbose);
+
+        String path = checkOutputPath(outputPath);
 
         if (outputFormat != FormatType.NEXUS) {
             errorStream.println("Annotations are only compatible with NEXUS output format");
@@ -36,72 +38,92 @@ public class GrapevineAssignLineages extends Command {
 
         RootedTree tree = readTree(treeFileName);
 
-        clusterName = "del_lineage";
+        clusterName = "uk_lineage";
 
-        Map<Object, Set<Node>> attributeValues = collectTipAttributeValues(tree, clusterName);
+        Map<String, CSVRecord> lineages = readCSV(clusterFileName, clusterName);
 
-        List<Object> keys = new ArrayList<>(attributeValues.keySet());
-        keys.sort((o1, o2) -> (o1.toString().length() == o2.toString().length() ?
-                o1.toString().compareTo(o2.toString()) :
-                o1.toString().length() - o2.toString().length()));
+        Map<String, Cluster> haplotypeClusterMap = new HashMap<>();
+        for (String lineageName : lineages.keySet()) {
+            CSVRecord record = lineages.get(lineageName);
+
+            //uk_lineage,sequence_hash,depth,del_trans,uk_tip_count
+            Cluster cluster = new Cluster(lineageName,
+                    record.get("sequence_hash"),
+                    Integer.parseInt(record.get("depth")),
+                    Integer.parseInt(record.get("uk_tip_count")),
+                    Integer.parseInt(record.get("tip_count")));
+
+            haplotypeClusterMap.put(record.get("sequence_hash"), cluster);
+        }
 
         if (isVerbose) {
-            outStream.println("Attribute: " + clusterName);
-            outStream.println("Values (" + keys.size() + "): " + String.join(", ", toString(keys)));
+            outStream.println("Lineage name: " + clusterName);
+            outStream.println("    Lineages: " + haplotypeClusterMap.size());
             outStream.println();
         }
 
-        Map<String, String> clusterLineageMap = new HashMap<>();
+        Map<Node, Cluster> nodeClusterMap = new HashMap<>();
 
-        for (Object key : keys) {
-            Set<Node> tips = attributeValues.get(key);
-            Map<String, Integer> counts = new HashMap<>();
-            for (Node tip: tips) {
-                String ukLineage = (String)tip.getAttribute("uk_lineage");
-                int count = counts.computeIfAbsent(ukLineage, k -> 0);
-                counts.put(ukLineage, count + 1);
-            }
-            Map<String, Integer> sortedCounts = counts
-                    .entrySet()
-                    .stream()
-                    .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-                    .collect(
-                            toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
+        findClusterRoots(tree, haplotypeClusterMap, nodeClusterMap);
 
-            if (counts.size() > 1) {
-                errorStream.println("There is more than one uk_lineage associated with " + key);
-                System.exit(1);
-            }
+        assignLineages(tree, tree.getRootNode(), nodeClusterMap);
 
-            clusterLineageMap.put(key.toString(), counts.keySet().iterator().next());
-        }
-
-        labelLineages(tree, clusterName, "uk_lineage", clusterLineageMap);
-        clusterLineages(tree, tree.getRootNode(), "uk_lineage", null, "new_uk_lineage", clusterLineageMap);
+        String outputTreeFileName = path + outputPrefix + ".nexus";
 
         if (isVerbose) {
-            outStream.println("Writing tree file, " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
+            outStream.println("Writing tree file, " + outputTreeFileName + ", in " + outputFormat.name().toLowerCase() + " format");
             outStream.println();
         }
 
-        writeTreeFile(tree, outputFileName, outputFormat);
+        writeTreeFile(tree, outputTreeFileName, outputFormat);
 
     }
 
     /**
      * recursive version
      * @param tree
-     * @param clusterLineageMap
+     * @param haplotypeClusterMap
+     * @param nodeClusterMap
      */
-    private void labelLineages(RootedTree tree, String clusterName, String lineageName, Map<String, String> clusterLineageMap) {
+    private void findClusterRoots(RootedTree tree, Map<String, Cluster> haplotypeClusterMap, Map<Node, Cluster> nodeClusterMap) {
         for (Node node : tree.getInternalNodes()) {
-            String cluster = (String)node.getAttribute(clusterName);
+            String haplotype = (String)node.getAttribute("sequence_hash");
+            Cluster cluster = haplotypeClusterMap.get(haplotype);
             if (cluster != null) {
-                String lineage = clusterLineageMap.get(cluster);
-                if (isVerbose) {
-                    outStream.println("Found cluster, " + cluster + " - assigning to " + lineage);
+
+                Node clusterNode = node;
+                int depth = 0;
+                while (tree.getParent(clusterNode) != null && depth < cluster.depth) {
+                    clusterNode = tree.getParent(clusterNode);
+                    depth += 1;
                 }
-                node.setAttribute(lineageName, lineage);
+
+                if (tree.isRoot(clusterNode)) {
+                    errorStream.println("Root of lineage, " + cluster.lineage + ", is the root of the tree");
+                    System.exit(1);
+                }
+
+                cluster.delTrans = (String)node.getAttribute("del_lineage");
+
+                boolean isUK = (Boolean)clusterNode.getAttribute("country_uk_deltran");
+
+//                Node parent = tree.getParent(clusterNode);
+//                boolean isParentUK = (Boolean)parent.getAttribute("country_uk_deltran");
+//                if (isParentUK) {
+//                    // if the parent is also UK, then crawl this lineage up...
+//                    while (isParentUK) {
+//                        clusterNode = tree.getParent(clusterNode);
+//                        depth += 1;
+//                        isUK = (Boolean) clusterNode.getAttribute("country_uk_deltran");
+//                    }
+//                }
+//                if (!isUK) {
+//                    // does this matter?
+////                    errorStream.println("Cluster, " + cluster.lineage + ", haplotype defined node is not UK");
+//                }
+
+                cluster.node = clusterNode;
+                nodeClusterMap.put(node, cluster);
             }
         }
     }
@@ -109,82 +131,36 @@ public class GrapevineAssignLineages extends Command {
     /**
      * recursive version
      * @param tree
-     * @param node
-     * @param clusterLineageMap
+     * @param nodeClusterMap
      */
-    private void clusterLineages(RootedTree tree, Node node, String lineageName, String parentCluster, String newLineageName, Map<String, String> clusterLineageMap) {
+    private void assignLineages(RootedTree tree, Node node, Map<Node, Cluster> nodeClusterMap) {
+        Cluster cluster = nodeClusterMap.get(node);
+        if (cluster != null) {
+            propagateAttribute(tree, node, "country_uk_deltran", true, "new_uk_lineage", cluster.lineage);
+        }
         if (!tree.isExternal(node)) {
             for (Node child : tree.getChildren(node)) {
-                clusterLineages(tree, child, lineageName, null, newLineageName, clusterLineageMap);
+                assignLineages(tree, child, nodeClusterMap);
             }
-
-            Map<String, Integer> lineages = new HashMap<>();
-            for (Node child : tree.getChildren(node)) {
-                String lineage = (String)child.getAttribute(lineageName);
-                if (lineage != null) {
-                    int count = lineages.computeIfAbsent(lineage, k -> 0);
-                    lineages.put(lineage, count + 1);
-                }
-            }
-
-            String lineage = null;
-
-            if (lineages.size() > 0) {
-                if (lineages.size() > 1) {
-                    throw new RuntimeException("more than one child lineage present");
-                }
-                lineage = lineages.keySet().iterator().next();
-
-                List<Pair> childSizes = new ArrayList<>();
-                for (Node child : tree.getChildren(node)) {
-                    if (lineage.equals((String)child.getAttribute(lineageName))) {
-                        childSizes.add(new Pair(child, countTips(tree, child)));
-                    }
-                }
-                childSizes.sort(Comparator.comparing(k -> -k.count));
-
-                int minSublineageSize = 50;
-                int bigSublineageCount = 0;
-
-                int totalSize = 0;
-                for (Pair pair : childSizes) {
-                    // first give everyone the base lineage designation
-                    if (pair.count >= minSublineageSize) {
-                        bigSublineageCount += 1;
-                    }
-                    totalSize += pair.count;
-
-                    pair.node.setAttribute(newLineageName, lineage);
-                    propagateAttribute(tree, pair.node, "country_uk_deltran", true, newLineageName, lineage);
-                }
-
-                int sublineageSize = 0;
-                if (bigSublineageCount > 1) {
-                    int sublineageNumber = 1;
-                    for (Pair pair : childSizes) {
-                        // then give children larger than minSublineageSize a sublineage designation
-                        if (pair.count >= minSublineageSize) {
-                            String sublineage = lineage + "." + sublineageNumber;
-                            pair.node.setAttribute(newLineageName, sublineage);
-                            propagateAttribute(tree, pair.node, "country_uk_deltran", true, newLineageName, sublineage);
-                            sublineageNumber += 1;
-                            sublineageSize += pair.count;
-
-                            if (isVerbose) {
-                                outStream.println("Creating sublineage: " + sublineage + " [" + pair.count + " taxa]");
-                            }
-                        }
-                    }
-                }
-                if (isVerbose) {
-                    outStream.println("Creating lineage: " + lineage + " [" + (totalSize - sublineageSize) + " taxa]");
-                }
-            }
-
-
         }
     }
+    
+    class Cluster {
+        public Cluster(String lineage, String haplotype, int depth, int tipCount, int ukTipCount) {
+            this.lineage = lineage;
+            this.haplotype = haplotype;
+            this.depth = depth;
+            this.tipCount = tipCount;
+            this.ukTipCount = ukTipCount;
+        }
 
-
+        final String lineage;
+        final String haplotype;
+        final int depth;
+        final int tipCount;
+        final int ukTipCount;
+        Node node;
+        String delTrans;
+    }
 }
 

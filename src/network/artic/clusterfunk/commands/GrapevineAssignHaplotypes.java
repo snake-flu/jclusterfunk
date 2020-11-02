@@ -64,6 +64,8 @@ public class GrapevineAssignHaplotypes extends Command {
 
     }
 
+
+
     /**
      * recursive version
      * @param tree
@@ -86,23 +88,27 @@ public class GrapevineAssignHaplotypes extends Command {
             }
 
             // order by frequency
-            LinkedHashMap<String, Integer> reversed = new LinkedHashMap<>();
+            List<String> haplotypeList = new ArrayList<>();
             haplotypeCounts.entrySet()
                     .stream()
                     // sort by frequencies and break ties with fewest ambiguities
                     .sorted((e1, e2) -> e1.getValue().equals(e2.getValue()) ?
                             ambiguityCounts.get(e1.getKey()) - ambiguityCounts.get(e2.getKey()) :
                             e2.getValue() - e1.getValue())
-                    .forEachOrdered(x -> reversed.put(x.getKey(), x.getValue()));
-
+                    .forEachOrdered(x -> {
+                        haplotypeList.add(x.getKey());
+                    });
 
             if (haplotypeCounts.size() > 0) {
                 // get the most frequent
-                String haplotypeHash = reversed.keySet().iterator().next();
+                String haplotypeHash = haplotypeList.get(0);
+                int ambiguityCount = ambiguityCounts.get(haplotypeHash);
+
 //                if (haplotypeCounts.size() > 1) {
 //                    errorStream.println("multiple haplotypes on internal node");
 //                }
                 node.setAttribute(attributeName, haplotypeHash);
+                node.setAttribute("ambiguity_count", ambiguityCount);
                 count += 1;
             }
         }
