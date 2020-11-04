@@ -76,6 +76,7 @@ public class GrapevineAssignHaplotypes extends Command {
         for (Node node : tree.getInternalNodes()) {
             Map<String, Integer> haplotypeCounts = new HashMap<>();
             Map<String, Integer> ambiguityCounts = new HashMap<>();
+            Map<String, String> representatives = new HashMap<>();
             for (Node child : tree.getChildren(node)) {
                 if (tree.isExternal(child)) {
                     if (tree.getLength(child) < ZERO_BRANCH_THRESHOLD) {
@@ -83,6 +84,8 @@ public class GrapevineAssignHaplotypes extends Command {
                         haplotypeCounts.put(hap, haplotypeCounts.getOrDefault(hap, 0) + 1);
                         int amb = Integer.parseInt((String)child.getAttribute("ambiguity_count"));
                         ambiguityCounts.put(hap, amb);
+                        representatives.put(hap, tree.getTaxon(child).getName());
+
                     }
                 }
             }
@@ -103,12 +106,14 @@ public class GrapevineAssignHaplotypes extends Command {
                 // get the most frequent
                 String haplotypeHash = haplotypeList.get(0);
                 int ambiguityCount = ambiguityCounts.get(haplotypeHash);
+                String representative = representatives.get(haplotypeHash);
 
 //                if (haplotypeCounts.size() > 1) {
 //                    errorStream.println("multiple haplotypes on internal node");
 //                }
                 node.setAttribute(attributeName, haplotypeHash);
                 node.setAttribute("ambiguity_count", ambiguityCount);
+                node.setAttribute("representative", representative);
                 count += 1;
             }
         }
