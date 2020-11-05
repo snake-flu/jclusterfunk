@@ -372,7 +372,7 @@ public class GrapevineAssignLineages extends Command {
     private void assignPhylotypes(RootedTree tree, Node node, String clusterName, Map<Node, Cluster> nodeClusterMap) {
         Cluster cluster = nodeClusterMap.get(node);
         if (cluster != null) {
-            assignPhylotype(tree, node, cluster.lineage + "_", -1, clusterName, cluster.lineage);
+            assignPhylotype(tree, node, cluster.lineage, 1, clusterName, cluster.lineage);
         }
         for (Node child : tree.getChildren(node)) {
             assignPhylotypes(tree, child, clusterName, nodeClusterMap);
@@ -387,10 +387,11 @@ public class GrapevineAssignLineages extends Command {
      * @param attributeValue
      */
     private void assignPhylotype(RootedTree tree, Node node, String parentPhylotype, int childNumber, String attributeName, Object attributeValue) {
-        String phylotype = parentPhylotype + (childNumber > 0 ? childNumber : "");
-        node.setAttribute("phylotype", phylotype);
+        String phylotype = parentPhylotype;
 
         if (!tree.isExternal(node)) {
+            phylotype += "." + childNumber;
+
             List<Node> children = tree.getChildren(node);
             children.sort(Comparator.comparingInt((child) -> countTips(tree, (Node) child)).reversed());
 
@@ -398,11 +399,12 @@ public class GrapevineAssignLineages extends Command {
             for (Node child : children) {
                 Object value = node.getAttribute(attributeName);
                 if (attributeName == null || (value != null && (attributeValue == null || value.equals(attributeValue)))) {
-                    assignPhylotype(tree, child, phylotype + (childNumber > 0 ? "." : ""), c, attributeName, attributeValue);
+                    assignPhylotype(tree, child, phylotype, c, attributeName, attributeValue);
                     c += 1;
                 }
             }
         }
+        node.setAttribute("phylotype", phylotype);
     }
 
     class Cluster {
