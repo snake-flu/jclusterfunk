@@ -70,9 +70,44 @@ public class GrapevineAssignLineages extends Command {
         List<Integer> ukLineageNumbers = new ArrayList<>(ukLineageSet);
         int nextUKLineageNumber = ukLineageNumbers.get(ukLineageNumbers.size() - 1) + 1;
 
+        if (isVerbose) {
+            outStream.println("Finding lineage roots");
+            outStream.println();
+        }
+
         findClusterRoots(tree, haplotypeClusterMap, nextUKLineageNumber, nodeClusterMap);
 
+        if (isVerbose) {
+            outStream.println("Found " + nodeClusterMap.size() + " lineages");
+            outStream.println();
+            outStream.println("Assigning lineages");
+            outStream.println();
+        }
+
+        int singletonCount = assignSingletons(tree, clusterName);
         assignLineages(tree, tree.getRootNode(), clusterName, nodeClusterMap);
+
+        int bigClusters = 0;
+        int smallClusters = 0;
+        for (Cluster cluster : nodeClusterMap.values()) {
+            if (cluster.ukTipCount >= 50) {
+                bigClusters += 1;
+            } else if (cluster.ukTipCount > 1) {
+                smallClusters += 1;
+            }
+        }
+
+        if (isVerbose) {
+            outStream.println("Assigned " + nodeClusterMap.size() + " as " + clusterName);
+            outStream.println("Large (>=50): " + bigClusters);
+            outStream.println(" Small (<50): " + smallClusters);
+            outStream.println("  Singletons: " + singletonCount);
+            outStream.println();
+            outStream.println("Assigning phylotypes");
+            outStream.println();
+        }
+
+        assignPhylotypes(tree, tree.getRootNode(), clusterName, nodeClusterMap);
 
         String outputTreeFileName = path + outputPrefix + "_tree.nexus";
         if (isVerbose) {
@@ -92,10 +127,11 @@ public class GrapevineAssignLineages extends Command {
                 outStream.println();
             }
 
-            writer.println("sequence_name," + clusterName);
+            writer.println("sequence_name," + clusterName + ",phylotype");
             for (Node tip: tree.getExternalNodes()) {
                 String lineage = (String)tip.getAttribute(clusterName);
-                writer.println(tree.getTaxon(tip).getName() + "," + (lineage != null ? lineage : ""));
+                String phylotype = (String)tip.getAttribute("phylotype");
+                writer.println(tree.getTaxon(tip).getName() + "," + (lineage != null ? lineage : "") + "," + (phylotype != null ? phylotype : ""));
             }
 
             writer.close();
@@ -126,7 +162,7 @@ public class GrapevineAssignLineages extends Command {
             }
 
             writer.close();
-            
+
             if (isVerbose) {
                 outStream.println("Written lineage file: " + outputLineageFileName);
                 outStream.println("            Lineages: " + nodeClusterMap.values().size());
@@ -208,6 +244,19 @@ public class GrapevineAssignLineages extends Command {
         }
     }
 
+    private int assignSingletons(RootedTree tree, String lineageName) {
+        int count = 0;
+        for (Node node : tree.getExternalNodes()) {
+            boolean isUK = (Boolean)node.getAttribute("country_uk_deltran");
+            boolean isParentUK = !tree.isRoot(node) && (Boolean)tree.getParent(node).getAttribute("country_uk_deltran");
+            if (isUK && !isParentUK) {
+                node.setAttribute(lineageName, "singleton");
+                count += 1;
+            }
+        }
+        return count;
+    }
+
     /**
      * recursive version
      * @param tree
@@ -216,11 +265,32 @@ public class GrapevineAssignLineages extends Command {
     private void assignLineages(RootedTree tree, Node node, String clusterName, Map<Node, Cluster> nodeClusterMap) {
         Cluster cluster = nodeClusterMap.get(node);
         if (cluster != null) {
-            propagateAttribute(tree, node, "country_uk_deltran", true, clusterName, cluster.lineage);
+            assignLineage(tree, node, "country_uk_deltran", true, clusterName, cluster.lineage);
         }
         if (!tree.isExternal(node)) {
             for (Node child : tree.getChildren(node)) {
                 assignLineages(tree, child, clusterName, nodeClusterMap);
+            }
+        }
+    }
+
+    /**
+     * Recursively sets an lineage.
+     * @param tree
+     * @param node
+     */
+    private void assignLineage(RootedTree tree, Node node, String attributeName, Object attributeValue, String lineageName, String lineageValue) {
+        node.setAttribute(lineageName, lineageValue);
+
+        if (!tree.isExternal(node)) {
+            List<Node> children = tree.getChildren(node);
+            children.sort(Comparator.comparingInt(child -> countTips(tree, child)));
+
+            for (Node child : children) {
+                Object value = node.getAttribute(attributeName);
+                if ((value != null && (attributeValue == null || value.equals(attributeValue)))) {
+                    assignLineage(tree, child, attributeName, attributeValue, lineageName, lineageValue);
+                }
             }
         }
     }
@@ -292,6 +362,47 @@ public class GrapevineAssignLineages extends Command {
 
         // no haplotype found
         return Integer.MAX_VALUE;
+    }
+
+    /**
+     * recursive version
+     * @param tree
+     * @param nodeClusterMap
+     */
+    private void assignPhylotypes(RootedTree tree, Node node, String clusterName, Map<Node, Cluster> nodeClusterMap) {
+        Cluster cluster = nodeClusterMap.get(node);
+        if (cluster != null) {
+            assignPhylotype(tree, node, cluster.lineage + "_", -1, clusterName, cluster.lineage);
+        }
+        for (Node child : tree.getChildren(node)) {
+            assignPhylotypes(tree, child, clusterName, nodeClusterMap);
+        }
+    }
+
+    /**
+     * Recursively sets phylotypes from a given node. Only goes down subtrees where attributeName == attributeValue.
+     * @param tree
+     * @param node
+     * @param attributeName
+     * @param attributeValue
+     */
+    private void assignPhylotype(RootedTree tree, Node node, String parentPhylotype, int childNumber, String attributeName, Object attributeValue) {
+        String phylotype = parentPhylotype + (childNumber > 0 ? childNumber : "");
+        node.setAttribute("phylotype", phylotype);
+
+        if (!tree.isExternal(node)) {
+            List<Node> children = tree.getChildren(node);
+            children.sort(Comparator.comparingInt((child) -> countTips(tree, (Node) child)).reversed());
+
+            int c = 1;
+            for (Node child : children) {
+                Object value = node.getAttribute(attributeName);
+                if (attributeName == null || (value != null && (attributeValue == null || value.equals(attributeValue)))) {
+                    assignPhylotype(tree, child, phylotype + (childNumber > 0 ? "." : ""), c, attributeName, attributeValue);
+                    c += 1;
+                }
+            }
+        }
     }
 
     class Cluster {

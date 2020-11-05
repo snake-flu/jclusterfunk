@@ -24,6 +24,8 @@ public class Polecat extends Command {
     }
 
     public enum Criterion {
+        SIZE("size"),
+        UK_SIZE("uk-size"),
         GROWTH_RATE("growth-rate"),
         IDENTICAL_COUNT("identical-count"),
         ADMIN1_ENTROPY("region-entropy"),
@@ -82,6 +84,7 @@ public class Polecat extends Command {
                    int minSize,
                    int maxSize,
                    int maxAge,
+                   int minRecency,
                    int maxRecency,
                    double minUKProportion,
                    Optimization optimization,
@@ -148,6 +151,12 @@ public class Polecat extends Command {
                     Stats stats = nodeStatsMap.get(node);
                     double crit = 0.0;
                     switch (optimizationCriterion) {
+                        case SIZE:
+                            crit = stats.tipCount;
+                            break;
+                        case UK_SIZE:
+                            crit = stats.ukCount;
+                            break;
                         case GROWTH_RATE:
                             crit = stats.growthRate;
                             break;
@@ -210,6 +219,12 @@ public class Polecat extends Command {
                 outStream.println("Ranking by criterion: " + rankCiterion.name);
             }
             switch (rankCiterion) {
+                case SIZE:
+                    comparator = Comparator.comparing(Stats::getTipCount);
+                    break;
+                case UK_SIZE:
+                    comparator = Comparator.comparing(Stats::getUkCount);
+                    break;
                 case GROWTH_RATE:
                     comparator = Comparator.comparing(Stats::getGrowthRate);
                     break;
@@ -267,6 +282,7 @@ public class Polecat extends Command {
                 for (Stats stats : nodeStats) {
                     if (stats.ukCount >= minSize &&
                             (maxAge < 0 || stats.getAge() < maxAge) &&
+                            (minRecency < 0 || stats.getRecency() < minRecency) &&
                             (maxRecency < 0 || stats.getRecency() < maxRecency) &&
                             stats.ukProportion >= minUKProportion) {
                         writer.print(

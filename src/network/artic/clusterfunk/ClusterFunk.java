@@ -189,6 +189,7 @@ class ClusterFunk {
                         options.addOption(MIN_CLUSTER_SIZE);
                         options.addOption(MAX_CLUSTER_SIZE);
                         options.addOption(MAX_CLUSTER_AGE);
+                        options.addOption(MIN_CLUSTER_RECENCY);
                         options.addOption(MAX_CLUSTER_RECENCY);
                         options.addOption(MIN_UK);
                         options.addOption(OPTIMIZE_BY);
@@ -490,6 +491,7 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("min-size", "10")),
                         Integer.parseInt(commandLine.getOptionValue("max-size", "-1")),
                         Integer.parseInt(commandLine.getOptionValue("max-age", "90")),
+                        Integer.parseInt(commandLine.getOptionValue("min-recency", "-1")),
                         Integer.parseInt(commandLine.getOptionValue("max-recency", "-1")),
                         Double.parseDouble(commandLine.getOptionValue("min-UK", "0.5")),
                         optimization,

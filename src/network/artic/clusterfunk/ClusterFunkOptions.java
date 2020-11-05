@@ -369,6 +369,14 @@ class ClusterFunkOptions {
             .desc("maximum age of a cluster")
             .type(Integer.class).build();
 
+    final static Option MIN_CLUSTER_RECENCY = Option.builder()
+            .longOpt("min-recency")
+            .argName("days")
+            .hasArg()
+            .required(false)
+            .desc("minimum recency of a cluster")
+            .type(Integer.class).build();
+
     final static Option MAX_CLUSTER_RECENCY = Option.builder()
             .longOpt("max-recency")
             .argName("days")
