@@ -141,6 +141,7 @@ class ClusterFunk {
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
+                        options.addOption(ATTRIBUTE);
                         options.addOption(CLUSTER_NAME);
                         break;
                     case GRAPEVINE_ASSIGN_HAPLOTYPES:
@@ -160,6 +161,7 @@ class ClusterFunk {
                         options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(OUTPUT_METADATA);
+                        options.addOption(ATTRIBUTE);
                         options.addOption(MIN_CLUSTER_SIZE);
                         break;
                     case INSERT:
@@ -446,6 +448,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("prefix"),
                         format,
+                        commandLine.getOptionValue("attribute"),
                         commandLine.getOptionValue("cluster-name"),
                         isVerbose);
                 break;
@@ -460,6 +463,16 @@ class ClusterFunk {
                         commandLine.getOptionValue("field-delimeter", "\\|"),
                         commandLine.getOptionValue("attribute"),
                         commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
+            case GRAPEVINE_SUBLINEAGES:
+                new GrapevineSublineages(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("prefix"),
+                        format,
+                        commandLine.getOptionValue("attribute"),
+                        Integer.parseInt(commandLine.getOptionValue("min-size", "50")),
                         isVerbose);
                 break;
             case POLECAT:
@@ -501,15 +514,6 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("max-count", "-1")),
                         Double.parseDouble(commandLine.getOptionValue("max-divergence", "1.5")),
                         commandLine.hasOption("ignore-missing"),
-                        isVerbose);
-                break;
-            case GRAPEVINE_SUBLINEAGES:
-                new GrapevineSublineages(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("output"),
-                        commandLine.getOptionValue("prefix"),
-                        format,
-                        Integer.parseInt(commandLine.getOptionValue("min-size", "50")),
                         isVerbose);
                 break;
             case PRUNE:

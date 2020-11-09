@@ -64,8 +64,6 @@ public class GrapevineAssignHaplotypes extends Command {
 
     }
 
-
-
     /**
      * recursive version
      * @param tree
@@ -82,7 +80,12 @@ public class GrapevineAssignHaplotypes extends Command {
                     if (tree.getLength(child) < ZERO_BRANCH_THRESHOLD) {
                         String hap = (String)child.getAttribute(attributeName);
                         haplotypeCounts.put(hap, haplotypeCounts.getOrDefault(hap, 0) + 1);
-                        int amb = Integer.parseInt((String)child.getAttribute("ambiguity_count"));
+                        int amb = 0;
+                        try {
+                            amb = Integer.parseInt((String) child.getAttribute("ambiguity_count"));
+                        } catch (NumberFormatException nfe) {
+                            errorStream.println("unable to parse value");
+                        }
                         ambiguityCounts.put(hap, amb);
                         representatives.put(hap, tree.getTaxon(child).getName());
 
