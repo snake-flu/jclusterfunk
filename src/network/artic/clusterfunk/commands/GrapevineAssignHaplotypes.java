@@ -33,14 +33,10 @@ public class GrapevineAssignHaplotypes extends Command {
         if (outputFormat != FormatType.NEXUS) {
             errorStream.println("Annotations are only compatible with NEXUS output format");
             System.exit(1);
-        }                                                           
+        }
 
         RootedTree tree = readTree(treeFileName);
 
-        if (annotationName == null) {
-            annotationName = "sequence_hash";
-        }
-        
         annotateTips(tree, getTaxonMap(tree), annotationName, ignoreMissing);
         annotateTips(tree, getTaxonMap(tree), "ambiguity_count", ignoreMissing);
 
@@ -53,7 +49,7 @@ public class GrapevineAssignHaplotypes extends Command {
 
         if (isVerbose) {
             outStream.println("Internal nodes: " + tree.getInternalNodes().size());
-            outStream.println("Labelled with haplotype: " + labelledCount);
+            outStream.println("Labelled with representitive: " + labelledCount);
             outStream.println();
 
             outStream.println("Writing tree file, " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
@@ -72,51 +68,40 @@ public class GrapevineAssignHaplotypes extends Command {
     private int labelInternalNodes(RootedTree tree, String attributeName) {
         int count = 0;
         for (Node node : tree.getInternalNodes()) {
-            Map<String, Integer> haplotypeCounts = new HashMap<>();
             Map<String, Integer> ambiguityCounts = new HashMap<>();
-            Map<String, String> representatives = new HashMap<>();
             for (Node child : tree.getChildren(node)) {
                 if (tree.isExternal(child)) {
                     if (tree.getLength(child) < ZERO_BRANCH_THRESHOLD) {
-                        String hap = (String)child.getAttribute(attributeName);
-                        haplotypeCounts.put(hap, haplotypeCounts.getOrDefault(hap, 0) + 1);
                         int amb = 0;
                         try {
                             amb = Integer.parseInt((String) child.getAttribute("ambiguity_count"));
                         } catch (NumberFormatException nfe) {
-                            errorStream.println("unable to parse value");
+                            errorStream.println("unable to ambiguity parse value");
+                            System.exit(1);
                         }
-                        ambiguityCounts.put(hap, amb);
-                        representatives.put(hap, tree.getTaxon(child).getName());
-
+                        String rep = tree.getTaxon(child).getName();
+                        ambiguityCounts.put(rep, amb);
                     }
                 }
             }
 
-            // order by frequency
-            List<String> haplotypeList = new ArrayList<>();
-            haplotypeCounts.entrySet()
-                    .stream()
-                    // sort by frequencies and break ties with fewest ambiguities
-                    .sorted((e1, e2) -> e1.getValue().equals(e2.getValue()) ?
-                            ambiguityCounts.get(e1.getKey()) - ambiguityCounts.get(e2.getKey()) :
-                            e2.getValue() - e1.getValue())
-                    .forEachOrdered(x -> {
-                        haplotypeList.add(x.getKey());
-                    });
+            if (ambiguityCounts.size() > 0) {
+                // order by frequency
+                List<String> representitiveList = new ArrayList<>();
+                ambiguityCounts.entrySet()
+                        .stream()
+                        // sort by frequencies and break ties with fewest ambiguities
+                        .sorted((e1, e2) -> e2.getValue() - e1.getValue())
+                        .forEachOrdered(x -> {
+                            representitiveList.add(x.getKey());
+                        });
 
-            if (haplotypeCounts.size() > 0) {
                 // get the most frequent
-                String haplotypeHash = haplotypeList.get(0);
-                int ambiguityCount = ambiguityCounts.get(haplotypeHash);
-                String representative = representatives.get(haplotypeHash);
+                String representative = representitiveList.get(0);
+                int ambiguityCount = ambiguityCounts.get(representative);
 
-//                if (haplotypeCounts.size() > 1) {
-//                    errorStream.println("multiple haplotypes on internal node");
-//                }
-                node.setAttribute(attributeName, haplotypeHash);
-                node.setAttribute("ambiguity_count", ambiguityCount);
                 node.setAttribute("representative", representative);
+                node.setAttribute("ambiguity_count", ambiguityCount);
                 count += 1;
             }
         }

@@ -16,6 +16,10 @@ import java.util.*;
  */
 public class GrapevineAssignLineages extends Command {
 
+    public GrapevineAssignLineages(boolean isVerbose) {
+        super(isVerbose);
+    }
+
     public GrapevineAssignLineages(String treeFileName,
                                    String clusterFileName,
                                    String outputPath,
@@ -43,14 +47,13 @@ public class GrapevineAssignLineages extends Command {
         Map<String, CSVRecord> lineages = readCSV(clusterFileName, clusterName);
 
         Set<Integer> ukLineageSet = new TreeSet<>();
-        Map<String, Cluster> haplotypeClusterMap = new HashMap<>();
+        Map<String, Cluster> representativeClusterMap = new HashMap<>();
         for (String lineageName : lineages.keySet()) {
             CSVRecord record = lineages.get(lineageName);
 
             //uk_lineage,sequence_hash,depth,del_trans,uk_tip_count
             Cluster cluster = new Cluster(lineageName,
                     record.get("representative"),
-                    record.get("haplotype"),
                     Integer.parseInt(record.get("depth")),
                     Integer.parseInt(record.get("uk_tip_count")),
                     Integer.parseInt(record.get("tip_count")));
@@ -61,12 +64,12 @@ public class GrapevineAssignLineages extends Command {
                 lineage = lineage.substring(0, dotIndex);
             }
             ukLineageSet.add(Integer.parseInt(lineage));
-            haplotypeClusterMap.put(record.get("haplotype"), cluster);
+            representativeClusterMap.put(record.get("representative"), cluster);
         }
 
         if (isVerbose) {
             outStream.println("Lineage name: " + clusterName);
-            outStream.println("    Lineages: " + haplotypeClusterMap.size());
+            outStream.println("    Lineages: " + representativeClusterMap.size());
             outStream.println();
         }
 
@@ -76,11 +79,18 @@ public class GrapevineAssignLineages extends Command {
         int nextUKLineageNumber = ukLineageNumbers.get(ukLineageNumbers.size() - 1) + 1;
 
         if (isVerbose) {
-            outStream.println("Finding lineage roots");
+            outStream.println("Finding existing lineage roots");
             outStream.println();
         }
 
-        findClusterRoots(tree, haplotypeName, haplotypeClusterMap, nextUKLineageNumber, nodeClusterMap);
+        findClusterRoots(tree, representativeClusterMap, nextUKLineageNumber, nodeClusterMap);
+
+        if (isVerbose) {
+            outStream.println("Finding new lineages");
+            outStream.println();
+        }
+
+        int newLineageCount = findNewClusters(tree, nodeClusterMap, nextUKLineageNumber);
 
         if (isVerbose) {
             outStream.println("Found " + nodeClusterMap.size() + " lineages");
@@ -150,16 +160,10 @@ public class GrapevineAssignLineages extends Command {
             String outputLineageFileName = path + outputPrefix + "_lineages.csv";
             PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputLineageFileName)));
 
-            int newLineageCount = 0;
-
-            writer.println("uk_lineage,representative,haplotype,depth,del_trans,uk_tip_count,tip_count");
+            writer.println("uk_lineage,representative,depth,del_trans,uk_tip_count,tip_count");
             for (Cluster cluster : nodeClusterMap.values()) {
-                if (cluster.newLineage) {
-                    newLineageCount += 1;
-                }
                 writer.println(cluster.lineage +
                         "," + cluster.representative +
-                        "," + cluster.haplotype +
                         "," + cluster.depth +
                         "," + cluster.delTrans +
                         "," + cluster.ukTipCount +
@@ -184,49 +188,76 @@ public class GrapevineAssignLineages extends Command {
     /**
      * recursive version
      * @param tree
-     * @param haplotypeClusterMap
+     * @param representitiveClusterMap
      * @param nodeClusterMap
      */
-    private void findClusterRoots(RootedTree tree, String haplotypeName, Map<String, Cluster> haplotypeClusterMap, int nextUKLineageNumber, Map<Node, Cluster> nodeClusterMap) {
-        for (Node node : tree.getInternalNodes()) {
-            String haplotype = (String)node.getAttribute(haplotypeName);
-            Cluster cluster = haplotypeClusterMap.get(haplotype);
-            if (cluster != null) {
+    private void findClusterRoots(RootedTree tree, Map<String, Cluster> representitiveClusterMap, int nextUKLineageNumber, Map<Node, Cluster> nodeClusterMap) {
 
-                Node clusterNode = node;
-                int depth = 0;
-                while (tree.getParent(clusterNode) != null && depth < cluster.depth) {
-                    clusterNode = tree.getParent(clusterNode);
-                    depth += 1;
-                }
+        // create a map of all the tip names
+        Map<String, Node> nameTipMap = new HashMap<>();
+        for (Node tip : tree.getExternalNodes()) {
+            nameTipMap.put(tree.getTaxon(tip).getName(), tip);
+        }
 
-                if (tree.isRoot(clusterNode)) {
-                    errorStream.println("Root of lineage, " + cluster.lineage + ", is the root of the tree");
-                    System.exit(1);
-                }
+        // go through all the clusers
+        for (String representative : representitiveClusterMap.keySet()) {
+            if (representative.contains("CAMB-7B361")) {
+                errorStream.println("CAMB-7B361");
+            }
 
-                cluster.delTrans = (String)node.getAttribute("del_lineage");
+            Cluster cluster = representitiveClusterMap.get(representative);
 
-//                boolean isUK = (Boolean)clusterNode.getAttribute("country_uk_deltran");
+            // find the representative tip
+            Node clusterNode = nameTipMap.get(cluster.representative);
+            if (clusterNode == null) {
+                errorStream.println("Can't find representative tip, " + cluster.representative + ", in tree");
+                System.exit(1);
+            }
+            // if the representative tip is not on the node, walk up to find it
+            int depth = 0;
+            while (tree.getParent(clusterNode) != null && depth < cluster.depth) {
+                clusterNode = tree.getParent(clusterNode);
+                depth += 1;
+            }
+
+            if (tree.isRoot(clusterNode)) {
+                errorStream.println("Root of lineage, " + cluster.lineage + ", is the root of the tree");
+                System.exit(1);
+            }
+
+//            boolean isUK = (Boolean)clusterNode.getAttribute("country_uk_deltran");
 //
-//                Node parent = tree.getParent(clusterNode);
-//                boolean isParentUK = (Boolean)parent.getAttribute("country_uk_deltran");
-//                if (isParentUK) {
-//                    // if the parent is also UK, then crawl this lineage up...
-//                    while (isParentUK) {
-//                        clusterNode = tree.getParent(clusterNode);
-//                        depth += 1;
-//                        isUK = (Boolean) clusterNode.getAttribute("country_uk_deltran");
-//                    }
+//            Node parent = tree.getParent(clusterNode);
+//            boolean isParentUK = (Boolean)parent.getAttribute("country_uk_deltran");
+//            if (isParentUK) {
+//                // if the parent is also UK, then crawl this lineage up...
+//                while (isParentUK) {
+//                    clusterNode = tree.getParent(clusterNode);
+//                    depth += 1;
+//                    isUK = (Boolean) clusterNode.getAttribute("country_uk_deltran");
 //                }
-//                if (!isUK) {
-//                    // does this matter?
+//            }
+//            if (!isUK) {
+//                // does this matter?
 ////                    errorStream.println("Cluster, " + cluster.lineage + ", haplotype defined node is not UK");
-//                }
+//            }
 
-                cluster.node = clusterNode;
-                nodeClusterMap.put(node, cluster);
-            } else {
+            cluster.delTrans = (String)clusterNode.getAttribute("del_lineage");
+            cluster.node = clusterNode;
+            nodeClusterMap.put(clusterNode, cluster);
+        }
+    }
+
+    /**
+     * recursive version
+     * @param tree
+     * @param nodeClusterMap
+     */
+    private int findNewClusters(RootedTree tree, Map<Node, Cluster> nodeClusterMap, int nextUKLineageNumber) {
+        int newLineageCount = 0;
+        for (Node node : tree.getInternalNodes()) {
+            Cluster cluster = nodeClusterMap.get(node);
+            if (cluster == null) {
                 // new UK lineage?
                 boolean isUK = (Boolean)node.getAttribute("country_uk_deltran");
                 boolean isParentUK = !tree.isRoot(node) && (Boolean)tree.getParent(node).getAttribute("country_uk_deltran");
@@ -236,9 +267,11 @@ public class GrapevineAssignLineages extends Command {
                     String ukLineage = (String)ukSubLineages.keySet().iterator().next();
                     if (ukSubLineages.size() == 0) {
 
-                        Cluster newCluster = createCluster(tree, node, haplotypeName, "UK" + nextUKLineageNumber);
+                        Cluster newCluster = createCluster(tree, node, "UK" + nextUKLineageNumber);
                         nextUKLineageNumber += 1;
                         nodeClusterMap.put(node, newCluster);
+
+                        newLineageCount += 1;
 
                         if (isVerbose) {
                             outStream.println("Creating new lineage: " + newCluster.lineage + " [" + newCluster.ukTipCount + " uk tips]");
@@ -247,6 +280,7 @@ public class GrapevineAssignLineages extends Command {
                 }
             }
         }
+        return newLineageCount;
     }
 
     private int assignSingletons(RootedTree tree, String lineageName) {
@@ -300,27 +334,28 @@ public class GrapevineAssignLineages extends Command {
         }
     }
 
-    private Cluster createCluster(RootedTree tree, Node node, String haplotypeName, String ukLineage) {
+    protected Cluster createCluster(RootedTree tree, Node node, String ukLineage) {
         String delLineage = (String)node.getAttribute("del_lineage");
         int tipCount = countTips(tree, node);
         int ukTipCount = countTips(tree, node, "country_uk_deltran", true);
 
         Node[] haplotypeChild = new Node[1];
-        int depth = findHaplotype(tree, node, haplotypeName, 0, haplotypeChild);
-
-        String haplotype = (String)haplotypeChild[0].getAttribute(haplotypeName);
-        if (haplotype == null) {
-            errorStream.println("no haplotype");
+        int depth = findRepresentitive(tree, node, 0, haplotypeChild);
+        if (ukLineage.equals("UK1814")) {
+            errorStream.println("UK1814");
         }
 
-        String representative = (tree.isExternal(haplotypeChild[0]) ?
+        List<String> representatives = (tree.isExternal(haplotypeChild[0]) ?
                 tree.getTaxon(haplotypeChild[0]).getName() :
                 (String)haplotypeChild[0].getAttribute("representative"));
         if (representative == null) {
             errorStream.println("no representative");
         }
+        if (representative.contains("CAMB-7B361")) {
+            errorStream.println("CAMB-7B361");
+        }
 
-        return new Cluster(node, delLineage, ukLineage, representative, haplotype, depth, tipCount, ukTipCount);
+        return new Cluster(node, delLineage, ukLineage, representative, depth, tipCount, ukTipCount);
     }
 
     /**
@@ -329,10 +364,12 @@ public class GrapevineAssignLineages extends Command {
      * @param node
      * @return
      */
-    private int findHaplotype(RootedTree tree, Node node, String haplotypeName, int depth, Node[] haplotypeNode) {
-        String haplotype = (String)node.getAttribute(haplotypeName);
-        if (haplotype != null) {
-            haplotypeNode[0] = node;
+    protected int findRepresentitive(RootedTree tree, Node node, int depth, Node[] representitiveNode) {
+        String representitive = (tree.isExternal(node) ?
+                tree.getTaxon(node).getName() :
+                (String)node.getAttribute("representitive"));
+        if (representitive != null) {
+            representitiveNode[0] = node;
             return depth;
         }
 
@@ -342,14 +379,14 @@ public class GrapevineAssignLineages extends Command {
             for (Node child : tree.getChildren(node)) {
                 boolean isUK = (Boolean)child.getAttribute("country_uk_deltran");
                 if (isUK) {
-                    int d = findHaplotype(tree, child, haplotypeName, depth + 1, haplotypeNode);
+                    int d = findRepresentitive(tree, child, depth + 1, representitiveNode);
                     if (d < minDepth) {
                         bestChildren.clear();
                         minDepth = d;
                     }
 
                     if (d == minDepth) {
-                        bestChildren.add(haplotypeNode[0]);
+                        bestChildren.add(representitiveNode[0]);
                     }
                 }
             }
@@ -360,12 +397,12 @@ public class GrapevineAssignLineages extends Command {
                     int amb2 = Integer.parseInt(node2.getAttribute("ambiguity_count").toString());
                     return amb1 - amb2;
                 } );
-                haplotypeNode[0] = bestChildren.get(0);
+                representitiveNode[0] = bestChildren.get(0);
                 return minDepth;
             }
         }
 
-        errorStream.println("value of " + haplotypeName + " not found for tip");
+        errorStream.println("value of 'representitive' not found for tip");
         System.exit(1);
 
         // no haplotype found
@@ -415,32 +452,33 @@ public class GrapevineAssignLineages extends Command {
         node.setAttribute("phylotype", phylotype);
     }
 
-    class Cluster {
-        public Cluster(String lineage, String representative, String haplotype, int depth, int tipCount, int ukTipCount) {
+    protected class Cluster {
+        public Cluster(String lineage, List<String> representatives, int depth, int tipCount, int ukTipCount) {
             this.lineage = lineage;
-            this.representative = representative;
-            this.haplotype = haplotype;
+            this.representatives = representatives;
             this.depth = depth;
             this.tipCount = tipCount;
             this.ukTipCount = ukTipCount;
             this.newLineage = false;
         }
 
-        public Cluster(Node node, String delTrans, String lineage, String representative, String haplotype, int depth, int tipCount, int ukTipCount) {
+        public Cluster(Node node, String delTrans, String lineage, List<String> representatives, int depth, int tipCount, int ukTipCount) {
             this.node = node;
             this.delTrans = delTrans;
             this.lineage = lineage;
-            this.representative = representative;
-            this.haplotype = haplotype;
+            this.representatives = representatives;
             this.depth = depth;
             this.tipCount = tipCount;
             this.ukTipCount = ukTipCount;
             this.newLineage = true;
         }
 
-        final String lineage;
-        final String representative;
-        final String haplotype;
+        public int getUkTipCount() {
+            return ukTipCount;
+        }
+
+        String lineage;
+        final List<String> representatives;
         final int depth;
         final int tipCount;
         final int ukTipCount;
