@@ -144,7 +144,7 @@ class ClusterFunk {
                         options.addOption(ATTRIBUTE);
                         options.addOption(CLUSTER_NAME);
                         break;
-                    case GRAPEVINE_ASSIGN_HAPLOTYPES:
+                    case GRAPEVINE_ASSIGN_REPRESENTATIVES:
                         options.addOption(INPUT);
                         options.addOption(METADATA);
                         options.addOption(OUTPUT_FILE);
@@ -452,8 +452,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("cluster-name"),
                         isVerbose);
                 break;
-            case GRAPEVINE_ASSIGN_HAPLOTYPES:
-                new GrapevineAssignHaplotypes(
+            case GRAPEVINE_ASSIGN_REPRESENTATIVES:
+                new GrapevineAssignRepresentatives(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
                         commandLine.getOptionValue("output"),
