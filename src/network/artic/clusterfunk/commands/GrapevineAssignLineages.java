@@ -10,6 +10,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -53,7 +54,7 @@ public class GrapevineAssignLineages extends Command {
 
             //uk_lineage,sequence_hash,depth,del_trans,uk_tip_count
             Cluster cluster = new Cluster(lineageName,
-                    record.get("representative"),
+                    record.get("representatives"),
                     Integer.parseInt(record.get("depth")),
                     Integer.parseInt(record.get("uk_tip_count")),
                     Integer.parseInt(record.get("tip_count")));
@@ -201,9 +202,9 @@ public class GrapevineAssignLineages extends Command {
 
         // go through all the clusers
         for (String representative : representitiveClusterMap.keySet()) {
-            if (representative.contains("CAMB-7B361")) {
-                errorStream.println("CAMB-7B361");
-            }
+//            if (representative.contains("CAMB-7B361")) {
+//                errorStream.println("CAMB-7B361");
+//            }
 
             Cluster cluster = representitiveClusterMap.get(representative);
 
@@ -341,21 +342,19 @@ public class GrapevineAssignLineages extends Command {
 
         Node[] haplotypeChild = new Node[1];
         int depth = findRepresentitive(tree, node, 0, haplotypeChild);
-        if (ukLineage.equals("UK1814")) {
-            errorStream.println("UK1814");
-        }
+//        if (ukLineage.equals("UK1814")) {
+//            errorStream.println("UK1814");
+//        }
 
-        List<String> representatives = (tree.isExternal(haplotypeChild[0]) ?
+        String r = (tree.isExternal(haplotypeChild[0]) ?
                 tree.getTaxon(haplotypeChild[0]).getName() :
-                (String)haplotypeChild[0].getAttribute("representative"));
-        if (representative == null) {
+                (String)haplotypeChild[0].getAttribute("representatives"));
+        if (r == null) {
             errorStream.println("no representative");
         }
-        if (representative.contains("CAMB-7B361")) {
-            errorStream.println("CAMB-7B361");
-        }
-
-        return new Cluster(node, delLineage, ukLineage, representative, depth, tipCount, ukTipCount);
+        String[] representatives = r.split("\\|");
+        List<String> representativeList = Arrays.stream(representatives).collect(Collectors.toList());
+        return new Cluster(node, delLineage, ukLineage, representativeList, depth, tipCount, ukTipCount);
     }
 
     /**
