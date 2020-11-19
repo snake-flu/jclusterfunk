@@ -238,6 +238,7 @@ public class Divide extends Command {
         }
 
     }
+
     private static class Subtree {
         public Subtree(Node root, String name, int count) {
             this.root = root;

@@ -461,7 +461,6 @@ class ClusterFunk {
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
-                        commandLine.getOptionValue("attribute"),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;

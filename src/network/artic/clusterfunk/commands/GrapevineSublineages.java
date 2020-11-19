@@ -120,7 +120,7 @@ public class GrapevineSublineages extends GrapevineAssignLineages {
             writer.println("uk_lineage,representative,depth,del_trans,uk_tip_count,tip_count");
             for (Cluster cluster : clusterList) {
                 writer.println(cluster.lineage +
-                        "," + cluster.representative +
+                        "," + cluster.representatives +
                         "," + cluster.depth +
                         "," + cluster.delTrans +
                         "," + cluster.ukTipCount +
@@ -177,9 +177,9 @@ public class GrapevineSublineages extends GrapevineAssignLineages {
             // start of a new lineage
             Map<Object, Integer> ukLineages = getTipAttributes(tree, node, "uk_lineage");
             String ukLineage = (String)ukLineages.keySet().iterator().next();
-            if (ukLineage.equals("UK8686")) {
-                errorStream.println("UK8686");
-            }
+//            if (ukLineage.equals("UK8686")) {
+//                errorStream.println("UK8686");
+//            }
 //            if (nodeLineageMap.containsValue(ukLineage)) {
 //                throw new RuntimeException("multiple roots of a ukLineage present");
 //            }

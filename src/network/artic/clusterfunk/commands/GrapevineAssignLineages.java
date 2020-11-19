@@ -52,9 +52,13 @@ public class GrapevineAssignLineages extends Command {
         for (String lineageName : lineages.keySet()) {
             CSVRecord record = lineages.get(lineageName);
 
+            String r = record.get("representatives");
+            String[] representatives = r.split("\\|");
+            List<String> representativeList = Arrays.stream(representatives).collect(Collectors.toList());
+
             //uk_lineage,sequence_hash,depth,del_trans,uk_tip_count
             Cluster cluster = new Cluster(lineageName,
-                    record.get("representatives"),
+                    representativeList,
                     Integer.parseInt(record.get("depth")),
                     Integer.parseInt(record.get("uk_tip_count")),
                     Integer.parseInt(record.get("tip_count")));
@@ -164,7 +168,7 @@ public class GrapevineAssignLineages extends Command {
             writer.println("uk_lineage,representative,depth,del_trans,uk_tip_count,tip_count");
             for (Cluster cluster : nodeClusterMap.values()) {
                 writer.println(cluster.lineage +
-                        "," + cluster.representative +
+                        "," + cluster.representatives +
                         "," + cluster.depth +
                         "," + cluster.delTrans +
                         "," + cluster.ukTipCount +
@@ -209,9 +213,9 @@ public class GrapevineAssignLineages extends Command {
             Cluster cluster = representitiveClusterMap.get(representative);
 
             // find the representative tip
-            Node clusterNode = nameTipMap.get(cluster.representative);
+            Node clusterNode = nameTipMap.get(cluster.representatives);
             if (clusterNode == null) {
-                errorStream.println("Can't find representative tip, " + cluster.representative + ", in tree");
+                errorStream.println("Can't find representative tip, " + cluster.representatives + ", in tree");
                 System.exit(1);
             }
             // if the representative tip is not on the node, walk up to find it

@@ -119,11 +119,9 @@ public class Join extends Command {
     private void findSubtrees(Subtree parentSubtree, MutableRootedTree tree, Node node, Map<String, String> rootTaxonMap, Map<String, Subtree> subtreeMap) {
         if (tree.isExternal(node)) {
             String name = tree.getTaxon(node).getName();
-            if (rootTaxonMap.containsValue(name)) {
-//            if (rootTaxonMap.containsKey(name)) {
-//                String subtreeName = rootTaxonMap.get(name);
-//                Subtree subtree = subtreeMap.get(subtreeName);
-                Subtree subtree = subtreeMap.get(name);
+            if (rootTaxonMap.containsKey(name)) {
+                String subtreeName = rootTaxonMap.get(name);
+                Subtree subtree = subtreeMap.get(subtreeName);
                 if (subtree.tree != tree) {
                     subtree.parentSubtree = parentSubtree;
                     subtree.parentTip = node;
