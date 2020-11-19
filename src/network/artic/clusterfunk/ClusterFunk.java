@@ -155,6 +155,15 @@ class ClusterFunk {
                         options.addOption(IGNORE_MISSING);
                         options.addOption(ATTRIBUTE);
                         break;
+                    case GRAPEVINE_LABEL_CLUSTERS:
+                        METADATA.setRequired(false);
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_PREFIX);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(CLUSTER_NAME);
+                        break;
                     case GRAPEVINE_SUBLINEAGES:
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_PATH);
@@ -462,6 +471,16 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
                         commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
+            case GRAPEVINE_LABEL_CLUSTERS:
+                new GrapevineLabelClusters(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("prefix"),
+                        format,
+                        commandLine.getOptionValue("cluster-name"),
                         isVerbose);
                 break;
             case GRAPEVINE_SUBLINEAGES:

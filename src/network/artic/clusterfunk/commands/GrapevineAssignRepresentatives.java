@@ -90,10 +90,10 @@ public class GrapevineAssignRepresentatives extends Command {
                             ambiguityCountList.add(x.getValue().toString());
                         });
 
-                String representitives = String.join("|", representitiveList);
+                String representatives = String.join("|", representitiveList);
                 String ambiguities = String.join("|", ambiguityCountList);
 
-                node.setAttribute("representatives", representitives);
+                node.setAttribute("representatives", representatives);
                 node.setAttribute("ambiguities", ambiguities);
                 count += 1;
             }

@@ -22,6 +22,7 @@ class ClusterFunkOptions {
         JOIN("join", "Join up previously divided subtrees."),
         GRAPEVINE_ASSIGN_LINEAGES("grapevine-assign-lineages", "Assign UK tips without lineages to a UK lineage."),
         GRAPEVINE_ASSIGN_REPRESENTATIVES("grapevine-assign-representatives", "Assign representative tips names to internal nodes."),
+        GRAPEVINE_LABEL_CLUSTERS("grapevine-label-clusters", "Labels nodes in a tree with a cluster."),
         GRAPEVINE_SUBLINEAGES("grapevine-sublineages", "split existing UK lineages into sub-lineages."),
         POLECAT("polecat", "Write out stats for all clusters"),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
