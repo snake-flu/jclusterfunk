@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toMap;
 /**
  *
  */
+@Deprecated
 public class GrapevineAssignRepresentatives extends Command {
     private final static double GENOME_LENGTH = 29903;
     private final static double ZERO_BRANCH_THRESHOLD = (1.0 / GENOME_LENGTH) * 0.01; // 1% of a 1 SNP branch length

@@ -52,9 +52,8 @@ public class GrapevineAssignLineages extends Command {
         for (String lineageName : lineages.keySet()) {
             CSVRecord record = lineages.get(lineageName);
 
-            String r = record.get("representatives");
-            String[] representatives = r.split("\\|");
-            List<String> representativeList = Arrays.stream(representatives).collect(Collectors.toList());
+            String reps = record.get("representatives");
+            List<String> representativeList = Arrays.stream(reps.split("\\|")).collect(Collectors.toList());
 
             //uk_lineage,sequence_hash,depth,del_trans,uk_tip_count
             Cluster cluster = new Cluster(lineageName,
