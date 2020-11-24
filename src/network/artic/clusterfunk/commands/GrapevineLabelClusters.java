@@ -30,7 +30,6 @@ public class GrapevineLabelClusters extends Command {
                                   String outputPath,
                                   String outputPrefix,
                                   FormatType outputFormat,
-                                  String clusterName,
                                   boolean isVerbose) {
 
         super(isVerbose);
@@ -53,17 +52,17 @@ public class GrapevineLabelClusters extends Command {
                 outStream.println();
             }
             // read the CSV of currently defined clusters
-            Map<String, CSVRecord> clusters = readCSV(clusterFileName, clusterName);
+            Map<String, CSVRecord> clusters = readCSV(clusterFileName, "cluster_id");
 
-            for (String clusterLabel : clusters.keySet()) {
-                if (clusterLabels.contains(clusterLabel)) {
-                    errorStream.println("Duplicate cluster label, " + clusterLabel + ", in cluster file");
+            for (String clusterId : clusters.keySet()) {
+                if (clusterLabels.contains(clusterId)) {
+                    errorStream.println("Duplicate cluster ID, " + clusterId + ", in cluster file");
                     System.exit(1);
                 }
 
-                clusterLabels.add(clusterLabel);
+                clusterLabels.add(clusterId);
 
-                CSVRecord record = clusters.get(clusterLabel);
+                CSVRecord record = clusters.get(clusterId);
 
                 final String[] reserves = new String[MAX_DEPTH];
                 final int[] reserveDepths = new int[MAX_DEPTH];
@@ -73,18 +72,17 @@ public class GrapevineLabelClusters extends Command {
                         reserveDepths[i] = Integer.parseInt(record.get("reserve_depth" + i));
                     }
                 }
-                Cluster cluster = new Cluster(clusterLabel,
+                Cluster cluster = new Cluster(clusterId,
                         record.get("representative"),
                         Integer.parseInt(record.get("depth")),
                         reserves,
                         reserveDepths,
                         Integer.parseInt(record.get("tip_count")));
 
-                clusterMap.put(clusterLabel, cluster);
+                clusterMap.put(clusterId, cluster);
             }
 
             if (isVerbose) {
-                outStream.println("        Cluster name: " + clusterName);
                 outStream.println("       Clusters read: " + clusterMap.size());
                 outStream.println();
             }
@@ -102,7 +100,7 @@ public class GrapevineLabelClusters extends Command {
         findClusterRoots(tree, clusterMap, nodeClusterMap, lostClusters);
 
         if (isVerbose) {
-            String lost = String.join(",", lostClusters.stream().map(c -> c.label).collect(Collectors.toList()));
+            String lost = String.join(",", lostClusters.stream().map(c -> c.clusterId).collect(Collectors.toList()));
             outStream.println("  Lost clusters: (" + lostClusters.size() + ") " + lost );
             outStream.println();
         }
@@ -112,10 +110,10 @@ public class GrapevineLabelClusters extends Command {
             outStream.println();
         }
 
-        int newLineageCount = findNewClusters(tree, nodeClusterMap, clusterLabels);
+        int newClusterCount = findNewClusters(tree, nodeClusterMap, clusterLabels);
 
         if (isVerbose) {
-            outStream.println("Found " + nodeClusterMap.size() + " lineages");
+            outStream.println("Found " + nodeClusterMap.size() + " new clusters");
             outStream.println();
         }
 
@@ -127,7 +125,7 @@ public class GrapevineLabelClusters extends Command {
 
         // annotate tree with cluster names
         for (Node node : nodeClusterMap.keySet()) {
-            node.setAttribute(clusterName, nodeClusterMap.get(node).label);
+            node.setAttribute("cluster_id", nodeClusterMap.get(node).clusterId);
         }
 
         writeTreeFile(tree, outputTreeFileName, outputFormat);
@@ -136,15 +134,15 @@ public class GrapevineLabelClusters extends Command {
             String outputClusterFileName = path + outputPrefix + "_clusters.csv";
             PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputClusterFileName)));
 
-            writer.print("cluster,representative,depth");
-            for (int i = 0; i < MAX_DEPTH; i++) {
+            writer.print("cluster_id,representative,depth");
+            for (int i = 0; i < MAX_RESERVE; i++) {
                 writer.print(",reserve" + i);
                 writer.print(",reserve_depth" + i );
             }
             writer.println(",tip_count");
 
             for (Cluster cluster : nodeClusterMap.values()) {
-                writer.print(cluster.label +
+                writer.print(cluster.clusterId +
                         "," + cluster.representative +
                         "," + cluster.depth);
                 for (int i = 0; i < MAX_DEPTH; i++) {
@@ -163,7 +161,7 @@ public class GrapevineLabelClusters extends Command {
             if (isVerbose) {
                 outStream.println("Written cluster file: " + outputClusterFileName);
                 outStream.println("            Clusters: " + nodeClusterMap.values().size());
-                outStream.println("        New lineages: " + newLineageCount);
+                outStream.println("        New clusters: " + newClusterCount);
                 outStream.println();
             }
 
@@ -229,7 +227,7 @@ public class GrapevineLabelClusters extends Command {
 //            }
 //            if (!isUK) {
 //                // does this matter?
-////                    errorStream.println("Cluster, " + cluster.lineage + ", haplotype defined node is not UK");
+////                    errorStream.println("Lineage, " + cluster.lineage + ", haplotype defined node is not UK");
 //            }
 
                 cluster.node = clusterNode;
@@ -275,7 +273,7 @@ public class GrapevineLabelClusters extends Command {
                 newLineageCount += 1;
 
                 if (isVerbose) {
-                    outStream.println("Creating new cluster with label: " + newCluster.label + " [" + newCluster.tipCount + " tips]");
+                    outStream.println("Creating new cluster with label: " + newCluster.clusterId + " [" + newCluster.tipCount + " tips]");
                 }
             }
         }
@@ -347,10 +345,10 @@ public class GrapevineLabelClusters extends Command {
     }
 
     protected class Cluster {
-        public Cluster(String label, String representative, int depth,
+        public Cluster(String clusterId, String representative, int depth,
                        String[] reserves, int[] reserveDepths,
                        int tipCount) {
-            this.label = label;
+            this.clusterId = clusterId;
             this.representative = representative;
             this.depth = depth;
             for (int i = 0; i < MAX_DEPTH; i++) {
@@ -361,11 +359,11 @@ public class GrapevineLabelClusters extends Command {
             this.newCluster = false;
         }
 
-        public Cluster(Node node, String label, Representative representative,
+        public Cluster(Node node, String clusterId, Representative representative,
                        List<Representative> reserves,
                        int tipCount) {
             this.node = node;
-            this.label = label;
+            this.clusterId = clusterId;
             this.representative = representative.name;
             this.depth = representative.depth;
             for (int i = 0; i < Math.min(reserves.size(), MAX_RESERVE); i++) {
@@ -377,7 +375,7 @@ public class GrapevineLabelClusters extends Command {
         }
 
         Node node;
-        final String label;
+        final String clusterId;
         final String representative;
         final int depth;
         final String[] reserve = new String[MAX_DEPTH];

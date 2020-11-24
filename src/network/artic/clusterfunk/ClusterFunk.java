@@ -141,8 +141,6 @@ class ClusterFunk {
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
-                        options.addOption(ATTRIBUTE);
-                        options.addOption(CLUSTER_NAME);
                         break;
                     case GRAPEVINE_ASSIGN_REPRESENTATIVES:
                         options.addOption(INPUT);
@@ -162,7 +160,6 @@ class ClusterFunk {
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
-                        options.addOption(CLUSTER_NAME);
                         break;
                     case GRAPEVINE_SUBLINEAGES:
                         options.addOption(INPUT);
@@ -170,7 +167,6 @@ class ClusterFunk {
                         options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(OUTPUT_METADATA);
-                        options.addOption(ATTRIBUTE);
                         options.addOption(MIN_CLUSTER_SIZE);
                         break;
                     case INSERT:
@@ -457,8 +453,6 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("prefix"),
                         format,
-                        commandLine.getOptionValue("attribute"),
-                        commandLine.getOptionValue("cluster-name"),
                         isVerbose);
                 break;
             case GRAPEVINE_ASSIGN_REPRESENTATIVES:
@@ -480,7 +474,6 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("prefix"),
                         format,
-                        commandLine.getOptionValue("cluster-name"),
                         isVerbose);
                 break;
             case GRAPEVINE_SUBLINEAGES:
@@ -489,7 +482,6 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("prefix"),
                         format,
-                        commandLine.getOptionValue("attribute"),
                         Integer.parseInt(commandLine.getOptionValue("min-size", "50")),
                         isVerbose);
                 break;

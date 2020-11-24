@@ -399,7 +399,7 @@ class ClusterFunkOptions {
             .argName("statistic")
             .hasArg()
             .required(false)
-            .desc("Cluster statistic to optimize across ancestry by. Options: " + Polecat.Criterion.getValuesString())
+            .desc("Lineage statistic to optimize across ancestry by. Options: " + Polecat.Criterion.getValuesString())
             .type(String.class).build();
 
     final static Option RANK_BY = Option.builder()
