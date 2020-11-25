@@ -10,7 +10,6 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -45,11 +44,14 @@ public class GrapevineAssignLineages extends Command {
         RootedTree tree = readTree(treeFileName);
 
         // find all the cluster labels in the tree
-        Map<String, Node> clusterNodeMap = new HashMap<>();
+        Map<String, Node> clusterIdNodeMap = new HashMap<>();
         for (Node node : tree.getInternalNodes()) {
-            String cluster = (String)node.getAttribute("cluster_id");
-            if (cluster != null) {
-                clusterNodeMap.put(cluster, node);
+            String clusterId = (String)node.getAttribute("cluster_id");
+            if (clusterId != null) {
+//                if (clusterId.equals("375c2a")) {
+//                    errorStream.println("375c2a");
+//                }
+                clusterIdNodeMap.put(clusterId, node);
             }
         }
 
@@ -91,7 +93,7 @@ public class GrapevineAssignLineages extends Command {
         }
 
         Map<Node, Lineage> nodeLineageMap = new HashMap<>();
-        findLineageRoots(tree, lineageName, clusterNodeMap, lineageList, nextUKLineageNumber, nodeLineageMap);
+        findLineageRoots(tree, lineageName, clusterIdNodeMap, lineageList, nodeLineageMap);
 
         if (isVerbose) {
             outStream.println("Existing lineages found: " + nodeLineageMap.size());
@@ -105,7 +107,7 @@ public class GrapevineAssignLineages extends Command {
 
         int count = nodeLineageMap.size();
 
-        int newLineageCount = findNewClusters(tree, lineageName, stateName, nodeLineageMap, nextUKLineageNumber);
+        int newLineageCount = findNewLineages(tree, lineageName, stateName, nodeLineageMap, nextUKLineageNumber);
 
         if (isVerbose) {
             outStream.println("Found " + (nodeLineageMap.size() - count) + " new lineages");
@@ -203,10 +205,9 @@ public class GrapevineAssignLineages extends Command {
      * recursive version
      * @param tree
      * @param lineageList
-     * @param nextUKLineageNumber
      * @param nodeLineageMap
      */
-    private void findLineageRoots(RootedTree tree, String lineageName, Map<String, Node> clusterNodeMap, List<Lineage> lineageList, int nextUKLineageNumber, Map<Node, Lineage> nodeLineageMap) {
+    private void findLineageRoots(RootedTree tree, String lineageName, Map<String, Node> clusterNodeMap, List<Lineage> lineageList, Map<Node, Lineage> nodeLineageMap) {
 
         // go through all the lineages
         for (Lineage lineage : lineageList) {
@@ -226,11 +227,11 @@ public class GrapevineAssignLineages extends Command {
      * @param tree
      * @param nodeClusterMap
      */
-    private int findNewClusters(RootedTree tree, String lineageName, String stateName, Map<Node, Lineage> nodeClusterMap, int nextUKLineageNumber) {
+    private int findNewLineages(RootedTree tree, String lineageName, String stateName, Map<Node, Lineage> nodeClusterMap, int nextUKLineageNumber) {
         int newLineageCount = 0;
         for (Node node : tree.getInternalNodes()) {
-            Lineage cluster = nodeClusterMap.get(node);
-            if (cluster == null) {
+            Lineage lineage = nodeClusterMap.get(node);
+            if (lineage == null) {
                 // new UK lineage?
                 boolean isUK = (Boolean)node.getAttribute(stateName);
                 boolean isParentUK = !tree.isRoot(node) && (Boolean)tree.getParent(node).getAttribute(stateName);
@@ -240,15 +241,15 @@ public class GrapevineAssignLineages extends Command {
                     String ukLineage = (String)ukSubLineages.keySet().iterator().next();
                     if (ukSubLineages.size() == 0) {
 
-                        Lineage newCluster = createCluster(tree, node, stateName, "UK" + nextUKLineageNumber);
+                        Lineage newLineage = createLineage(tree, node, stateName, "UK" + nextUKLineageNumber);
                         nextUKLineageNumber += 1;
-                        nodeClusterMap.put(node, newCluster);
+                        nodeClusterMap.put(node, newLineage);
 
                         newLineageCount += 1;
 
-                        if (isVerbose) {
-                            outStream.println("Creating new lineage: " + newCluster.name + " [" + newCluster.ukTipCount + " uk tips]");
-                        }
+//                        if (isVerbose) {
+//                            outStream.println("Creating new lineage: " + newCluster.name + " [" + newCluster.ukTipCount + " uk tips]");
+//                        }
                     }
                 }
             }
@@ -307,7 +308,7 @@ public class GrapevineAssignLineages extends Command {
         }
     }
 
-    protected Lineage createCluster(RootedTree tree, Node node, String stateName, String ukLineage) {
+    protected Lineage createLineage(RootedTree tree, Node node, String stateName, String ukLineage) {
         String delLineage = (String)node.getAttribute("del_lineage");
         int tipCount = countTips(tree, node);
         int ukTipCount = countTips(tree, node, stateName, true);

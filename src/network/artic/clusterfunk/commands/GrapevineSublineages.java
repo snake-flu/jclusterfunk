@@ -180,7 +180,7 @@ public class GrapevineSublineages extends GrapevineAssignLineages {
             if (ukLineages.size() > 1) {
                 throw new RuntimeException("ambiguous lineage");
             }
-            Lineage cluster = createCluster(tree, node, stateName, ukLineage);
+            Lineage cluster = createLineage(tree, node, stateName, ukLineage);
             nodeClusterMap.put(node, cluster);
         }
         if (!tree.isExternal(node)) {
@@ -252,7 +252,7 @@ public class GrapevineSublineages extends GrapevineAssignLineages {
                     if (childSizes.size() > 1) {
                         // there are multiple children of this lineage - merge them at this node
                         lineageNode = node;
-                        nodeCluster = createCluster(tree, node, stateName, childLineage);
+                        nodeCluster = createLineage(tree, node, stateName, childLineage);
 
                         List<Lineage> clusterList = lineageClusterMap.getOrDefault(nodeCluster.name, new ArrayList<>());
                         clusterList.add(nodeCluster);
