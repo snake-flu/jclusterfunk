@@ -27,6 +27,7 @@ public class Divide extends Command {
 
         super(isVerbose);
 
+        boolean requireOutgroup = true;
 
         String path = checkOutputPath(outputPath);
 
@@ -37,13 +38,13 @@ public class Divide extends Command {
         if (maxSubtreeCount > 1) {
 
             int minSize = 2;
-            collectSubtrees(tree, tree.getRootNode(), minSize, subtreeMap);
+            collectSubtrees(tree, tree.getRootNode(), minSize, subtreeMap, requireOutgroup);
 
             while (subtreeMap.keySet().size() > maxSubtreeCount) {
                 minSize *= 2;
                 subtreeMap.clear();
                 clearInternalAttributes(tree);
-                collectSubtrees(tree, tree.getRootNode(), minSize, subtreeMap);
+                collectSubtrees(tree, tree.getRootNode(), minSize, subtreeMap, requireOutgroup);
 
                 if (isVerbose) {
                     outStream.println("Min subtree size: " + minSize + " - " + subtreeMap.keySet().size() + " subtrees");
@@ -51,7 +52,7 @@ public class Divide extends Command {
             }
 
         } else if (minSubtreeSize > 1) {
-            collectSubtrees(tree, tree.getRootNode(), minSubtreeSize, subtreeMap);
+            collectSubtrees(tree, tree.getRootNode(), minSubtreeSize, subtreeMap, requireOutgroup);
         } else {
             errorStream.println("Specify one or other of max-size and max-count");
             System.exit(1);
@@ -70,19 +71,41 @@ public class Divide extends Command {
      * @param node
      * @param subtreeMap
      */
-    private int collectSubtrees(RootedTree tree, Node node, int maxSubtreeSize, Map<Node, Subtree> subtreeMap) {
+    private int collectSubtrees(RootedTree tree, Node node, int maxSubtreeSize, Map<Node, Subtree> subtreeMap, boolean requireOutgroup) {
         if (!tree.isExternal(node)) {
             int count = 0;
 
             for (Node child : tree.getChildren(node)) {
-                count += collectSubtrees(tree, child, maxSubtreeSize, subtreeMap);
+                count += collectSubtrees(tree, child, maxSubtreeSize, subtreeMap, requireOutgroup);
             }
 
             if (count > maxSubtreeSize || tree.isRoot(node)) {
-                String name = "subtree_" + (tree.isRoot(node) ? 0 : (subtreeMap.size() + 1));
-                node.setAttribute("subtree", name);
 
-                subtreeMap.put(node, new Subtree(node, name, count));
+                if (!tree.isRoot(node)) {
+                    Map<Integer, List<Taxon>> tipMap = findRootRepresentative(tree, node, 0, requireOutgroup);
+                    if (tipMap.size() > 0) {
+                        String name = "subtree_" + (subtreeMap.size() + 1);
+                        node.setAttribute("subtree", name);
+
+                        Subtree subtree = new Subtree(node, name, count);
+
+                        int distance = tipMap.keySet().iterator().next();
+                        subtree.rootRepresentitive = tipMap.get(distance).get(0);
+                        subtree.rootLength = distance;
+
+                        subtreeMap.put(node, subtree);
+                    } else {
+                        if (isVerbose) {
+                            outStream.println("  No outgroup compatible representitive for subtree");
+                        }
+
+                    }
+                } else {
+                    String name = "subtree_0";
+                    node.setAttribute("subtree", name);
+
+                    subtreeMap.put(node, new Subtree(node, name, count));
+                }
                 return 1;
             }
 
@@ -95,16 +118,18 @@ public class Divide extends Command {
 
     void createSubtrees(RootedTree tree, Map<Node, Subtree> subtreeMap) {
 
-        for (Node key : subtreeMap.keySet()) {
-            Subtree subtree = subtreeMap.get(key);
-
-            if (!tree.isRoot(subtree.root)) {
-                Map<Integer, List<Taxon>> tipMap = findRootRepresentative(tree, subtree.root, 0);
-                int distance = tipMap.keySet().iterator().next();
-                subtree.rootRepresentitive = tipMap.get(distance).get(0);
-                subtree.rootLength = distance;
-            }
-        }
+//        for (Node key : subtreeMap.keySet()) {
+//            Subtree subtree = subtreeMap.get(key);
+//
+//            if (!tree.isRoot(subtree.root)) {
+//                Map<Integer, List<Taxon>> tipMap = findRootRepresentative(tree, subtree.root, 0, requireOutgroup);
+//                if (tipMap.size() > 0) {
+//                    int distance = tipMap.keySet().iterator().next();
+//                    subtree.rootRepresentitive = tipMap.get(distance).get(0);
+//                    subtree.rootLength = distance;
+//                }
+//            }
+//        }
 
         for (Node key : subtreeMap.keySet()) {
             Subtree subtree = subtreeMap.get(key);
@@ -125,7 +150,7 @@ public class Divide extends Command {
      * @param node
      * @return
      */
-    private Map<Integer, List<Taxon>> findRootRepresentative(RootedTree tree, Node node, int distance) {
+    private Map<Integer, List<Taxon>> findRootRepresentative(RootedTree tree, Node node, int distance, boolean requireOutgroup) {
         Map<Integer, List<Taxon>> tipMap  = new TreeMap<>();
         
         for (Node child: tree.getChildren(node)) {
@@ -133,8 +158,8 @@ public class Divide extends Command {
                 List<Taxon> taxa = tipMap.getOrDefault(distance, new ArrayList<Taxon>());
                 taxa.add(tree.getTaxon(child));
                 tipMap.put(distance, taxa);
-            } else {
-                tipMap.putAll(findRootRepresentative(tree, child, distance + 1));
+            } else if (!requireOutgroup) {
+                tipMap.putAll(findRootRepresentative(tree, child, distance + 1, requireOutgroup));
             }
         }
 
