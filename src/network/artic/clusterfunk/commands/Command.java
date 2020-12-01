@@ -555,7 +555,7 @@ abstract class Command {
                     String key = record.get(indexColumn);
                     if (csv.containsKey(key)) {
                         errorStream.println("Duplicate index value, " + key + " in metadata table");
-                        System.exit(1);
+//                        System.exit(1);
                     }
                     csv.put(key, record);
                 }
@@ -570,7 +570,7 @@ abstract class Command {
                     String key = record.get(0);
                     if (csv.containsKey(key)) {
                         errorStream.println("Duplicate index value, " + key + " in metadata table");
-                        System.exit(1);
+//                        System.exit(1);
                     }
                     csv.put(key, record);
                 }
