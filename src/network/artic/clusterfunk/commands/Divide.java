@@ -196,6 +196,8 @@ public class Divide extends Command {
                     Node newChild = newTree.createExternalNode(taxon);
                     children.add(newChild);
                     newTree.setHeight(newChild, tree.getHeight(child));
+                    newChild.setAttribute("subtree", subtreeName);
+
                 } else {
                     children.add(createNodes(tree, child, subtreeMap, newTree));
                 }
