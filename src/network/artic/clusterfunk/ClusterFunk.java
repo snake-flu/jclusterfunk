@@ -157,6 +157,7 @@ class ClusterFunk {
                         METADATA.setRequired(false);
                         options.addOption(INPUT);
                         options.addOption(METADATA);
+                        options.addOption(LINEAGE_FILE);
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
@@ -471,6 +472,7 @@ class ClusterFunk {
                 new GrapevineLabelClusters(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("lineages"),
                         commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("prefix"),
                         format,

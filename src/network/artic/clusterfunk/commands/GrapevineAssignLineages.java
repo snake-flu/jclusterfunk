@@ -23,7 +23,7 @@ public class GrapevineAssignLineages extends Command {
     }
 
     public GrapevineAssignLineages(String treeFileName,
-                                   String clusterFileName,
+                                   String lineageFileName,
                                    String outputPath,
                                    String outputPrefix,
                                    FormatType outputFormat,
@@ -55,7 +55,7 @@ public class GrapevineAssignLineages extends Command {
             }
         }
 
-        Map<String, CSVRecord> lineages = readCSV(clusterFileName, lineageName);
+        Map<String, CSVRecord> lineages = readCSV(lineageFileName, lineageName);
 
         Set<Integer> ukLineageSet = new TreeSet<>();
         List<Lineage> lineageList = new ArrayList<>();

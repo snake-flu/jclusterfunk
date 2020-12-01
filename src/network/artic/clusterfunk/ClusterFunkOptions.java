@@ -87,6 +87,14 @@ class ClusterFunkOptions {
             .desc("input metadata file")
             .type(String.class).build();
 
+    final static Option LINEAGE_FILE = Option.builder("l")
+            .longOpt("lineages")
+            .argName("file")
+            .hasArg()
+            .required(true)
+            .desc("input lineage csv file")
+            .type(String.class).build();
+
     final static Option TAXON_FILE = Option.builder()
             .longOpt("taxon-file")
             .argName("file")

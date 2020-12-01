@@ -27,6 +27,7 @@ public class GrapevineLabelClusters extends Command {
 
     public GrapevineLabelClusters(String treeFileName,
                                   String clusterFileName,
+                                  String lineageFileName,
                                   String outputPath,
                                   String outputPrefix,
                                   FormatType outputFormat,
@@ -72,15 +73,17 @@ public class GrapevineLabelClusters extends Command {
                 Cluster cluster = new Cluster(clusterId,
                         record.get("representative"),
                         Integer.parseInt(record.get("depth")),
+                        "",
+//                        record.get("sequence_hash"),
                         reserves,
                         reserveDepths,
                         Integer.parseInt(record.get("tip_count")),
                         record.get("status")
                 );
 
-                if (cluster.clusterId.equals("375c2a")) {
-                    errorStream.println("375c2a");
-                }
+//                if (cluster.clusterId.equals("a70720")) {
+//                    errorStream.println("a70720");
+//                }
 
                 clusterMap.put(clusterId, cluster);
             }
@@ -88,6 +91,21 @@ public class GrapevineLabelClusters extends Command {
             if (isVerbose) {
                 outStream.println("       Clusters read: " + clusterMap.size());
                 outStream.println();
+            }
+        }
+
+        Set<String> priorityClusterIds = new HashSet<>();
+        if (lineageFileName != null) {
+            if (isVerbose) {
+                outStream.println("Reading lineage file: " + lineageFileName);
+                outStream.println();
+            }
+            // read the CSV of currently defined clusters
+            Map<String, CSVRecord> lineages = readCSV(lineageFileName, null);
+
+            for (String id : lineages.keySet()) {
+                CSVRecord record = lineages.get(id);
+                priorityClusterIds.add(record.get("cluster_id"));
             }
         }
 
@@ -104,7 +122,7 @@ public class GrapevineLabelClusters extends Command {
 
         // start by assigning clusters that have a representative right on the node
         int maxDepth = 0;
-        int foundClusterCount = findClusterRoots(tree, clusterMap, maxDepth, nodeClusterMap, foundClusters, dupeClusters, lostClusters);
+        int foundClusterCount = findClusterRoots(tree, clusterMap, maxDepth, nodeClusterMap, priorityClusterIds, foundClusters, dupeClusters, lostClusters);
         if (isVerbose) {
             outStream.println(foundClusterCount + " with representative depth " + maxDepth);
             outStream.println();
@@ -113,7 +131,7 @@ public class GrapevineLabelClusters extends Command {
         // then ones further away
         while (foundClusterCount > 0 && maxDepth <= MAX_DEPTH) {
             maxDepth += 1;
-            foundClusterCount = findClusterRoots(tree, clusterMap, maxDepth, nodeClusterMap, foundClusters, dupeClusters, lostClusters);
+            foundClusterCount = findClusterRoots(tree, clusterMap, maxDepth, nodeClusterMap, priorityClusterIds, foundClusters, dupeClusters, lostClusters);
             if (isVerbose) {
                 outStream.println(foundClusterCount + " with representative depth " + maxDepth);
                 outStream.println();
@@ -136,7 +154,9 @@ public class GrapevineLabelClusters extends Command {
             outStream.println();
         }
 
-        int newClusterCount = findNewClusters(tree, nodeClusterMap, clusterMap.keySet());
+        Set<String> clusterLabels = new HashSet<>(clusterMap.keySet());
+
+        int newClusterCount = findNewClusters(tree, nodeClusterMap, clusterLabels);
 
         if (isVerbose) {
             outStream.println("Found " + newClusterCount + " new clusters");
@@ -171,6 +191,7 @@ public class GrapevineLabelClusters extends Command {
             for (Cluster cluster : nodeClusterMap.values()) {
                 writer.print(cluster.clusterId +
                         "," + cluster.representative +
+//                        "," + cluster.sequenceHash +
                         "," + cluster.depth);
                 for (int i = 0; i < MAX_RESERVE; i++) {
                     if (cluster.reserve[i] != null) {
@@ -223,7 +244,8 @@ public class GrapevineLabelClusters extends Command {
      * @param nodeClusterMap
      */
     private int findClusterRoots(RootedTree tree, Map<String, Cluster> clusterMap, int maxDepth,
-                                 Map<Node, Cluster> nodeClusterMap, Set<Cluster> foundClusters, Set<Cluster> dupeClusters, Set<Cluster> lostClusters) {
+                                 Map<Node, Cluster> nodeClusterMap, Set<String> priorityClusterIds,
+                                 Set<Cluster> foundClusters, Set<Cluster> dupeClusters, Set<Cluster> lostClusters) {
 
         // create a map of all the tip names
         Map<String, Node> nameTipMap = new HashMap<>();
@@ -238,8 +260,8 @@ public class GrapevineLabelClusters extends Command {
         // go through all the clusters
         for (String clusterId : clusterMap.keySet()) {
             Cluster cluster = clusterMap.get(clusterId);
-//            if (cluster.clusterId.equals("375c2a")) {
-//                errorStream.println("375c2a");
+//            if (cluster.clusterId.equals("0a4f17")) {
+//                errorStream.println("0a4f17");
 //            }
             // find the representative tip
             Node clusterNode = nameTipMap.get(cluster.representative);
@@ -270,13 +292,17 @@ public class GrapevineLabelClusters extends Command {
                     cluster.node = clusterNode;
 
                     if (nodeClusterMap.containsKey(clusterNode)) {
-//                        Cluster c = nodeClusterMap.get(clusterNode);
-//                        if (isVerbose) {
-//                            outStream.println("WARNING: Node already has a cluster_id, " + c.clusterId + ", cannot relabel with " + cluster.clusterId + " - adding to lost list");
-//                        }
-                        cluster.status = "dupe";
-                        dupeClusters.add(cluster);
-                        continue;
+                        Cluster c = nodeClusterMap.get(clusterNode);
+                        if (priorityClusterIds.contains(c.clusterId) || !priorityClusterIds.contains(cluster.clusterId)) {
+                            // if the existing cluster id is already on the priority list or the new one isn't then just flag it as a dupe...
+                            if (isVerbose) {
+                                outStream.println("WARNING: Node already has a cluster_id, " + c.clusterId + ", cannot relabel with " + cluster.clusterId + " - adding to lost list");
+                            }
+                            cluster.status = "dupe";
+                            dupeClusters.add(cluster);
+                            continue;
+                        }
+                        // otherwise go on and replace it
                     }
 
                     if (!cluster.status.equals("")) {
@@ -314,6 +340,7 @@ public class GrapevineLabelClusters extends Command {
 //                clusterLabels.add(clusterLabel);
                 Cluster newCluster = createCluster(tree, node, clusterLabel);
                 nodeClusterMap.put(node, newCluster);
+                clusterLabels.add(clusterLabel);
 
                 newLineageCount += 1;
 
@@ -336,6 +363,7 @@ public class GrapevineLabelClusters extends Command {
         }
         representatives.sort(
                 Comparator.comparingInt(Representative::getDepth)
+                        .thenComparing(Representative::isUK)
                         .thenComparingInt(Representative::getAmbiguityCount)
         );
 
@@ -350,7 +378,11 @@ public class GrapevineLabelClusters extends Command {
      */
     protected List<Representative> findRepresentative(RootedTree tree, Node node, int depth) {
         if (tree.isExternal(node)) {
-            return Collections.singletonList(new Representative(tree, node, depth));
+            String sequenceHash = (String)node.getAttribute("sequence_hash");
+            sequenceHash = (sequenceHash == null ? "" : sequenceHash);
+            String deltrans = node.getAttribute("country_uk_deltran").toString();
+            boolean isUK = Boolean.parseBoolean(deltrans);
+            return Collections.singletonList(new Representative(tree, node, sequenceHash, isUK, depth));
         }
 
         List<Representative> representatives = new ArrayList<>();
@@ -391,11 +423,13 @@ public class GrapevineLabelClusters extends Command {
 
     protected class Cluster {
         public Cluster(String clusterId, String representative, int depth,
+                       String sequenceHash,
                        String[] reserves, int[] reserveDepths,
                        int tipCount, String status) {
             this.clusterId = clusterId;
             this.representative = representative;
             this.depth = depth;
+            this.sequenceHash = sequenceHash;
             for (int i = 0; i < MAX_DEPTH; i++) {
                 this.reserve[i] = reserves[i];
                 this.reserveDepth[i] = reserveDepths[i];
@@ -412,6 +446,7 @@ public class GrapevineLabelClusters extends Command {
             this.clusterId = clusterId;
             this.representative = representative.name;
             this.depth = representative.depth;
+            this.sequenceHash = representative.sequenceHash;
             for (int i = 0; i < Math.min(reserves.size(), MAX_RESERVE); i++) {
                 this.reserve[i] = reserves.get(i).name;
                 this.reserveDepth[i] = reserves.get(i).depth;
@@ -424,6 +459,7 @@ public class GrapevineLabelClusters extends Command {
         Node node;
         final String clusterId;
         final String representative;
+        final String sequenceHash;
         final int depth;
         final String[] reserve = new String[MAX_DEPTH];
         final int[] reserveDepth = new int[MAX_DEPTH];
@@ -433,8 +469,10 @@ public class GrapevineLabelClusters extends Command {
     }
 
     protected class Representative {
-        public Representative(RootedTree tree, Node node, int depth) {
+        public Representative(RootedTree tree, Node node, String sequenceHash, boolean isUK, int depth) {
             this.name = tree.getTaxon(node).getName();
+            this.sequenceHash = sequenceHash;
+            this.isUK = isUK;
             this.depth = depth;
             this.ambiguityCount =
                     node.getAttribute("ambiguity_count") != null ?
@@ -443,6 +481,10 @@ public class GrapevineLabelClusters extends Command {
 
         public String getName() {
             return name;
+        }
+
+        public boolean isUK() {
+            return isUK;
         }
 
         public int getDepth() {
@@ -454,6 +496,8 @@ public class GrapevineLabelClusters extends Command {
         }
 
         final String name;
+        final String sequenceHash;
+        final boolean isUK;
         final int depth;
         final int ambiguityCount;
     }
