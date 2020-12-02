@@ -46,6 +46,10 @@ The output files will be:
 `cog_global_2020-11-29_metadata.csv` – an metadata csv containing the lineages designation for each tip.
 `cog_global_2020-11-29_tree.nexus` – the tree file with the lineages added as annotations
 
+## Finding new lineages
+
+Having assigned the existing lineages in the step above, jclusterfunk will then try to find new lineages. For this it requires the deltrans parsimony reconstruction annotated in the tree using `country_uk_deltran`. It will find nodes with a transition from non-UK to UK without any existing UK lineage designations and give it the next UK lineage number.
+
 ## Labelling the clusters (continuing)
 
 For the next run, the existing clusters can be used to ensure continuity of cluster labelling (and thus lineage designation):
