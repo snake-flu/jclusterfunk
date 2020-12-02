@@ -6,6 +6,8 @@ jclusterfunk grapevine-label-clusters -i cog_global_2020-11-28_tree.nexus -o ./ 
 
 This takes an annotated tree, `cog_global_2020-10-28_tree.nexus`, and creates a new tree called `cog_global_2020-11-28_labelled_tree.nexus` plus a list of clusters and representative taxa called `cog_global_2020-11-28_labelled_clusters.csv`. 
 
+The algorithm tries to find a tip that is directly attached to a node with as short as possible branch length to act as a 'representative' of that node. It will also find 5 reserves in case the representative is removed from the data set. When picking representatives it will break ties by preferring more complete genomes and UK genomes. For this it requires tips to be labelled with the attributes `ambiguity_count` (the number of ambiguous sites in the sequence) and `country_uk_deltran` (a boolean as to whether the node is in or out of the UK based on the deltrans parsimony reconstruction).
+
 This file will look like this:
 ```
 cluster_id,representative,depth,reserve0,reserve_depth0,reserve1,reserve_depth1,reserve2,reserve_depth2,reserve3,reserve_depth3,reserve4,reserve_depth4,tip_count,status
