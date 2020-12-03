@@ -15,11 +15,11 @@ class ClusterFunkOptions {
         ASSIGN("assign", "Clean and assign lineage annotations."),
         CLUSTER("cluster", "label clusters by number based on node attributes."),
         SUBCLUSTER("subcluster", "split existing clusters into subclusters."),
+        CONQUER("conquer", "Join up previously divided subtrees."),
         CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),
         CONVERT("convert", "Convert tree from one format to another."),
         DIVIDE("divide", "Divide tree into approximately equal sized subtrees."),
         INSERT("insert", "Insert tips into the tree."),
-        JOIN("join", "Join up previously divided subtrees."),
         GRAPEVINE_ASSIGN_LINEAGES("grapevine-assign-lineages", "Assign UK tips without lineages to a UK lineage."),
         GRAPEVINE_ASSIGN_REPRESENTATIVES("grapevine-assign-representatives", "Assign representative tips names to internal nodes."),
         GRAPEVINE_LABEL_CLUSTERS("grapevine-label-clusters", "Labels nodes in a tree with a cluster."),
@@ -351,6 +351,12 @@ class ClusterFunkOptions {
             .longOpt("keep-taxa")
             .required(false)
             .desc("keep only the taxa specifed (default false)")
+            .type(String.class).build();
+
+    final static Option REQUIRE_OUTGROUP = Option.builder()
+            .longOpt("require-outgroup")
+            .required(false)
+            .desc("only divide subtrees where the representative is an outgroup (default false)")
             .type(String.class).build();
 
     // polecat cluster stats options

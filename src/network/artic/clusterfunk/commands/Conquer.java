@@ -22,13 +22,13 @@ import java.util.*;
  * Divides up a tree into roughly equal sized subtrees. This can be used for dynamic tree building approaches.
  * One of either maxSubtreeCount or maxSubtreeSize can be specified (the other should be 0).
  */
-public class Join extends Command {
+public class Conquer extends Command {
     private static final String[] TREE_EXTENSIONS = {".tree", ".nexus", ".nex", ".newick", ".nwk"};
 
-    public Join(String inputPath,
-                String outputFileName,
-                FormatType outputFormat,
-                boolean isVerbose) {
+    public Conquer(String inputPath,
+                   String outputFileName,
+                   FormatType outputFormat,
+                   boolean isVerbose) {
 
         super(isVerbose);
 

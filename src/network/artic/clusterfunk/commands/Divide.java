@@ -23,11 +23,10 @@ public class Divide extends Command {
                   FormatType outputFormat,
                   int maxSubtreeCount,
                   int minSubtreeSize,
+                  boolean requireOutgroup,
                   boolean isVerbose) {
 
         super(isVerbose);
-
-        boolean requireOutgroup = true;
 
         String path = checkOutputPath(outputPath);
 

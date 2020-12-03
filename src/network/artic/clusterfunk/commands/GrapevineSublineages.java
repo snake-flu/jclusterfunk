@@ -42,9 +42,6 @@ public class GrapevineSublineages extends GrapevineAssignLineages {
 
         Map<Node, Lineage> nodeClusterMap = new HashMap<>();
 
-//        String clusterAttribute = "country_uk_acctran";
-        String clusterAttribute = "country_uk_deltran";
-
         findClusterRoots(tree, tree.getRootNode(), lineageName, stateName, false, nodeClusterMap);
 
         int bigClusters = 0;
@@ -64,7 +61,7 @@ public class GrapevineSublineages extends GrapevineAssignLineages {
 
 
         if (isVerbose) {
-            outStream.println("Found " + nodeClusterMap.size() + " clusters with " + clusterAttribute);
+            outStream.println("Found " + nodeClusterMap.size() + " clusters with " + stateName);
             outStream.println("Large (>=50): " + bigClusters);
             outStream.println(" Small (<50): " + smallClusters);
             outStream.println("  Singletons: " + singletons);

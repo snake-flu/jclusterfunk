@@ -71,10 +71,8 @@ class ClusterFunk {
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
-                        OptionGroup annotateGroup = new OptionGroup();
-                        annotateGroup.addOption(LABEL_FIELDS);
-                        annotateGroup.addOption(TIP_ATTRIBUTES);
-                        options.addOptionGroup(annotateGroup);
+                        options.addOption(LABEL_FIELDS);
+                        options.addOption(TIP_ATTRIBUTES);
                         options.addOption(REPLACE);
                         options.addOption(IGNORE_MISSING);
                         break;
@@ -99,6 +97,11 @@ class ClusterFunk {
                         options.addOption(VALUE);
                         options.addOption(CLUSTER_NAME);
                         options.addOption(CLUSTER_PREFIX);
+                        break;
+                    case CONQUER:
+                        options.addOption(INPUT_PATH);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
                         break;
                     case CONTEXT:
                         options.addOption(INPUT);
@@ -134,6 +137,7 @@ class ClusterFunk {
                         divideGroup.addOption(MAX_SUBTREE_COUNT);
                         divideGroup.addOption(MIN_SUBTREE_SIZE);
                         options.addOptionGroup(divideGroup);
+                        divideGroup.addOption(REQUIRE_OUTGROUP);
                         break;
                     case GRAPEVINE_ASSIGN_LINEAGES:
                         options.addOption(INPUT);
@@ -180,11 +184,6 @@ class ClusterFunk {
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(UNIQUE_ONLY);
                         options.addOption(IGNORE_MISSING);
-                        break;
-                    case JOIN:
-                        options.addOption(INPUT_PATH);
-                        options.addOption(OUTPUT_FILE);
-                        options.addOption(OUTPUT_FORMAT);
                         break;
                     case POLECAT:
                         options.addOption(INPUT);
@@ -425,6 +424,14 @@ class ClusterFunk {
                         format,
                         Integer.parseInt(commandLine.getOptionValue("max-count", "0")),
                         Integer.parseInt(commandLine.getOptionValue("min-size", "0")),
+                        commandLine.hasOption("require-outgroup"),
+                        isVerbose);
+                break;
+            case CONQUER:
+                new Conquer(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
                         isVerbose);
                 break;
             case INSERT:
@@ -438,13 +445,6 @@ class ClusterFunk {
                         commandLine.getOptionValue("field-delimeter", "\\|"),
                         commandLine.hasOption("unique-only"),
                         commandLine.hasOption("ignore-missing"),
-                        isVerbose);
-                break;
-            case JOIN:
-                new Join(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("output"),
-                        format,
                         isVerbose);
                 break;
             case GRAPEVINE_ASSIGN_LINEAGES:
