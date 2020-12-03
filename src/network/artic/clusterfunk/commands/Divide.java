@@ -38,6 +38,7 @@ public class Divide extends Command {
 
             if (isVerbose) {
                 outStream.println("Finding a maximum of " + maxSubtreeCount + " subtrees");
+                outStream.println();
             }
 
             int minSize = 2;
@@ -55,16 +56,23 @@ public class Divide extends Command {
                 }
 
                 if (isVerbose) {
-                    outStream.println("  Min subtree size: " + minSize + " - " + subtreeMap.keySet().size() + " subtrees");
+                    outStream.println("    Min subtree size: " + minSize + " - produces " + subtreeMap.keySet().size() + " subtrees");
                 }
             }
 
         } else if (minSubtreeSize > 1) {
-            outStream.println("Finding a subtrees of " + minSubtreeSize + " minimum size");
+            if (isVerbose) {
+                outStream.println("Finding a subtrees of " + minSubtreeSize + " minimum size");
+            }
             collectSubtrees(tree, tree.getRootNode(), minSubtreeSize, subtreeMap, requireOutgroup);
         } else {
             errorStream.println("Specify one or other of max-size and max-count");
             System.exit(1);
+        }
+
+        if (isVerbose) {
+            outStream.println();
+            outStream.println("Dividing into " + subtreeMap.keySet().size() + " subtrees");
         }
 
         createSubtrees(tree, subtreeMap);
@@ -107,6 +115,7 @@ public class Divide extends Command {
 //                        if (isVerbose) {
 //                            outStream.println("  No outgroup compatible representitive for subtree");
 //                        }
+                        return count;
                     }
                 } else {
                     String name = "subtree_0";
