@@ -137,7 +137,7 @@ class ClusterFunk {
                         divideGroup.addOption(MAX_SUBTREE_COUNT);
                         divideGroup.addOption(MIN_SUBTREE_SIZE);
                         options.addOptionGroup(divideGroup);
-                        divideGroup.addOption(REQUIRE_OUTGROUP);
+                        options.addOption(REQUIRE_OUTGROUP);
                         break;
                     case GRAPEVINE_ASSIGN_LINEAGES:
                         options.addOption(INPUT);
