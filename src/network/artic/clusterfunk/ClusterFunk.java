@@ -356,7 +356,7 @@ class ClusterFunk {
                         format,
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
                         commandLine.getOptionValues("label-fields"),
                         commandLine.getOptionValues("tip-attributes"),
                         commandLine.hasOption("replace"),
@@ -372,7 +372,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
                         commandLine.getOptionValue("attribute"),
                         commandLine.getOptionValue("out-attribute"),
                         true,
@@ -404,7 +404,7 @@ class ClusterFunk {
                         commandLine.hasOption("output-taxa"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
                         commandLine.hasOption("mrca"),
                         Integer.parseInt(commandLine.getOptionValue("max-parent", "1")),
                         Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
@@ -453,7 +453,7 @@ class ClusterFunk {
                         format,
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
                         commandLine.hasOption("unique-only"),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
@@ -475,7 +475,7 @@ class ClusterFunk {
                         format,
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
@@ -523,7 +523,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
                         Integer.parseInt(commandLine.getOptionValue("min-size", "10")),
                         Integer.parseInt(commandLine.getOptionValue("max-size", "-1")),
                         Integer.parseInt(commandLine.getOptionValue("max-age", "90")),
@@ -550,7 +550,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
                         commandLine.hasOption("keep-taxa"),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
@@ -591,7 +591,7 @@ class ClusterFunk {
                         format,
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
                         orderType,
                         commandLine.getOptionValues("sort-by"),
                         isVerbose);
@@ -634,7 +634,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
                         commandLine.getOptionValue("attribute"),
                         isVerbose);
                 break;

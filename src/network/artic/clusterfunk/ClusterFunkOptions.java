@@ -9,6 +9,8 @@ import org.apache.commons.cli.Option;
  */
 class ClusterFunkOptions {
 
+    public static final String DEFAULT_DELIMITER = "|";
+
     enum Command {
         NONE("", ""),
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
@@ -133,7 +135,7 @@ class ClusterFunkOptions {
             .argName("delimiter")
             .hasArg()
             .required(false)
-            .desc("the delimiter used to specify fields in the tip labels (default = '|')")
+            .desc("the delimiter used to specify fields in the tip labels (default = '" + DEFAULT_DELIMITER + "')")
             .type(String.class).build();
 
     final static Option OUTPUT_FILE = Option.builder("o")
