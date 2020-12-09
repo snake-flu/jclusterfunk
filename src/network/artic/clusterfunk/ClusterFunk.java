@@ -249,6 +249,17 @@ class ClusterFunk {
 //                        orderGroup2.addOption(MIDPOINT);
 //                        options.addOptionGroup(orderGroup2);
 //                        break;
+                    case SAMPLE:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(OUTPUT_METADATA);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(KEEP_TAXA);
+                        break;
                     case SPLIT:
                         options.addOption(INPUT);
                         METADATA.setRequired(false);
@@ -597,6 +608,22 @@ class ClusterFunk {
 //                        commandLine.getOptionValues("outgroups"),
 //                        isVerbose);
 //                break;
+            case SAMPLE:
+                new Sample(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        commandLine.getOptionValue("output-metadata"),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        1000,
+                        "adm0",
+                        "epiweek",
+                        commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
             case SPLIT:
                 new Split(
                         commandLine.getOptionValue("input"),
