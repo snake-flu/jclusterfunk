@@ -53,7 +53,8 @@ public class Sample extends Command {
 
         Map<String, Subtree> subtreeMap = new HashMap<>();
 
-        pruneCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseAttributeName, subtreeMap);
+//        pruneCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseAttributeName, subtreeMap);
+        collapseCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseAttributeName);
 
         int count = subtreeMap.values().stream().mapToInt(subtree -> subtree.tips.size()).sum();
 
@@ -161,6 +162,27 @@ public class Sample extends Command {
             return Collections.singleton((String)node.getAttribute(attributeName));
         }
     }
+
+    private void collapseCollapsedSubtrees(MutableRootedTree tree, Node node, String attributeName) {
+        if (!tree.isExternal(node)) {
+            if (Boolean.TRUE.equals(node.getAttribute("collapse"))) {
+                String value = (String)node.getAttribute(attributeName);
+                node.setAttribute(attributeName, value);
+                String name = getUniqueHexCode();
+                List<Node> externalNodes = tree.getExternalNodes(node);
+                List<String> tips = externalNodes.stream().map(node1 -> tree.getTaxon(node1).getName()).collect(Collectors.toList());
+                node.setAttribute("Name", name);
+                node.setAttribute("!cartoon", "{" + tips.size() + ",0.0}");
+//                node.setAttribute("!collapsed", "{\"collapsed\",0.0}");
+            } else {
+
+                for (Node child : tree.getChildren(node)) {
+                    collapseCollapsedSubtrees(tree, child, attributeName);
+                }
+            }
+        }
+    }
+
 
     private void pruneCollapsedSubtrees(MutableRootedTree tree, Node node, String attributeName, Map<String, Subtree> subtrees) {
         if (!tree.isExternal(node)) {
