@@ -1,15 +1,17 @@
 package network.artic.clusterfunk.commands;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import jebl.evolution.graphs.Node;
 import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.MutableRootedTree;
-import jebl.evolution.trees.RootedSubtree;
 import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
-import org.apache.commons.csv.CSVRecord;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -17,9 +19,9 @@ import java.util.*;
 public class Sample extends Command {
     public Sample(String treeFileName,
                   String metadataFileName,
-                  String outputFileName,
+                  String outputPath,
+                  String outputFileStem,
                   FormatType outputFormat,
-                  String outputMetadataFileName,
                   String indexColumn,
                   int indexHeader,
                   String headerDelimiter,
@@ -31,20 +33,34 @@ public class Sample extends Command {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
+        String path = checkOutputPath(outputPath);
+
         RootedTree tree = readTree(treeFileName);
         MutableRootedTree sampledTree = new MutableRootedTree(tree);
 
         Map<Taxon, String> taxonMap = getTaxonMap(sampledTree);
 
-        String[] annotationColumns = new String[] { "sample_date", "epi_week", "country", "adm1", "location" };
+        String collapseAttributeName = "country";
+        annotateTips(sampledTree, taxonMap, collapseAttributeName, ignoreMissing);
 
-        for (String columnName: annotationColumns) {
-            annotateTips(sampledTree, taxonMap, columnName, ignoreMissing);
+//        String[] annotationColumns = new String[] { "sample_date", "epi_week", "country", "adm1" };
+//
+//        for (String columnName: annotationColumns) {
+//            annotateTips(sampledTree, taxonMap, columnName, ignoreMissing);
+//        }
+
+        collapseByAttribute(sampledTree, sampledTree.getRootNode(), collapseAttributeName);
+
+        Map<String, Subtree> subtreeMap = new HashMap<>();
+
+        pruneCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseAttributeName, subtreeMap);
+
+        int count = subtreeMap.values().stream().mapToInt(subtree -> subtree.tips.size()).sum();
+
+        if (isVerbose) {
+            outStream.println("Collapsed subtrees by " + collapseAttributeName + " to " + subtreeMap.size() + " subtrees (containing " + count + " tips)");
+            outStream.println();
         }
-
-        collapseByAttribute(sampledTree, sampledTree.getRootNode(), "country");
-
-        pruneCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), "country");
 
 //        if (!ignoreMissing && taxa != null) {
 //            if (taxa != null) {
@@ -88,12 +104,23 @@ public class Sample extends Command {
 //
 //        RootedTree outTree = new RootedSubtree(tree, includedTaxa);
 //
+        String outputFileName = path + outputFileStem + "_tree." + outputFormat.name().toLowerCase();
+
         if (isVerbose) {
             outStream.println("Writing tree file, " + outputFileName + ", in " + outputFormat.name().toLowerCase() + " format");
             outStream.println();
         }
 
         writeTreeFile(sampledTree, outputFileName, outputFormat);
+
+        String subtreeFileName = path + outputFileStem + "_collapsed_subtrees.csv";
+
+        if (isVerbose) {
+            outStream.println("Writing subtree description file, " + subtreeFileName);
+            outStream.println();
+        }
+
+        writeSubtreeRoots(subtreeMap, subtreeFileName);
 
 //        if (outputMetadataFileName != null) {
 //            List<CSVRecord> metadataRows = new ArrayList<>();
@@ -135,20 +162,75 @@ public class Sample extends Command {
         }
     }
 
-    private void pruneCollapsedSubtrees(MutableRootedTree tree, Node node, String attributeName) {
+    private void pruneCollapsedSubtrees(MutableRootedTree tree, Node node, String attributeName, Map<String, Subtree> subtrees) {
         if (!tree.isExternal(node)) {
             if (Boolean.TRUE.equals(node.getAttribute("collapse"))) {
-                String name = node.getAttribute(attributeName) + "[" + tree.getExternalNodeCount(node) + "]";
+                String value = (String)node.getAttribute(attributeName);
+                String name = getUniqueHexCode();
+                List<Node> externalNodes = tree.getExternalNodes(node);
+                List<String> tips = externalNodes.stream().map(node1 -> tree.getTaxon(node1).getName()).collect(Collectors.toList());
                 Node parent = tree.getParent(node);
                 tree.removeChild(node, parent);
-                tree.addChild(tree.createExternalNode(Taxon.getTaxon(name)), parent);
+                Node tip = tree.createExternalNode(Taxon.getTaxon(name));
+                tree.addChild(tip, parent);
+                tree.setLength(tip, tree.getLength(node));
+                tip.setAttribute(attributeName, value);
+                tip.setAttribute("collapsed_tips", tips.size());
+
+                subtrees.put(name, new Subtree(name, node, attributeName, value, tips));
             } else {
 
                 for (Node child : tree.getChildren(node)) {
-                    pruneCollapsedSubtrees(tree, child, attributeName);
+                    pruneCollapsedSubtrees(tree, child, attributeName, subtrees);
                 }
             }
         }
+    }
+
+    /**
+     */
+    void writeSubtreeRoots(Map<String, Subtree> subtreeMap, String outputFileName) {
+        
+        try {
+            PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputFileName)));
+
+            writer.println("name,attribute_name,attribute_value,tip_count,tips");
+
+            for (String key : subtreeMap.keySet()) {
+                Subtree subtree = subtreeMap.get(key);
+                writer.print(subtree.name);
+                writer.print(",");
+                writer.print(subtree.attributeName);
+                writer.print(",");
+                writer.print(subtree.attributeValue);
+                writer.print(",");
+                writer.print(subtree.tips.size());
+                writer.print(",");
+                writer.println(String.join("|", subtree.tips));
+            }
+
+            writer.close();
+        } catch (IOException e) {
+            errorStream.println("Error writing metadata file: " + e.getMessage());
+            System.exit(1);
+        }
+
+    }
+
+    private class Subtree {
+        public Subtree(String name, Node root, String attributeName, String attributeValue, List<String> tips) {
+            this.name = name;
+            this.root = root;
+            this.attributeName = attributeName;
+            this.attributeValue = attributeValue;
+            this.tips = tips;
+        }
+
+        final String name;
+        final Node root;
+        final String attributeName;
+        final String attributeValue;
+        final List<String> tips;
     }
 }
 

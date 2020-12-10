@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -332,15 +331,10 @@ public class GrapevineLabelClusters extends Command {
         for (Node node : tree.getInternalNodes()) {
             Cluster cluster = nodeClusterMap.get(node);
             if (cluster == null) {
-                SecureRandom random = new SecureRandom();
-                String clusterLabel = String.format("%06x", random.nextInt(0xFFFFFF));
-                while (clusterLabels.contains(clusterLabel)) {
-                    clusterLabel = String.format("%06x", random.nextInt(0xFFFFFF));
-                }
+                String clusterLabel = getUniqueHexCode(clusterLabels);
 //                clusterLabels.add(clusterLabel);
                 Cluster newCluster = createCluster(tree, node, clusterLabel);
                 nodeClusterMap.put(node, newCluster);
-                clusterLabels.add(clusterLabel);
 
                 newLineageCount += 1;
 

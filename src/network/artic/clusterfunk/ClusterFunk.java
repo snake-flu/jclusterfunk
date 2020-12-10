@@ -252,9 +252,9 @@ class ClusterFunk {
                     case SAMPLE:
                         options.addOption(INPUT);
                         options.addOption(METADATA);
-                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_PATH);
+                        options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
-                        options.addOption(OUTPUT_METADATA);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
@@ -613,8 +613,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
                         commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("prefix"),
                         format,
-                        commandLine.getOptionValue("output-metadata"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),

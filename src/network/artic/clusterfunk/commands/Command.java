@@ -16,6 +16,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.util.*;
 
 import static java.util.stream.Collectors.toMap;
@@ -669,7 +670,7 @@ abstract class Command {
      * @param lines
      * @param fileName
      */
-     static void writeTextFile(List<String> lines, String fileName) {
+    static void writeTextFile(List<String> lines, String fileName) {
         try {
             PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(fileName)));
 
@@ -773,8 +774,19 @@ abstract class Command {
         return null;
     }
 
+    protected String getUniqueHexCode() {
+        return getUniqueHexCode(this.existingCodes);
+    }
 
-
+    protected String getUniqueHexCode(Set<String> existingCodes) {
+        SecureRandom random = new SecureRandom();
+        String code = String.format("%06x", random.nextInt(0xFFFFFF));
+        while (existingCodes.contains(code)) {
+            code = String.format("%06x", random.nextInt(0xFFFFFF));
+        }
+        existingCodes.add(code);
+        return code;
+    }
 
 
     public static class Pair {
@@ -786,5 +798,7 @@ abstract class Command {
         Node node;
         int count;
     }
+
+    private final Set<String> existingCodes = new HashSet<>();
 
 }
