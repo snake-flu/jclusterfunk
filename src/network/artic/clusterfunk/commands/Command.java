@@ -369,19 +369,40 @@ abstract class Command {
      * Annotates the tips of a tree with a set of columns from the metadata table
      * @param tree
      * @param taxonMap
-     * @param columnName
+     * @param annotationName
      * @param ignoreMissing
      */
     void annotateTips(RootedTree tree,
                       Map<Taxon, String> taxonMap,
-                      String columnName,
+                      String annotationName,
+                      boolean ignoreMissing) {
+        annotateTips(tree, taxonMap, annotationName, new String[] { annotationName }, ignoreMissing);
+    }
+        /**
+         * Annotates the tips of a tree with a set of columns from the metadata table
+         * @param tree
+         * @param taxonMap
+         * @param annotationName
+         * @param columnNames
+         * @param ignoreMissing
+         */
+    void annotateTips(RootedTree tree,
+                      Map<Taxon, String> taxonMap,
+                      String annotationName,
+                      String[] columnNames,
                       boolean ignoreMissing) {
 
         for (Node tip : tree.getExternalNodes()) {
             String key = taxonMap.get(tree.getTaxon(tip));
-            String value = getTipAnnotation(key, columnName, ignoreMissing);
+            String value = null;
+            int i = 0;
+            do {
+                value = getTipAnnotation(key, columnNames[i], ignoreMissing);
+                i++;
+            } while (value == null && i < columnNames.length);
+
             if (value != null) {
-                tip.setAttribute(columnName, value);
+                tip.setAttribute(annotationName, value);
             }
         }
     }

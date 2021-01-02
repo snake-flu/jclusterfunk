@@ -621,6 +621,8 @@ class ClusterFunk {
                         1000,
                         "adm0",
                         "epiweek",
+                        "location",
+                        "location",
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;

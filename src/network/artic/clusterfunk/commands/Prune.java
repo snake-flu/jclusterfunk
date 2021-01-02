@@ -29,26 +29,20 @@ public class Prune extends Command {
 
         super(metadataFileName, taxaFileName, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
-        List<String> targetTaxaList = (targetTaxa != null ? Arrays.asList(targetTaxa) : Collections.emptyList());
+        List<String> targetTaxaList = new ArrayList<>(targetTaxa != null ? Arrays.asList(targetTaxa) : Collections.emptyList());
+        if (taxa != null) {
+            targetTaxaList.addAll(taxa);
+        }
 
-        if (taxa == null && targetTaxaList.size() == 0) {
-            throw new IllegalArgumentException("context command requires a taxon list and/or additional target taxa");
+        if (targetTaxaList.size() == 0) {
+            throw new IllegalArgumentException("prune command requires a taxon list and/or additional target taxa");
         }
 
         RootedTree tree = readTree(treeFileName);
 
         Map<Taxon, String> taxonMap = getTaxonMap(tree);
 
-        if (!ignoreMissing && taxa != null) {
-            if (taxa != null) {
-                for (String key : taxa) {
-                    if (!taxonMap.containsValue(key)) {
-                        errorStream.println("Taxon, " + key + ", not found in tree");
-                        System.exit(1);
-                    }
-                }
-            }
-
+        if (!ignoreMissing) {
             for (String key : targetTaxaList) {
                 if (!taxonMap.containsValue(key)) {
                     errorStream.println("Taxon, " + key + ", not found in tree");
@@ -63,7 +57,7 @@ public class Prune extends Command {
         for (Node tip : tree.getExternalNodes()) {
             Taxon taxon = tree.getTaxon(tip);
             String index = taxonMap.get(taxon);
-            if ((taxa != null && taxa.contains(index) == keepTaxa) || targetTaxaList.contains(index) == keepTaxa) {
+            if (targetTaxaList.contains(index) == keepTaxa) {
                 includedTaxa.add(taxon);
             }
         }
