@@ -619,11 +619,10 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
                         1000,
-                        new String[] { "adm0" },
-                        false,
-                        new String[] { },
-                        new String[] { },
-                        1.0,
+                        "adm0",
+                        "adm1",
+                        "adm2",
+                        "adm2",
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
