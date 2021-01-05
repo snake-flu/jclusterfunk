@@ -26,8 +26,11 @@ public class Sample extends Command {
                   int indexHeader,
                   String headerDelimiter,
                   int maxTaxa,
-                  String primaryAttribute,
-                  String secondaryAttribute,
+                  String[] collapsedAttributes,
+                  boolean clumpIdentical,
+                  String[] enrichedAttributes,
+                  String[] enrichedValues,
+                  double enrichedProportion,
                   boolean ignoreMissing,
                   boolean isVerbose) {
 

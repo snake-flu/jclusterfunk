@@ -35,7 +35,8 @@ public class Polecat extends Command {
         DATE_SPAN("date-span"),
         PERSISTENCE("persistence"),
         RECENCY("recency"),
-        AGE("age");
+        AGE("age"),
+        STEM_LENGTH("stem-length");
 
         Criterion(String name) {
             this.name = name;
@@ -187,6 +188,9 @@ public class Polecat extends Command {
                         case AGE:
                             crit = stats.getAge();
                             break;
+                        case STEM_LENGTH:
+                            crit = stats.getStemLength();
+                            break;
                         default:
                             throw new IllegalStateException("Unexpected value: " + optimizationCriterion);
                     }
@@ -251,6 +255,9 @@ public class Polecat extends Command {
                     break;
                 case AGE:
                     comparator = Comparator.comparing(Stats::getAge);
+                    break;
+                case STEM_LENGTH:
+                    comparator = Comparator.comparing(Stats::getStemLength);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown enum value");
