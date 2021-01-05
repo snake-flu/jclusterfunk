@@ -627,7 +627,7 @@ class ClusterFunk {
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
-                case SPLIT:
+            case SPLIT:
                 new Split(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
