@@ -14,7 +14,7 @@ import static network.artic.clusterfunk.ClusterFunkOptions.*;
 class ClusterFunk {
 
     private final static String NAME = "jclusterfunk";
-    private static final String VERSION = "v0.0.13";
+    private static final String VERSION = "v0.0.14";
     private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
@@ -619,12 +619,15 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", "\\|"),
                         1000,
-                        "adm0",
-                        "epiweek",
+                        new String[] { "adm0" },
+                        false,
+                        new String[] { },
+                        new String[] { },
+                        1.0,
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
-            case SPLIT:
+                case SPLIT:
                 new Split(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
