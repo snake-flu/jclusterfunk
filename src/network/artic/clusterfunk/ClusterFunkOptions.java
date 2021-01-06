@@ -16,6 +16,7 @@ class ClusterFunkOptions {
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
         ASSIGN("assign", "Clean and assign lineage annotations."),
         CLUSTER("cluster", "label clusters by number based on node attributes."),
+        EXTRACT("extract", "Extract tip annotations as a metadata csv."),
         SUBCLUSTER("subcluster", "split existing clusters into subclusters."),
         CONQUER("conquer", "Join up previously divided subtrees."),
         CONTEXT("context", "Extract trees of the neighbourhoods or contexts of a set of tips."),

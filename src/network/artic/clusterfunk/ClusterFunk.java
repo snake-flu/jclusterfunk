@@ -14,7 +14,7 @@ import static network.artic.clusterfunk.ClusterFunkOptions.*;
 class ClusterFunk {
 
     private final static String NAME = "jclusterfunk";
-    private static final String VERSION = "v0.0.14";
+    private static final String VERSION = "v0.0.15";
     private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
@@ -138,6 +138,16 @@ class ClusterFunk {
                         divideGroup.addOption(MIN_SUBTREE_SIZE);
                         options.addOptionGroup(divideGroup);
                         options.addOption(REQUIRE_OUTGROUP);
+                        break;
+                    case EXTRACT:
+                        options.addOption(INPUT);
+                        options.addOption(TAXON_FILE);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        options.addOption(TIP_ATTRIBUTES);
+                        options.addOption(IGNORE_MISSING);
                         break;
                     case GRAPEVINE_ASSIGN_LINEAGES:
                         options.addOption(INPUT);
@@ -443,6 +453,19 @@ class ClusterFunk {
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("output"),
                         format,
+                        isVerbose);
+                break;
+            case EXTRACT:
+                new Extract(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("taxon-file"),
+                        commandLine.getOptionValues("taxa"),
+                        commandLine.getOptionValues("tip-attributes"),
+                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
+                        commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
             case INSERT:
