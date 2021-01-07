@@ -91,7 +91,7 @@ class ClusterFunkOptions {
             .desc("input metadata file")
             .type(String.class).build();
 
-    final static Option LINEAGE_FILE = Option.builder("l")
+    final static Option LINEAGE_FILE = Option.builder()
             .longOpt("lineages")
             .argName("file")
             .hasArg()
@@ -123,7 +123,7 @@ class ClusterFunkOptions {
             .desc("metadata column to use to match tip labels (default first column)")
             .type(String.class).build();
 
-    final static Option INDEX_FIELD = Option.builder()
+    final static Option INDEX_FIELD = Option.builder("n")
             .longOpt("id-field")
             .argName("field number")
             .hasArg()
@@ -185,7 +185,7 @@ class ClusterFunkOptions {
             .desc("output a text file of taxon names to match each output tree")
             .type(String.class).build();
 
-    final static Option ATTRIBUTE = Option.builder()
+    final static Option ATTRIBUTE = Option.builder("a")
             .longOpt("attribute")
             .argName("attribute_name")
             .hasArg()
@@ -221,11 +221,11 @@ class ClusterFunkOptions {
             .longOpt("out-attribute")
             .argName("name")
             .hasArg()
-            .required(true)
+            .required(false)
             .desc("the new attribute name in output")
             .type(String.class).build();
 
-    final static Option LABEL_FIELDS = Option.builder()
+    final static Option LABEL_FIELDS = Option.builder("l")
             .longOpt("label-fields")
             .argName("columns")
             .hasArgs()

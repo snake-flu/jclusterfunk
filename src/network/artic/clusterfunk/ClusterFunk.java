@@ -232,7 +232,8 @@ class ClusterFunk {
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
-                        options.addOption(TIP_ATTRIBUTES);
+                        options.addOption(ATTRIBUTE);
+                        options.addOption(OUT_ATTRIBUTE);
                         break;
                     case REORDER:
                         options.addOption(INPUT);
@@ -600,7 +601,8 @@ class ClusterFunk {
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("output"),
                         format,
-                        commandLine.getOptionValues("tip-attributes"),
+                        commandLine.getOptionValue("attribute"),
+                        commandLine.getOptionValue("attribute"),
                         isVerbose);
                 break;
             case REORDER:

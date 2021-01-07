@@ -495,6 +495,7 @@ abstract class Command {
             if (value != null) {
                 Set<Node> tips = attributeValues.getOrDefault(value, new HashSet<>());
                 tips.add(tip);
+                attributeValues.put(value, tips);
             }
         }
         return attributeValues;
