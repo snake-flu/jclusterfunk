@@ -513,9 +513,9 @@ public class Polecat extends Command {
                 System.out.println("inf");
             }
 
-            if ((Integer)this.node.getAttribute("number") == 5108) {
-                System.err.println("er");
-            }
+//            if ((Integer)this.node.getAttribute("number") == 5108) {
+//                System.err.println("er");
+//            }
             if (this.dates.size() > 0) {
                 this.dateRange = (double) ChronoUnit.DAYS.between(getLeastRecentDate(), getMostRecentDate());
             } else {

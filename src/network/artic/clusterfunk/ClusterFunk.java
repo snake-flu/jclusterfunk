@@ -171,6 +171,7 @@ class ClusterFunk {
                         METADATA.setRequired(false);
                         options.addOption(INPUT);
                         options.addOption(METADATA);
+                        LINEAGE_FILE.setRequired(false);
                         options.addOption(LINEAGE_FILE);
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
