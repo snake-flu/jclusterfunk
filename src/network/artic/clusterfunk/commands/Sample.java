@@ -4,6 +4,8 @@ import jebl.evolution.graphs.Node;
 import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.MutableRootedTree;
 import jebl.evolution.trees.RootedTree;
+import jebl.evolution.trees.RootedTreeUtils;
+import jebl.util.Attributable;
 import network.artic.clusterfunk.FormatType;
 
 import java.io.IOException;
@@ -33,6 +35,7 @@ public class Sample extends Command {
                   String secondaryAttribute,
                   String collapseBy,
                   String clumpBy,
+                  boolean leaveRepresentative,
                   boolean ignoreMissing,
                   boolean isVerbose) {
 
@@ -68,7 +71,7 @@ public class Sample extends Command {
 
         if (collapseBy != null) {
             annotateTips(sampledTree, taxonMap, collapseBy, ignoreMissing);
-            pruneCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseBy, subtreeMap);
+            pruneCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseBy, leaveRepresentative, subtreeMap);
 //        collapseCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseAttributeName);
             int count = subtreeMap.values().stream().mapToInt(subtree -> subtree.tips.size()).sum();
             if (isVerbose) {
@@ -78,7 +81,7 @@ public class Sample extends Command {
         }
         if (clumpBy != null) {
             annotateTips(sampledTree, taxonMap, clumpBy, ignoreMissing);
-            clumpByAttribute(sampledTree, sampledTree.getRootNode(), clumpBy, subtreeMap);
+            clumpByAttribute(sampledTree, sampledTree.getRootNode(), clumpBy, leaveRepresentative, subtreeMap);
             if (isVerbose) {
                 outStream.println("Clumped tips by " + collapseBy + "");
                 outStream.println();
@@ -212,10 +215,11 @@ public class Sample extends Command {
      * @param attributeName
      * @return
      */
-    private void clumpByAttribute(MutableRootedTree tree, Node node, String attributeName, Map<String, Subtree> subtrees) {
+    private void clumpByAttribute(MutableRootedTree tree, Node node, String attributeName,
+                                  boolean leaveRepresentative, Map<String, Subtree> subtrees) {
         if (!tree.isExternal(node)) {
             for (Node child : tree.getChildren(node)) {
-                clumpByAttribute(tree, child, attributeName, subtrees);
+                clumpByAttribute(tree, child, attributeName, leaveRepresentative, subtrees);
             }
 
             Map<String, List<Node>> clumps = new HashMap<>();
@@ -233,12 +237,20 @@ public class Sample extends Command {
                     String name = getUniqueHexCode();
                     List<String> tips = externalNodes.stream().map(node1 -> tree.getTaxon(node1).getName()).collect(Collectors.toList());
 
+                    String representative = null;
+
                     double minLength = Double.MAX_VALUE;
                     for (Node externalNode : externalNodes) {
-                        minLength = Math.min(tree.getLength(externalNode), minLength);
+                        if (tree.getLength(externalNode) < minLength) {
+                            minLength = tree.getLength(externalNode);
+                            representative = tree.getTaxon(externalNode).getName();
+                        }
                         tree.removeChild(externalNode, node);
                     }
-                    Node tip = tree.createExternalNode(Taxon.getTaxon(name + "|" + value + "|" + tips.size()));
+                    Node tip = tree.createExternalNode(
+                            Taxon.getTaxon(
+                                    (leaveRepresentative ? representative + "|" : "") +
+                                            name + "|" + value + "|" + tips.size()));
                     tree.addChild(tip, node);
                     tree.setLength(tip, minLength);
                     tip.setAttribute(attributeName, value);
@@ -269,19 +281,32 @@ public class Sample extends Command {
 //    }
 
 
-    private void pruneCollapsedSubtrees(MutableRootedTree tree, Node node, String attributeName, Map<String, Subtree> subtrees) {
+    private void pruneCollapsedSubtrees(MutableRootedTree tree, Node node, String attributeName,
+                                        boolean leaveRepresentative, Map<String, Subtree> subtrees) {
         if (!tree.isExternal(node)) {
             Set<Object> attributes = getTipAttributes(tree, node, attributeName).keySet();
             if (attributes.size() == 1) {
                 String value = (String)attributes.iterator().next();
                 String name = getUniqueHexCode();
                 List<Node> externalNodes = tree.getExternalNodes(node);
+                String representative = null;
+                double minDivergence = Double.MAX_VALUE;
+                for (Node tip : externalNodes) {
+                    double d = tree.getHeight(node) - tree.getHeight(tip);
+                    if (d < minDivergence) {
+                        minDivergence = d;
+                        representative = tree.getTaxon(tip).getName();
+                    }
+                }
                 List<String> tips = externalNodes.stream().map(node1 -> tree.getTaxon(node1).getName()).collect(Collectors.toList());
                 Node parent = tree.getParent(node);
                 tree.removeChild(node, parent);
-                Node tip = tree.createExternalNode(Taxon.getTaxon(name + "|" + value + "|" + tips.size()));
+                Node tip = tree.createExternalNode(
+                        Taxon.getTaxon(
+                                (leaveRepresentative ? representative + "|" : "") +
+                                        name + "|" + value + "|" + tips.size()));
                 tree.addChild(tip, parent);
-                tree.setLength(tip, tree.getLength(node));
+                tree.setLength(tip, leaveRepresentative ? minDivergence : tree.getLength(node));
                 tip.setAttribute(attributeName, value);
                 tip.setAttribute("tips", tips.size());
 
@@ -289,7 +314,7 @@ public class Sample extends Command {
             } else {
 
                 for (Node child : tree.getChildren(node)) {
-                    pruneCollapsedSubtrees(tree, child, attributeName, subtrees);
+                    pruneCollapsedSubtrees(tree, child, attributeName, leaveRepresentative, subtrees);
                 }
             }
         }

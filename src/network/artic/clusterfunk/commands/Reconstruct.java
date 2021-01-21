@@ -1,6 +1,7 @@
 package network.artic.clusterfunk.commands;
 
 import jebl.evolution.graphs.Node;
+import jebl.evolution.sequences.State;
 import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.RootedTree;
 import jebl.evolution.trees.SimpleRootedTree;
@@ -69,7 +70,8 @@ public class Reconstruct extends Command {
      * @param tipAttributeName
      */
     private void parsimonyReconstruction(RootedTree tree, String tipAttributeName, String nodeAttributeName) {
-        parsimonyReconstruction(tree, tree.getRootNode(), tipAttributeName, nodeAttributeName);
+        fitchParsimony(tree, tree.getRootNode(), tipAttributeName, nodeAttributeName);
+        parsimonyReconstruction(tree, tree.getRootNode(), nodeAttributeName, null,true);
     }
 
     /**
@@ -79,7 +81,7 @@ public class Reconstruct extends Command {
      * @param tipAttributeName
      * @return
      */
-    private Set<Object> parsimonyReconstruction(RootedTree tree, Node node, String tipAttributeName, String nodeAttributeName) {
+    private Set<Object> fitchParsimony(RootedTree tree, Node node, String tipAttributeName, String nodeAttributeName) {
         if (tree.isExternal(node)) {
             Object value = node.getAttribute(tipAttributeName);
             return Collections.singleton(value);
@@ -88,7 +90,7 @@ public class Reconstruct extends Command {
         Set<Object> union = null;
         Set<Object> intersection = null;
         for (Node child : tree.getChildren(node)) {
-            Set<Object> childSet = parsimonyReconstruction(tree, child, tipAttributeName, nodeAttributeName);
+            Set<Object> childSet = fitchParsimony(tree, child, tipAttributeName, nodeAttributeName);
             if (union == null) {
                 union = new HashSet<>(childSet);
                 intersection = new HashSet<>(childSet);
@@ -98,11 +100,39 @@ public class Reconstruct extends Command {
             }
         }
 
-        if (union.size() == 2) {
-            node.setAttribute("union", union);
+        if (intersection.size() > 0) {
+            node.setAttribute(nodeAttributeName + "_states", intersection);
+        } else {
+            node.setAttribute(nodeAttributeName + "_states", union);
         }
 
         return union;
+    }
+
+    /**
+     * recursive version
+     * @param tree
+     * @param node
+     * @param nodeAttributeName
+     * @return
+     */
+    private void parsimonyReconstruction(RootedTree tree, Node node, String nodeAttributeName, Object parentState, boolean deltran) {
+        if (!tree.isExternal(node)) {
+            Set<Object> states = (Set<Object>)node.getAttribute(nodeAttributeName + "_states");
+
+            Object nodeState = null;
+            if (parentState != null && states.contains(parentState)) {
+                nodeState = parentState;
+            } else {
+//                int first = firstIndexOf(nodeStateSet);
+//                nodeStates = sequenceType.getState(first);
+            }
+
+            for (Node child : tree.getChildren(node)) {
+                parsimonyReconstruction(tree, child, nodeAttributeName, nodeState, true);
+            }
+
+        }
     }
 
     /**
@@ -144,6 +174,7 @@ public class Reconstruct extends Command {
 
         return isMonophyletic;
     }
+
 
 }
 
