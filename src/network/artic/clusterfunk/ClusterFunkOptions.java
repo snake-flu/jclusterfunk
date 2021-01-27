@@ -31,7 +31,7 @@ class ClusterFunkOptions {
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
         RECONSTRUCT("reconstruct", "Reconstruct internal node annotations."),
         REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
-        //        REROOT("reroot", "Re-root the tree using an outgroup."),
+        REROOT("reroot", "Re-root the tree using an outgroup."),
         SAMPLE("sample", "Sample taxa down using metadata attributes."),
         SPLIT("split", "Split out subtrees based on tip annotations."),
         STATISTICS("statistics", "Extract statistics and information from trees.");
@@ -308,6 +308,13 @@ class ClusterFunkOptions {
             .required(false)
             .desc("a list of tips to use as an outgroup for re-rooting")
             .type(String.class).build();
+
+    final static Option ROOT_LOCATION = Option.builder()
+            .longOpt("root-location")
+            .required(false)
+            .desc("location on the root branch for the root as a fraction of the branch length from the ingroup")
+            .type(Double.class).build();
+
 
     final static Option INCREASING = Option.builder()
             .longOpt("increasing")
