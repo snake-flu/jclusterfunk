@@ -98,6 +98,12 @@ class ClusterFunk {
                         options.addOption(CLUSTER_NAME);
                         options.addOption(CLUSTER_PREFIX);
                         break;
+                    case COLLAPSE:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(BRANCH_THRESHOLD);
+                        break;
                     case CONQUER:
                         options.addOption(INPUT_PATH);
                         options.addOption(OUTPUT_FILE);
@@ -360,7 +366,6 @@ class ClusterFunk {
         long startTime = System.currentTimeMillis();
 
         switch (command) {
-
             case ANNOTATE:
                 new Annotate(
                         commandLine.getOptionValue("input"),
@@ -403,6 +408,15 @@ class ClusterFunk {
                         commandLine.getOptionValue("cluster-name"),
                         commandLine.getOptionValue("cluster-prefix"),
                         0,
+                        isVerbose);
+                break;
+            case COLLAPSE:
+                String value = commandLine.getOptionValue("threshold");
+                new Collapse(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        Double.parseDouble(commandLine.getOptionValue("threshold", "0.0")),
                         isVerbose);
                 break;
             case CONTEXT:

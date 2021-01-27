@@ -16,6 +16,7 @@ class ClusterFunkOptions {
         ANNOTATE("annotate", "Annotate tips and nodes from a metadata table."),
         ASSIGN("assign", "Clean and assign lineage annotations."),
         CLUSTER("cluster", "label clusters by number based on node attributes."),
+        COLLAPSE("collapse", "collapse branch lengths below a threshold into polytomies"),
         EXTRACT("extract", "Extract tip annotations as a metadata csv."),
         SUBCLUSTER("subcluster", "split existing clusters into subclusters."),
         CONQUER("conquer", "Join up previously divided subtrees."),
@@ -311,10 +312,19 @@ class ClusterFunkOptions {
 
     final static Option ROOT_LOCATION = Option.builder()
             .longOpt("root-location")
+            .argName("fraction")
             .required(false)
+            .numberOfArgs(1)
             .desc("location on the root branch for the root as a fraction of the branch length from the ingroup")
             .type(Double.class).build();
 
+    final static Option BRANCH_THRESHOLD = Option.builder("t")
+            .longOpt("threshold")
+            .argName("length")
+            .required(true)
+            .numberOfArgs(1)
+            .desc("the threshold for branch lengths to be collapsed into polytomies")
+            .type(Double.class).build();
 
     final static Option INCREASING = Option.builder()
             .longOpt("increasing")
