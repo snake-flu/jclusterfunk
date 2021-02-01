@@ -98,6 +98,12 @@ class ClusterFunk {
                         options.addOption(CLUSTER_NAME);
                         options.addOption(CLUSTER_PREFIX);
                         break;
+                    case COLLAPSE:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(BRANCH_THRESHOLD);
+                        break;
                     case CONQUER:
                         options.addOption(INPUT_PATH);
                         options.addOption(OUTPUT_FILE);
@@ -250,17 +256,18 @@ class ClusterFunk {
                         orderGroup.addOption(SORT_COLUMNS);
                         options.addOptionGroup(orderGroup);
                         break;
-//                    case REROOT:
-//                        options.addOption(INPUT);
-//                        options.addOption(OUTPUT_FILE);
-//                        options.addOption(OUTPUT_FORMAT);
-//                        options.addOption(INDEX_HEADER);
-//                        options.addOption(HEADER_DELIMITER);
-//                        OptionGroup orderGroup2= new OptionGroup();
-//                        orderGroup2.addOption(OUTGROUPS);
-//                        orderGroup2.addOption(MIDPOINT);
-//                        options.addOptionGroup(orderGroup2);
-//                        break;
+                    case REROOT:
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
+                        OptionGroup orderGroup2= new OptionGroup();
+                        orderGroup2.addOption(OUTGROUPS);
+                        orderGroup2.addOption(MIDPOINT);
+                        options.addOption(ROOT_LOCATION);
+                        options.addOptionGroup(orderGroup2);
+                        break;
                     case SAMPLE:
                         options.addOption(INPUT);
                         options.addOption(METADATA);
@@ -359,7 +366,6 @@ class ClusterFunk {
         long startTime = System.currentTimeMillis();
 
         switch (command) {
-
             case ANNOTATE:
                 new Annotate(
                         commandLine.getOptionValue("input"),
@@ -402,6 +408,15 @@ class ClusterFunk {
                         commandLine.getOptionValue("cluster-name"),
                         commandLine.getOptionValue("cluster-prefix"),
                         0,
+                        isVerbose);
+                break;
+            case COLLAPSE:
+                String value = commandLine.getOptionValue("threshold");
+                new Collapse(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        Double.parseDouble(commandLine.getOptionValue("threshold", "0.0")),
                         isVerbose);
                 break;
             case CONTEXT:
@@ -622,18 +637,20 @@ class ClusterFunk {
                         commandLine.getOptionValues("sort-by"),
                         isVerbose);
                 break;
-//            case REROOT:
-//                RootType rootType = commandLine.hasOption("midpoint") ? RootType.MIDPOINT : RootType.OUTGROUP;
-//                new Reroot(
-//                        commandLine.getOptionValue("input"),
-//                        commandLine.getOptionValue("output"),
-//                        format,
-//                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
-//                        commandLine.getOptionValue("field-delimeter", "\\|"),
-//                        rootType,
-//                        commandLine.getOptionValues("outgroups"),
-//                        isVerbose);
-//                break;
+            case REROOT:
+                RootType rootType = commandLine.hasOption("midpoint") ? RootType.MIDPOINT : RootType.OUTGROUP;
+                double rootLocation = Double.parseDouble(commandLine.getOptionValue("root-location", "0.5"));
+                new Reroot(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        Integer.parseInt(commandLine.getOptionValue("index-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", "\\|"),
+                        rootType,
+                        rootLocation,
+                        commandLine.getOptionValues("outgroups"),
+                        isVerbose);
+                break;
             case SAMPLE:
                 new Sample(
                         commandLine.getOptionValue("input"),
