@@ -44,7 +44,7 @@ public class Insert extends Command {
             Node tip = tipMap.get(key);
 
             String taxa = metadata.get(key).get(1);
-            String[] insertions = taxa.split(headerDelimiter);
+            String[] insertions = taxa.split("\\|");
 
             if (tip != null) {
                 List<String> insertionList = Arrays.asList(insertions);
