@@ -411,7 +411,6 @@ class ClusterFunk {
                         isVerbose);
                 break;
             case COLLAPSE:
-                String value = commandLine.getOptionValue("threshold");
                 new Collapse(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("output"),
