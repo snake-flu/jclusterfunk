@@ -19,6 +19,8 @@ public class Reconstruct extends Command {
                        FormatType outputFormat,
                        String tipStateAttibuteName,
                        String reconstructedStateAttributeName,
+                       String rootState,
+                       boolean deltran,
                        boolean isVerbose) {
 
         super(isVerbose);
@@ -43,7 +45,7 @@ public class Reconstruct extends Command {
             outStream.println();
         }
 
-        parsimonyReconstruction(tree, tipStateAttibuteName, reconstructedStateAttributeName);
+        parsimonyReconstruction(tree, tipStateAttibuteName, reconstructedStateAttributeName, rootState, deltran);
 
 //        clearInternalAttributes(tree);
 
@@ -69,9 +71,9 @@ public class Reconstruct extends Command {
      * @param tree
      * @param tipAttributeName
      */
-    private void parsimonyReconstruction(RootedTree tree, String tipAttributeName, String nodeAttributeName) {
+    private void parsimonyReconstruction(RootedTree tree, String tipAttributeName, String nodeAttributeName, Object parentState, boolean deltran) {
         fitchParsimony(tree, tree.getRootNode(), tipAttributeName, nodeAttributeName);
-        parsimonyReconstruction(tree, tree.getRootNode(), nodeAttributeName, null,true);
+        parsimonyReconstruction(tree, tree.getRootNode(), nodeAttributeName, parentState, deltran);
     }
 
     /**
@@ -124,8 +126,13 @@ public class Reconstruct extends Command {
             if (parentState != null && states.contains(parentState)) {
                 nodeState = parentState;
             } else {
-//                int first = firstIndexOf(nodeStateSet);
-//                nodeStates = sequenceType.getState(first);
+                nodeState = states.stream().findFirst();
+            }
+
+            if (deltran) {
+                node.setAttribute(nodeAttributeName, nodeState);
+            } else {
+                node.setAttribute(nodeAttributeName, parentState);
             }
 
             for (Node child : tree.getChildren(node)) {

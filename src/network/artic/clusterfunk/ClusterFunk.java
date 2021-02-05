@@ -241,6 +241,8 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FORMAT);
                         options.addOption(ATTRIBUTE);
                         options.addOption(OUT_ATTRIBUTE);
+                        options.addOption(ROOT_VALUE);
+                        options.addOption(ALGORITHM);
                         break;
                     case REORDER:
                         options.addOption(INPUT);
@@ -617,7 +619,9 @@ class ClusterFunk {
                         commandLine.getOptionValue("output"),
                         format,
                         commandLine.getOptionValue("attribute"),
-                        commandLine.getOptionValue("attribute"),
+                        commandLine.getOptionValue("out-attribute"),
+                        commandLine.getOptionValue("root-value"),
+                        commandLine.getOptionValue("algorithm").startsWith("del"),
                         isVerbose);
                 break;
             case REORDER:

@@ -202,6 +202,22 @@ class ClusterFunkOptions {
             .desc("the attribute value")
             .type(String.class).build();
 
+    final static Option ROOT_VALUE = Option.builder()
+            .longOpt("root-value")
+            .argName("attribute_value")
+            .hasArg()
+            .required(true)
+            .desc("the attribute value at the root")
+            .type(String.class).build();
+
+    final static Option ALGORITHM = Option.builder()
+            .longOpt("algorithm")
+            .argName("deltran/acctran")
+            .required(false)
+            .numberOfArgs(1)
+            .desc("the algorithm for reconstruction of node values")
+            .type(String.class).build();
+
     final static Option CLUSTER_NAME = Option.builder()
             .longOpt("cluster-name")
             .argName("name")
