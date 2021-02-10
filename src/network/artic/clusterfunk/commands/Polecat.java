@@ -113,7 +113,11 @@ public class Polecat extends Command {
 
         int i = 1;
         for (Node node : tree.getInternalNodes()) {
-            node.setAttribute("number", i);
+            if (node.getAttribute("cluster_id") != null) {
+                node.setAttribute("id", node.getAttribute("cluster_id"));
+            } else {
+                node.setAttribute("id", i);
+            }
             i += 1;
         }
 
@@ -279,7 +283,7 @@ public class Polecat extends Command {
                     outStream.println();
                     outStream.println("   Writing stats for clusters to file: " + outputMetadataFileName);
                 }
-                writer.println("node_number,parent_number,most_recent_tip,least_recent_tip,day_range,persistence,recency,age," +
+                writer.println("node_id,parent_id,most_recent_tip,least_recent_tip,day_range,persistence,recency,age," +
                         "tip_count,uk_tip_count,uk_child_count,uk_chain_count,identical_count," + // haplotype,
                         "divergence_ratio,mean_tip_divergence,stem_length,growth_rate," +
                         "lineage,uk_lineage,proportion_uk,admin0_count,admin1_count,admin2_count," +
@@ -293,8 +297,8 @@ public class Polecat extends Command {
                             (maxRecency < 0 || stats.getRecency() < maxRecency) &&
                             stats.ukProportion >= minUKProportion) {
                         writer.print(
-                                stats.node.getAttribute("number") + "," +
-                                        (stats.parent != null ? stats.parent.getAttribute("number") : "root") + "," +
+                                stats.node.getAttribute("id") + "," +
+                                        (stats.parent != null ? stats.parent.getAttribute("id") : "root") + "," +
                                         dateFormat.format(stats.getMostRecentDate()) + "," +
                                         dateFormat.format(stats.getLeastRecentDate()) + "," +
                                         stats.getDateRangeBase() + "," +
