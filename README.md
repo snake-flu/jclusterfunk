@@ -77,3 +77,18 @@ The general command line for running jclusterfunk is:
 #### `split`
 
 `--attribute <attribute>`
+
+## Installation
+
+The easiest way to install is using `conda`:
+
+`conda install cov-ert::jclusterfunk`
+
+Alternatively, the download the latest binary:
+https://github.com/cov-ert/jclusterfunk/releases/latest
+
+This contains two files:
+`jclusterfunk` an executable shell file
+`jclusterfunk.jar` the Java jar file
+
+Both of these can be copies to a `bin` directory on the path such as `/usr/local/bin` or `~/bin`
