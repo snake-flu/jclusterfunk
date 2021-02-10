@@ -10,8 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static java.util.stream.Collectors.toMap;
-
 /**
  * Bespoke function to split Grapevine UK_lineages into sublineages
  */

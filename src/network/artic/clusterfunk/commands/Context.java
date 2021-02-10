@@ -2,18 +2,14 @@ package network.artic.clusterfunk.commands;
 
 import jebl.evolution.graphs.Node;
 import jebl.evolution.taxa.Taxon;
-import jebl.evolution.trees.RootedSubtree;
 import jebl.evolution.trees.RootedTree;
 import jebl.evolution.trees.RootedTreeUtils;
 import jebl.evolution.trees.SimpleRootedTree;
 import network.artic.clusterfunk.FormatType;
-import org.apache.commons.csv.CSVRecord;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 

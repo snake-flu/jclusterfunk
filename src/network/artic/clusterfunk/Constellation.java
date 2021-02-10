@@ -1,9 +1,6 @@
 package network.artic.clusterfunk;
 
-import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.BitSet;
-import java.util.Set;
 
 public class Constellation {
     static String constellation1 = "ABCDEFGHI";

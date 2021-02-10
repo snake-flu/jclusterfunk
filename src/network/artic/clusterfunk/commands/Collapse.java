@@ -1,17 +1,9 @@
 package network.artic.clusterfunk.commands;
 
-import com.sun.tools.hat.internal.model.Root;
-import javafx.scene.Parent;
-import jebl.evolution.graphs.Graph;
 import jebl.evolution.graphs.Node;
-import jebl.evolution.taxa.Taxon;
-import jebl.evolution.trees.*;
+import jebl.evolution.trees.MutableRootedTree;
+import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
-import network.artic.clusterfunk.RootType;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  *

@@ -2,10 +2,7 @@ package network.artic.clusterfunk.commands;
 
 import jebl.evolution.graphs.Node;
 import jebl.evolution.taxa.Taxon;
-import jebl.evolution.trees.RootedSubtree;
 import jebl.evolution.trees.RootedTree;
-import network.artic.clusterfunk.FormatType;
-import org.apache.commons.csv.CSVRecord;
 
 import java.io.IOException;
 import java.io.PrintWriter;

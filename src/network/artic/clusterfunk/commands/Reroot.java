@@ -6,7 +6,6 @@ import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.ReRootedTree;
 import jebl.evolution.trees.RootedTree;
 import jebl.evolution.trees.RootedTreeUtils;
-import jebl.evolution.trees.Tree;
 import network.artic.clusterfunk.FormatType;
 import network.artic.clusterfunk.RootType;
 

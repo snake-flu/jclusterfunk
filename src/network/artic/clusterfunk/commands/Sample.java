@@ -4,8 +4,6 @@ import jebl.evolution.graphs.Node;
 import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.MutableRootedTree;
 import jebl.evolution.trees.RootedTree;
-import jebl.evolution.trees.RootedTreeUtils;
-import jebl.util.Attributable;
 import network.artic.clusterfunk.FormatType;
 
 import java.io.IOException;

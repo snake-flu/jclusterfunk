@@ -3,10 +3,12 @@ package network.artic.clusterfunk.commands;
 import jebl.evolution.graphs.Node;
 import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.RootedTree;
-import jebl.evolution.trees.SimpleRootedTree;
 import network.artic.clusterfunk.FormatType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *

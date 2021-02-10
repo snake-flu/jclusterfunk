@@ -1,7 +1,6 @@
 package network.artic.clusterfunk.commands;
 
 import jebl.evolution.graphs.Node;
-import jebl.evolution.taxa.Taxon;
 import jebl.evolution.trees.MutableRootedTree;
 import jebl.evolution.trees.RootedTree;
 import jebl.evolution.trees.SimpleRootedTree;
@@ -12,11 +11,11 @@ import org.apache.commons.csv.CSVRecord;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Reader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Divides up a tree into roughly equal sized subtrees. This can be used for dynamic tree building approaches.
