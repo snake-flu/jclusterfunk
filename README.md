@@ -15,7 +15,7 @@ The general command line for running jclusterfunk is:
 | `convert` | Convert the tree from one format to another without changing it. |
 | `prune` | Prune out sets of tips from a tree. |
 | `reorder` | Reorder branches at each node to have increasing or decreasing numbers of child nodes. |
-| `reroot` | Reroot the tree using an outgroup or at the midpoint. - *not yet implemented* |
+| `reroot` | Reroot the tree using an outgroup or at the midpoint. |
 | `split` | Split the tree into subtrees defined by annotations of the tips or the nodes. |
 
 ### general options
