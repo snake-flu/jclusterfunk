@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
  */
 public class GrapevineLabelClusters extends Command {
 
+    private final static double GENOME_LENGTH = 29903;
+    private final static double ZERO_BRANCH_THRESHOLD = (1.0 / GENOME_LENGTH) * 0.01; // 1% of a 1 SNP branch length
+
     private static final int MAX_DEPTH = 5;
     private static final int MAX_RESERVE = 5;
 
@@ -259,8 +262,11 @@ public class GrapevineLabelClusters extends Command {
         // go through all the clusters
         for (String clusterId : clusterMap.keySet()) {
             Cluster cluster = clusterMap.get(clusterId);
-//            if (cluster.clusterId.equals("0a4f17")) {
-//                errorStream.println("0a4f17");
+//            if (cluster.clusterId.equals("10cb9f")) {
+//                errorStream.println("10cb9f");
+//            }
+//            if (cluster.clusterId.equals("b48e7e")) {
+//                errorStream.println("b48e7e");
 //            }
             // find the representative tip
             Node clusterNode = nameTipMap.get(cluster.representative);
@@ -280,12 +286,14 @@ public class GrapevineLabelClusters extends Command {
 
                     clusterNode = tree.getParent(clusterNode);
 
-                    // if the representative tip is not on the node, walk up to find it
-                    // technically depth of 0 means a child with a zero branch length
-                    int depth = 1;
-                    while (tree.getParent(clusterNode) != null && depth < repDepth) {
-                        clusterNode = tree.getParent(clusterNode);
-                        depth += 1;
+                    if (maxDepth > 1) {
+                        // if the representative tip is not on the node, walk up to find it
+                        // technically depth of 0 means a child with a zero branch length
+                        int depth = 1;
+                        while (tree.getParent(clusterNode) != null && depth < repDepth) {
+                            clusterNode = tree.getParent(clusterNode);
+                            depth += 1;
+                        }
                     }
 
                     cluster.node = clusterNode;
@@ -295,7 +303,7 @@ public class GrapevineLabelClusters extends Command {
                         if (priorityClusterIds.contains(c.clusterId) || !priorityClusterIds.contains(cluster.clusterId)) {
                             // if the existing cluster id is already on the priority list or the new one isn't then just flag it as a dupe...
                             if (isVerbose) {
-                                outStream.println("WARNING: Node already has a cluster_id, " + c.clusterId + ", cannot relabel with " + cluster.clusterId + " - adding to lost list");
+                                outStream.println("WARNING: Node already has a cluster_id, " + c.clusterId + ", cannot relabel with " + cluster.clusterId + " - adding to duplicate list");
                             }
                             cluster.status = "dupe";
                             dupeClusters.add(cluster);
@@ -350,7 +358,7 @@ public class GrapevineLabelClusters extends Command {
     protected Cluster createCluster(RootedTree tree, Node node, String label) {
         int tipCount = countTips(tree, node);
 
-        List<Representative> representatives = findRepresentative(tree, node, -1);
+        List<Representative> representatives = findRepresentative(tree, node, 0);
         if (representatives.size() == 0) {
             errorStream.println("No representative found for cluster, " + label);
             return null;
@@ -372,11 +380,17 @@ public class GrapevineLabelClusters extends Command {
      */
     protected List<Representative> findRepresentative(RootedTree tree, Node node, int depth) {
         if (tree.isExternal(node)) {
-            String sequenceHash = (String)node.getAttribute("sequence_hash");
-            sequenceHash = (sequenceHash == null ? "" : sequenceHash);
-            String deltrans = node.getAttribute("country_uk_deltran").toString();
-            boolean isUK = Boolean.parseBoolean(deltrans);
-            return Collections.singletonList(new Representative(tree, node, sequenceHash, isUK, depth));
+            String label = tree.getTaxon(node).getName();
+            boolean isUK = label.startsWith("England") |
+                    label.startsWith("Scotland") |
+                    label.startsWith("Wales") |
+                    label.startsWith("Northern_Ireland");
+//            String sequenceHash = (String)node.getAttribute("sequence_hash");
+//            sequenceHash = (sequenceHash == null ? "" : sequenceHash);
+//            String deltrans = node.getAttribute("country_uk_deltran").toString();
+//            boolean isUK = Boolean.parseBoolean(deltrans);
+//            return Collections.singletonList(new Representative(tree, node, sequenceHash, isUK, depth));
+            return Collections.singletonList(new Representative(tree, node, null, isUK, depth));
         }
 
         List<Representative> representatives = new ArrayList<>();
@@ -467,7 +481,12 @@ public class GrapevineLabelClusters extends Command {
             this.name = tree.getTaxon(node).getName();
             this.sequenceHash = sequenceHash;
             this.isUK = isUK;
-            this.depth = depth;
+            this.length = tree.getLength(node);
+            if (depth == 1 && length < ZERO_BRANCH_THRESHOLD) {
+                this.depth = 0;
+            } else {
+                this.depth = depth;
+            }
             this.ambiguityCount =
                     node.getAttribute("ambiguity_count") != null ?
                             Integer.parseInt(node.getAttribute("ambiguity_count").toString()) : Integer.MAX_VALUE;
@@ -479,6 +498,10 @@ public class GrapevineLabelClusters extends Command {
 
         public boolean isUK() {
             return isUK;
+        }
+
+        public double getLength() {
+            return length;
         }
 
         public int getDepth() {
@@ -493,6 +516,7 @@ public class GrapevineLabelClusters extends Command {
         final String sequenceHash;
         final boolean isUK;
         final int depth;
+        final double length;
         final int ambiguityCount;
     }
 
