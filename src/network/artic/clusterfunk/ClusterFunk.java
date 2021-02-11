@@ -246,6 +246,7 @@ class ClusterFunk {
                         break;
                     case REORDER:
                         options.addOption(INPUT);
+                        METADATA.setRequired(false);
                         options.addOption(METADATA);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
