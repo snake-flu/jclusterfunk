@@ -55,7 +55,12 @@ abstract class Command {
     Command(String metadataFileName, String taxaFileName, String indexColumn, int indexHeader, String headerDelimiter, boolean isVerbose) {
         this.indexColumn = indexColumn;
         this.indexHeader = indexHeader;
-        this.headerDelimiter = headerDelimiter;
+        if ("|".equals(headerDelimiter)) {
+            this.headerDelimiter = "\\|";
+        } else {
+            this.headerDelimiter = headerDelimiter;
+        }
+
         this.isVerbose = isVerbose;
 
         if (metadataFileName != null) {

@@ -400,7 +400,13 @@ public class Polecat extends Command {
 
             this.admin0.put(admin0 != null ? admin0 : "", 1);
             this.lineage.put(lineage != null ? lineage : "", 1);
-            if (admin0.equalsIgnoreCase("UK")) {
+            if (admin0 == null) {
+                errorStream.println("admin0 missing");
+                if (tip.contains("England") || tip.contains("Scotland") || tip.contains("Wales") || tip.contains("Northern_Ireland")) {
+                    admin0 = "UK";
+                }
+            }
+            if ("UK".equalsIgnoreCase(admin0)) {
                 ukCount = 1;
                 ukProportion = 1.0;
                 this.admin1.put(admin1 != null ? admin1 : "", 1);
