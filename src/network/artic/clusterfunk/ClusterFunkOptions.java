@@ -35,7 +35,8 @@ class ClusterFunkOptions {
         REROOT("reroot", "Re-root the tree using an outgroup."),
         SAMPLE("sample", "Sample taxa down using metadata attributes."),
         SPLIT("split", "Split out subtrees based on tip annotations."),
-        STATISTICS("statistics", "Extract statistics and information from trees.");
+        STATISTICS("statistics", "Extract statistics and information from trees."),
+        TMRCA("tmrca", "Extract a TMRCA for a set of taxa from a list of trees.");
 
         Command(final String name, final String description) {
             this.name = name;

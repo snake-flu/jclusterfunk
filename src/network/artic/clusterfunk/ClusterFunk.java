@@ -14,7 +14,7 @@ import static network.artic.clusterfunk.ClusterFunkOptions.*;
 class ClusterFunk {
 
     private final static String NAME = "jclusterfunk";
-    private static final String VERSION = "v0.0.19";
+    private static final String VERSION = "v0.0.20";
     private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
@@ -225,6 +225,7 @@ class ClusterFunk {
                     case PRUNE:
                         options.addOption(INPUT);
                         options.addOption(TAXON_FILE);
+                        options.addOption(TAXA);
                         METADATA.setRequired(false);
                         options.addOption(METADATA);
                         options.addOption(OUTPUT_FILE);
@@ -305,6 +306,14 @@ class ClusterFunk {
                         options.addOption(ATTRIBUTE);
                         options.addOption(CLUSTER_PREFIX);
                         options.addOption(MIN_CLUSTER_SIZE);
+                        break;
+                    case TMRCA:
+                        options.addOption(INPUT);
+                        options.addOption(TAXON_FILE);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(INDEX_FIELD);
+                        options.addOption(HEADER_DELIMITER);
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown enum value, " + command);
@@ -704,6 +713,18 @@ class ClusterFunk {
                         commandLine.getOptionValue("cluster-prefix"),
                         commandLine.getOptionValue("attribute"),
                         Integer.parseInt(commandLine.getOptionValue("min-size", "10")),
+                        isVerbose);
+                break;
+            case TMRCA:
+                new TMRCA(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("taxon-file"),
+                        commandLine.getOptionValues("taxa"),
+                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("id-column", null),
+                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
+                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
+                        commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
             default:
