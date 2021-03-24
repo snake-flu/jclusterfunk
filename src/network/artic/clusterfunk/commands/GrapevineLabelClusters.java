@@ -22,6 +22,7 @@ public class GrapevineLabelClusters extends Command {
 
     private static final int MAX_DEPTH = 5;
     private static final int MAX_RESERVE = 5;
+    private static final String CLUSTER_ID_PREFIX = "C_";
 
     public GrapevineLabelClusters(boolean isVerbose) {
         super(isVerbose);
@@ -339,7 +340,7 @@ public class GrapevineLabelClusters extends Command {
         for (Node node : tree.getInternalNodes()) {
             Cluster cluster = nodeClusterMap.get(node);
             if (cluster == null) {
-                String clusterLabel = getUniqueHexCode(clusterLabels);
+                String clusterLabel = CLUSTER_ID_PREFIX + getUniqueHexCode(clusterLabels);
 //                clusterLabels.add(clusterLabel);
                 Cluster newCluster = createCluster(tree, node, clusterLabel);
                 nodeClusterMap.put(node, newCluster);
