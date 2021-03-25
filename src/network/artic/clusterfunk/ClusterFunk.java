@@ -14,7 +14,7 @@ import static network.artic.clusterfunk.ClusterFunkOptions.*;
 class ClusterFunk {
 
     private final static String NAME = "jclusterfunk";
-    private static final String VERSION = "v0.0.20";
+    private static final String VERSION = "v0.0.21";
     private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
@@ -314,6 +314,7 @@ class ClusterFunk {
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
+                        options.addOption(STEM);
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown enum value, " + command);
@@ -724,6 +725,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
+                        commandLine.hasOption("stem"),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;

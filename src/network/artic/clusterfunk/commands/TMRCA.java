@@ -24,6 +24,7 @@ public class TMRCA extends Command {
                  String indexColumn,
                  int indexHeader,
                  String headerDelimiter,
+                 boolean isStem,
                  boolean ignoreMissing,
                  boolean isVerbose) {
 
@@ -70,7 +71,7 @@ public class TMRCA extends Command {
 
             try {
                 Set<Node> tips = RootedTreeUtils.getTipsForTaxa(tree, taxonSet);
-                tmrca = findTMRCA(tree, tips);
+                tmrca = findTMRCA(tree, tips, isStem);
             } catch (MissingTaxonException mte) {
                 errorStream.println("Tip missing: " + mte.getMessage());
                 System.exit(1);
@@ -97,8 +98,12 @@ public class TMRCA extends Command {
      * descendents with that cluster number.
      * @param tree
      */
-    double findTMRCA(RootedTree tree, Set<Node> tips) {
-        return tree.getHeight(RootedTreeUtils.getCommonAncestorNode(tree, tips));
+    double findTMRCA(RootedTree tree, Set<Node> tips, boolean isStem) {
+        Node mrca = RootedTreeUtils.getCommonAncestorNode(tree, tips);
+        if (isStem && tree.getParent(mrca) != null) {
+            return tree.getHeight(tree.getParent(mrca));
+        }
+        return tree.getHeight(mrca);
     }
 
 }
