@@ -412,6 +412,12 @@ class ClusterFunkOptions {
             .desc("only divide subtrees where the representative is an outgroup (default false)")
             .type(String.class).build();
 
+    final static Option STEM = Option.builder()
+            .longOpt("stem")
+            .required(false)
+            .desc("find the time of the stem above the MRCA (default false)")
+            .type(String.class).build();
+
     // polecat cluster stats options
     final static Option MIN_CLUSTER_SIZE = Option.builder()
             .longOpt("min-size")
