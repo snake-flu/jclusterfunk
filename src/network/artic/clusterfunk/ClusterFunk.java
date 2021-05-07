@@ -202,9 +202,19 @@ class ClusterFunk {
                         options.addOption(UNIQUE_ONLY);
                         options.addOption(IGNORE_MISSING);
                         break;
+                    case MERGE:
+                        options.addOption(INPUT);
+                        options.addOption(METADATA);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(INDEX_COLUMN);
+                        options.addOption(ADD_COLUMNS);
+                        options.addOption(OVERWRITE);
+                        options.addOption(IGNORE_MISSING);
+                        break;
                     case POLECAT:
                         options.addOption(INPUT);
                         options.addOption(METADATA);
+                        options.addOption(TAXA);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(MIN_CLUSTER_SIZE);
                         options.addOption(INDEX_COLUMN);
@@ -549,6 +559,17 @@ class ClusterFunk {
                         Integer.parseInt(commandLine.getOptionValue("min-size", "50")),
                         isVerbose);
                 break;
+            case MERGE:
+                new Merge(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("output"),
+                        commandLine.getOptionValue("id-column", null),
+                        commandLine.getOptionValues("columns"),
+                        commandLine.hasOption("overwrite"),
+                        commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
             case POLECAT:
                 Polecat.Optimization optimization = Polecat.Optimization.MAXIMUM;
                 Polecat.Criterion optimizationCriterion = Polecat.Criterion.getValue(commandLine.getOptionValue("optimize-by", "growth-rate"));
@@ -571,6 +592,7 @@ class ClusterFunk {
                 new Polecat(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("taxa"),
                         commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),

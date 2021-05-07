@@ -84,7 +84,7 @@ abstract class Command {
         }
     }
 
-    private void readTaxa(String taxaFileName, String indexColumn) {
+    protected void readTaxa(String taxaFileName, String indexColumn) {
 
         try {
             TreeImporter importer = null;
@@ -262,16 +262,20 @@ abstract class Command {
 
 
     private FormatType getTreeFileType(Reader reader) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(reader);
-        String line = bufferedReader.readLine();
-        while (line != null && line.length() == 0) {
-            line = bufferedReader.readLine();
-        }
+//        String line = bufferedReader.readLine();
+//        while (line != null && line.length() == 0) {
+//            line = bufferedReader.readLine();
+//        }
 
-        if (line != null && line.trim().toUpperCase().startsWith("#NEXUS")) {
+        char[] head = new char[1024];
+
+        int charsRead = reader.read(head, 0, head.length);
+        String headString = new String(head).trim().toUpperCase();
+
+        if (headString.startsWith("#NEXUS")) {
             return FormatType.NEXUS;
         }
-        if (line != null && line.trim().toUpperCase().startsWith("(")) {
+        if (headString.startsWith("(")) {
             return FormatType.NEWICK;
         }
 
@@ -687,7 +691,6 @@ abstract class Command {
             errorStream.println("Error writing metadata file: " + e.getMessage());
             System.exit(1);
         }
-
     }
 
     /**

@@ -78,6 +78,7 @@ public class Polecat extends Command {
 
     public Polecat(String treeFileName,
                    String metadataFileName,
+                   String taxaFileName,
                    String outputMetadataFileName,
                    String indexColumn,
                    int indexHeader,
@@ -98,6 +99,10 @@ public class Polecat extends Command {
                    boolean isVerbose) {
 
         super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
+
+        if (taxaFileName != null) {
+            readTaxa(taxaFileName, "cog_id");
+        }
 
         this.maxBaseDivergence = maxBaseDivergence;
 

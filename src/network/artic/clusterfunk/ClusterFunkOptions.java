@@ -28,6 +28,7 @@ class ClusterFunkOptions {
         GRAPEVINE_ASSIGN_REPRESENTATIVES("grapevine-assign-representatives", "Assign representative tips names to internal nodes."),
         GRAPEVINE_LABEL_CLUSTERS("grapevine-label-clusters", "Labels nodes in a tree with a cluster."),
         GRAPEVINE_SUBLINEAGES("grapevine-sublineages", "split existing UK lineages into sub-lineages."),
+        MERGE("merge", "Merge two metadata tables"),
         POLECAT("polecat", "Write out stats for all clusters"),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
         RECONSTRUCT("reconstruct", "Reconstruct internal node annotations."),
@@ -259,6 +260,14 @@ class ClusterFunkOptions {
             .desc("a list of metadata columns to add as tip attributes")
             .type(String.class).build();
 
+    final static Option ADD_COLUMNS = Option.builder("a")
+            .longOpt("add-columns")
+            .argName("columns")
+            .hasArgs()
+            .required(false)
+            .desc("a list of metadata columns to add")
+            .type(String.class).build();
+
     final static Option MRCA = Option.builder()
             .longOpt("mrca")
             .required(false)
@@ -365,6 +374,12 @@ class ClusterFunkOptions {
             .longOpt("replace")
             .required(false)
             .desc("replace the annotations or tip label headers rather than appending (default false)")
+            .type(String.class).build();
+
+    final static Option OVERWRITE = Option.builder()
+            .longOpt("overwrite")
+            .required(false)
+            .desc("overwrite existing values (default false)")
             .type(String.class).build();
 
     final static Option STATISTICS = Option.builder()
