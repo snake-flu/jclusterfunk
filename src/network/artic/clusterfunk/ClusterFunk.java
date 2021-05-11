@@ -14,7 +14,7 @@ import static network.artic.clusterfunk.ClusterFunkOptions.*;
 class ClusterFunk {
 
     private final static String NAME = "jclusterfunk";
-    private static final String VERSION = "v0.0.21";
+    private static final String VERSION = "v0.0.22";
     private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
@@ -292,6 +292,14 @@ class ClusterFunk {
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(KEEP_TAXA);
+                        break;
+                    case SCALE:
+                        BRANCH_THRESHOLD.setRequired(false);
+                        options.addOption(INPUT);
+                        options.addOption(OUTPUT_FILE);
+                        options.addOption(OUTPUT_FORMAT);
+                        options.addOption(SCALE_FACTOR);
+                        options.addOption(BRANCH_THRESHOLD);
                         break;
                     case SPLIT:
                         options.addOption(INPUT);
@@ -704,6 +712,15 @@ class ClusterFunk {
                         "adm2",
                         false,
                         commandLine.hasOption("ignore-missing"),
+                        isVerbose);
+                break;
+            case SCALE:
+                new Scale(
+                        commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("output"),
+                        format,
+                        Double.parseDouble(commandLine.getOptionValue("factor", "1.0")),
+                        Double.parseDouble(commandLine.getOptionValue("threshold", "-1.0")),
                         isVerbose);
                 break;
             case SPLIT:

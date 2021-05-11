@@ -35,6 +35,7 @@ class ClusterFunkOptions {
         REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
         REROOT("reroot", "Re-root the tree using an outgroup."),
         SAMPLE("sample", "Sample taxa down using metadata attributes."),
+        SCALE("scale", "Scale all the branch lengths in a tree by a factor."),
         SPLIT("split", "Split out subtrees based on tip annotations."),
         STATISTICS("statistics", "Extract statistics and information from trees."),
         TMRCA("tmrca", "Extract a TMRCA for a set of taxa from a list of trees.");
@@ -350,6 +351,14 @@ class ClusterFunkOptions {
             .required(true)
             .numberOfArgs(1)
             .desc("the threshold for branch lengths to be collapsed into polytomies")
+            .type(Double.class).build();
+
+    final static Option SCALE_FACTOR = Option.builder("s")
+            .longOpt("factor")
+            .argName("value")
+            .required(true)
+            .numberOfArgs(1)
+            .desc("the factor to scale all branches by")
             .type(Double.class).build();
 
     final static Option INCREASING = Option.builder()
