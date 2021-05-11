@@ -406,7 +406,7 @@ public class Polecat extends Command {
             this.admin0.put(admin0 != null ? admin0 : "", 1);
             this.lineage.put(lineage != null ? lineage : "", 1);
             if (admin0 == null) {
-                errorStream.println("admin0 missing");
+                errorStream.println("admin0 missing: " + tip);
                 if (tip.contains("England") || tip.contains("Scotland") || tip.contains("Wales") || tip.contains("Northern_Ireland")) {
                     admin0 = "UK";
                 }
