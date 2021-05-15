@@ -208,8 +208,8 @@ class ClusterFunk {
                         options.addOption(OUTPUT_FILE);
                         options.addOption(INDEX_COLUMN);
                         options.addOption(ADD_COLUMNS);
+                        options.addOption(EXTRACT);
                         options.addOption(OVERWRITE);
-                        options.addOption(IGNORE_MISSING);
                         break;
                     case POLECAT:
                         options.addOption(INPUT);
@@ -505,6 +505,7 @@ class ClusterFunk {
             case EXTRACT:
                 new Extract(
                         commandLine.getOptionValue("input"),
+                        commandLine.getOptionValue("metadata-file"),
                         commandLine.getOptionValue("taxon-file"),
                         commandLine.getOptionValues("taxa"),
                         commandLine.getOptionValues("tip-attributes"),
@@ -576,7 +577,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("id-column", null),
                         commandLine.getOptionValues("columns"),
                         commandLine.hasOption("overwrite"),
-                        commandLine.hasOption("ignore-missing"),
+                        commandLine.hasOption("extract"),
                         isVerbose);
                 break;
             case POLECAT:

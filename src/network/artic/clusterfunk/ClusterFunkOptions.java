@@ -391,6 +391,12 @@ class ClusterFunkOptions {
             .desc("overwrite existing values (default false)")
             .type(String.class).build();
 
+    final static Option EXTRACT = Option.builder()
+            .longOpt("extract")
+            .required(false)
+            .desc("extract only the matching rows (default false)")
+            .type(String.class).build();
+
     final static Option STATISTICS = Option.builder()
             .longOpt("stats")
             .required(true)

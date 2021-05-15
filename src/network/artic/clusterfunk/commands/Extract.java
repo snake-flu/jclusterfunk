@@ -15,6 +15,7 @@ import java.util.*;
  */
 public class Extract extends Command {
     public Extract(String treeFileName,
+                   String metadataFileName,
                    String taxaFileName,
                    String[] targetTaxa,
                    String[] attributeNames,
@@ -35,45 +36,46 @@ public class Extract extends Command {
             targetTaxaList.addAll(taxa);
         }
 
-        RootedTree tree = readTree(treeFileName);
+        if (treeFileName != null) {
+            RootedTree tree = readTree(treeFileName);
+            Map<Taxon, String> taxonMap = getTaxonMap(tree);
 
-        Map<Taxon, String> taxonMap = getTaxonMap(tree);
-
-        if (!ignoreMissing && targetTaxaList.size() > 0) {
-            for (String key : targetTaxaList) {
-                if (!taxonMap.containsValue(key)) {
-                    errorStream.println("Taxon, " + key + ", not found in tree");
-                    System.exit(1);
-                }
-            }
-        }
-
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputFileName)));
-
-            writer.print(indexColumn + ",");
-            writer.println(String.join(",", attributeNames));
-
-            for (Node tip : tree.getExternalNodes()) {
-                String name = taxonMap.get(tree.getTaxon(tip));
-                if (targetTaxaList.size() == 0 || targetTaxaList.contains(name)) {
-                    writer.print(name);
-                    for (String attributeName : attributeNames) {
-                        writer.print(",");
-                        Object value = tip.getAttribute(attributeName);
-                        if (value != null) {
-                            writer.print(value.toString());
-                        }
+            if (!ignoreMissing && targetTaxaList.size() > 0) {
+                for (String key : targetTaxaList) {
+                    if (!taxonMap.containsValue(key)) {
+                        errorStream.println("Taxon, " + key + ", not found in tree");
+                        System.exit(1);
                     }
-                    writer.println();
                 }
             }
 
-            writer.close();
-        } catch (IOException ioe) {
-            errorStream.println("Error opening output file: " + ioe.getMessage());
-            System.exit(1);
+            PrintWriter writer = null;
+            try {
+                writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputFileName)));
+
+                writer.print(indexColumn + ",");
+                writer.println(String.join(",", attributeNames));
+
+                for (Node tip : tree.getExternalNodes()) {
+                    String name = taxonMap.get(tree.getTaxon(tip));
+                    if (targetTaxaList.size() == 0 || targetTaxaList.contains(name)) {
+                        writer.print(name);
+                        for (String attributeName : attributeNames) {
+                            writer.print(",");
+                            Object value = tip.getAttribute(attributeName);
+                            if (value != null) {
+                                writer.print(value.toString());
+                            }
+                        }
+                        writer.println();
+                    }
+                }
+
+                writer.close();
+            } catch (IOException ioe) {
+                errorStream.println("Error opening output file: " + ioe.getMessage());
+                System.exit(1);
+            }
         }
     }
 }

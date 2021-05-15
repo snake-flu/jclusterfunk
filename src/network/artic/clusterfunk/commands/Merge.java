@@ -21,7 +21,7 @@ public class Merge extends Command {
                  String indexColumn,
                  String[] addColumns,
                  boolean overwriteExisting,
-                 boolean ignoreMissing,
+                 boolean extractMatches,
                  boolean isVerbose) {
 
         super(isVerbose);
@@ -63,7 +63,6 @@ public class Merge extends Command {
             int rowCount = 0;
             int valueCount = 0;
 
-            boolean extractMatches = true;
             try {
                 PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputFileName)));
 
