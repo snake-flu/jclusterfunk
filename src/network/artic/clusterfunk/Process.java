@@ -44,7 +44,7 @@ public class Process {
                     }
                     String key = record.get(indexColumn);
                     if (csv.containsKey(key)) {
-                        errorStream.println("Duplicate index value, " + key + " in metadata table");
+//                        errorStream.println("Duplicate index value, " + key + " in metadata table");
 //                        System.exit(1);
                     }
                     csv.put(key, record);
@@ -70,6 +70,43 @@ public class Process {
             System.exit(1);
         }
         return csv;
+    }
+
+    static protected Map<String, List<String>> readCSVColumns(String fileName, String indexColumn, String[] valueColumns) {
+        Map<String, List<String>> columnMap = new HashMap<>();
+        try {
+            Reader in = new FileReader(fileName);
+            CSVParser parser = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
+
+            // a particular column is used to index - check it is there for the first record
+            // and use it to key the records
+
+            boolean first = true;
+            for (CSVRecord record : parser) {
+                if (first) {
+                    if (record.get(indexColumn) == null) {
+                        errorStream.println("Index column, " + indexColumn + " not found in metadata table");
+                        System.exit(1);
+                    }
+                    first = false;
+                }
+                String key = record.get(indexColumn);
+//                    if (csv.containsKey(key)) {
+//                        errorStream.println("Duplicate index value, " + key + " in metadata table");
+////                        System.exit(1);
+//                    }
+                List<String> values = new ArrayList<>();
+                for (String column: valueColumns) {
+                    values.add(record.get(column));
+                }
+                columnMap.put(key, values);
+            }
+
+        } catch (IOException e) {
+            errorStream.println("Error reading metadata file: " + e.getMessage());
+            System.exit(1);
+        }
+        return columnMap;
     }
 
     static List<CSVRecord> filter(List<CSVRecord> rows, String column, String value) {
@@ -139,73 +176,95 @@ public class Process {
         return countsMap;
     }
 
-    static final String[] COLUMNS = { /*"sequence_name","cog_id","gisaid_id",*/"sample_date","epi_week","adm2","NUTS1","longitude","latitude","location","pillar_2","is_surveillance","travel_history","lineage" };
-
-    static final String[] FILE_NAMES = {
-            "cog_global_2021-05-11_consortium.csv",
-            "cog_global_2021-05-12_consortium.csv",
-            "cog_global_2021-05-13_consortium.csv",
-            "cog_global_2021-05-14_consortium.csv",
-            "cog_global_2021-05-15_consortium.csv",
-            "cog_global_2021-05-16_consortium.csv",
-            "cog_global_2021-05-17_consortium.csv"
-    };
+    static final String[] COLUMNS = { /*"sequence_name","cog_id","gisaid_id",*/
+            "sample_date","epi_week","adm2","NUTS1","longitude","latitude","location",
+            "pillar_2","is_surveillance","travel_history","lineage", "collection_date",
+            "received_date", "submission_org_code"};
 
     public static void main(String[] args) {
-        List<String> dateSet = createDateSet(2021, 3, 1, 2021, 5, 17);
-        List<String> dateAddedList = createDateSet(2021, 5, 11, 2021, 5, 17);
+        List<String> dateSet = createDateSet(2021, 3, 1, 2021, 5, 24);
+        List<String> dateAddedList = createDateSet(2021, 5, 11, 2021, 5, 24);
 
         String[] lineages = { "B.1.617.2", "B.1.1.7"};
         Set<String> lineageSet = new HashSet<String>(Arrays.asList(lineages));
+
+//        Map<String, List<String>> collectionDateMap = readCSVColumns("cog_2021-05-22_all_metadata.csv",
+//                "central_sample_id", new String[] {"collection_date", "received_date", "submission_org"});
 
         Map<String, CSVRecord> rowMap = new HashMap<>();
 
         Map<String, String> dateAddedMap = new HashMap<>();
 
         for (String dateAdded : dateAddedList) {
-            String filename = "cog_global_" + dateAdded + "_consortium.csv";
-            List<CSVRecord> rows = readCSV(filename, "sequence_name");
-            outStream.println("Read metadata table: " + filename);
-            outStream.println("               Rows: " + rows.size());
+            String filename = "cog_" + dateAdded + "_all_metadata.csv";
+            if (Files.exists(Paths.get(filename))) {
+                List<CSVRecord> rows = readCSV(filename, "sequence_name");
+                outStream.println("Read metadata table: " + filename);
+                outStream.println("               Rows: " + rows.size());
 
-            rows = filter(rows, "country", "UK");
-            outStream.println("            UK only: " + rows.size());
+//            rows = filter(rows, "country", "UK");
+//            outStream.println("            UK only: " + rows.size());
 
-            rows = filter(rows, "sample_date", new HashSet<>(dateSet));
-            outStream.println("         since march only: " + rows.size());
+                rows = filter(rows, "sample_date", new HashSet<>(dateSet));
+                outStream.println("         since march only: " + rows.size());
 
 
-            int newCount = 0;
-            for (CSVRecord row : rows) {
-                if (!rowMap.containsKey(row.get("cog_id"))) {
-                    dateAddedMap.put(row.get("cog_id"), dateAdded);
-                    newCount += 1;
+                int newCount = 0;
+                for (CSVRecord row : rows) {
+                    String cogId = row.get("central_sample_id");
+
+                    if (!rowMap.containsKey(cogId)) {
+                        dateAddedMap.put(cogId, dateAdded);
+                        newCount += 1;
+                    }
+                    rowMap.put(cogId, row);
                 }
-                rowMap.put(row.get("cog_id"), row);
+                outStream.println("         new sequences: " + newCount);
+                outStream.println();
             }
-            outStream.println("         new sequences: " + newCount);
-            outStream.println();
         }
 
         Map<String, CSVRecord> travelMap = readCSVMap("travel_history.csv", "cog_id");
 
-//        Map<String, Map<String, Integer>> countMap = count(rows, "sample_date", new HashSet<String>(dateSet), "lineage", lineageSet);
+        String filename = "cog_" + dateAddedList.get(dateAddedList.size() - 1) + "_all_metadata.csv";
+        Map<String, CSVRecord> geographyMap = readCSVMap("cog_global_2021-05-_geography.csv", "cog_id");
+
+        Map<String, CSVRecord> ctList = readCSVMap("ct.csv", null);
+
+        Map<String, Map<String, Integer>> countMap = count(new ArrayList<>(rowMap.values()), "sample_date", new HashSet<String>(dateSet), "lineage", lineageSet);
+
+//        System.out.print("sample_date,n_B.1.1.7,n_B.1.617.2,n_B.1.1.7_adj,n_B.1.617.2_adj,p_ct30_sgn,p_ct30_sgp,n_sgn,n_sgp");
 //
-//        System.out.print("sample_date");
-//        for (String lineage : lineageSet) {
-//            System.out.print("," + lineage);
-//        }
 //        System.out.println();
 //
-//        for (String date : countMap.keySet()) {
+//        for (String date : dateSet) {
 //            System.out.print(date);
 //
 //            Map<String, Integer> counts = countMap.get(date);
-//            for (String lineage : lineageSet) {
-//                System.out.print("," + counts.getOrDefault(lineage, 0));
+//            CSVRecord ct = ctList.get(date);
+//            if (ct == null) {
+//                System.err.println("CT missing for date " + date);
+//                System.exit(1);
 //            }
-//            System.out.println();
+//            int countB117 = 0;
+//            int countB16172 = 0;
+//            if (counts != null) {
+//                countB117 = counts.getOrDefault("B.1.1.7", 0);
+//                countB16172 = counts.getOrDefault("B.1.617.2", 0);
+//            }
+//            double propCT30SGNegative = Double.parseDouble(ct.get("p_SGTF_ct30"));
+//            double propCT30SGPositive = Double.parseDouble(ct.get("p_SGP_ct30"));
+//            double countSGNegative = Integer.parseInt(ct.get("N_SGTF"));
+//            double countSGPositive = Integer.parseInt(ct.get("N_SGP"));
+//
+//            double correctedB117 = (1.0 + propCT30SGNegative) * countB117;
+//            double correctedB16172 = (1.0 + propCT30SGPositive) * countB16172;
+//
+//
+//            System.out.println( "," + countB117 + "," + countB16172 + "," + correctedB117 + "," + correctedB16172 + "," +
+//                    propCT30SGNegative + "," + propCT30SGPositive + "," + countSGNegative + "," + countSGPositive);
 //        }
+//        System.out.println();
 
         PrintWriter writer = null;
         try {
@@ -213,14 +272,15 @@ public class Process {
 
             writer.println("epi_week,adm2,lineage,count");
 
-            for (int week = 52; week <= 72; week += 1) {
+            for (int week = 52; week <= 73; week += 1) {
                 Map<String, Integer> locationCountsB117 = new HashMap<>();
                 Map<String, Integer> locationCountsB117Travel = new HashMap<>();
                 Map<String, Integer> locationCountsB16172 = new HashMap<>();
                 Map<String, Integer> locationCountsB16172Travel = new HashMap<>();
                 for (String key : rowMap.keySet()) {
                     CSVRecord row = rowMap.get(key);
-                    String cogId = row.get("cog_id");
+//                    String cogId = row.get("cog_id");
+                    String cogId = row.get("central_sample_id");
                     boolean travel = travelMap.get(cogId) != null && "India".equals(travelMap.get(cogId).get("travel_history"));
                     String adm2 = row.get("adm2");
                     adm2 = adm2.replace(' ', '_');
@@ -294,77 +354,95 @@ public class Process {
             System.exit(1);
         }
 
-        try {
-            writer = new PrintWriter(Files.newBufferedWriter(Paths.get("adm2_travel.csv")));
-
-            writer.println("adm2,B.1.1.7,B.1.617.2,other,travel");
-
-            Map<String, Integer> locationCountsB117 = new HashMap<>();
-            Map<String, Integer> locationCountsB16172 = new HashMap<>();
-            Map<String, Integer> locationCountsOther = new HashMap<>();
-            Map<String, Integer> locationCountsTravel = new HashMap<>();
-            for (String key : rowMap.keySet()) {
-                CSVRecord row = rowMap.get(key);
-                String cogId = row.get("cog_id");
-                boolean travel = travelMap.get(cogId) != null && "India".equals(travelMap.get(cogId).get("travel_history"));
-                String adm2 = row.get("adm2");
-                adm2 = adm2.replace(' ', '_');
-                if (!adm2.isEmpty() && !adm2.contains("|")) {
-                    if (travel) {
-                        locationCountsTravel.put(adm2,
-                                locationCountsTravel.getOrDefault(adm2, 0) + 1);
-                    } else {
-                        if ("B.1.1.7".equals(row.get("lineage"))) {
-                            locationCountsB117.put(adm2,
-                                    locationCountsB117.getOrDefault(adm2, 0) + 1);
-                        } else if ("B.1.617.2".equals(row.get("lineage"))) {
-                            locationCountsB16172.put(adm2,
-                                    locationCountsB16172.getOrDefault(adm2, 0) + 1);
-                        } else {
-                            locationCountsOther.put(adm2,
-                                    locationCountsOther.getOrDefault(adm2, 0) + 1);
-                        }
-                    }
-                }
-            }
-
-            Set<String> locations = new TreeSet<>(locationCountsB117.keySet());
-            locations.addAll(locationCountsB16172.keySet());
-            locations.addAll(locationCountsOther.keySet());
-            locations.addAll(locationCountsTravel.keySet());
-            for (String location : locations) {
-                writer.print(location);
-                writer.print("," + locationCountsB117.getOrDefault(location, 0));
-                writer.print("," + locationCountsB16172.getOrDefault(location, 0));
-                writer.print("," + locationCountsOther.getOrDefault(location, 0));
-                writer.print("," + locationCountsTravel.getOrDefault(location, 0));
-                writer.println();
-            }
-
-            writer.close();
-        } catch (IOException ioe) {
-            errorStream.println("Error opening output file: " + ioe.getMessage());
-            System.exit(1);
-        }
+//        try {
+//            writer = new PrintWriter(Files.newBufferedWriter(Paths.get("adm2_travel.csv")));
+//
+//            writer.println("adm2,B.1.1.7,B.1.617.2,other,travel");
+//
+//            Map<String, Integer> locationCountsB117 = new HashMap<>();
+//            Map<String, Integer> locationCountsB16172 = new HashMap<>();
+//            Map<String, Integer> locationCountsOther = new HashMap<>();
+//            Map<String, Integer> locationCountsTravel = new HashMap<>();
+//            for (String key : rowMap.keySet()) {
+//                CSVRecord row = rowMap.get(key);
+//                String cogId = row.get("cog_id");
+//                boolean travel = travelMap.get(cogId) != null && "India".equals(travelMap.get(cogId).get("travel_history"));
+//                String adm2 = row.get("adm2");
+//                adm2 = adm2.replace(' ', '_');
+//                if (!adm2.isEmpty() && !adm2.contains("|")) {
+//                    if (travel) {
+//                        locationCountsTravel.put(adm2,
+//                                locationCountsTravel.getOrDefault(adm2, 0) + 1);
+//                    } else {
+//                        if ("B.1.1.7".equals(row.get("lineage"))) {
+//                            locationCountsB117.put(adm2,
+//                                    locationCountsB117.getOrDefault(adm2, 0) + 1);
+//                        } else if ("B.1.617.2".equals(row.get("lineage"))) {
+//                            locationCountsB16172.put(adm2,
+//                                    locationCountsB16172.getOrDefault(adm2, 0) + 1);
+//                        } else {
+//                            locationCountsOther.put(adm2,
+//                                    locationCountsOther.getOrDefault(adm2, 0) + 1);
+//                        }
+//                    }
+//                }
+//            }
+//
+//            Set<String> locations = new TreeSet<>(locationCountsB117.keySet());
+//            locations.addAll(locationCountsB16172.keySet());
+//            locations.addAll(locationCountsOther.keySet());
+//            locations.addAll(locationCountsTravel.keySet());
+//            for (String location : locations) {
+//                writer.print(location);
+//                writer.print("," + locationCountsB117.getOrDefault(location, 0));
+//                writer.print("," + locationCountsB16172.getOrDefault(location, 0));
+//                writer.print("," + locationCountsOther.getOrDefault(location, 0));
+//                writer.print("," + locationCountsTravel.getOrDefault(location, 0));
+//                writer.println();
+//            }
+//
+//            writer.close();
+//        } catch (IOException ioe) {
+//            errorStream.println("Error opening output file: " + ioe.getMessage());
+//            System.exit(1);
+//        }
 
         try {
             writer = new PrintWriter(Files.newBufferedWriter(Paths.get("data.csv")));
 
             writer.print(String.join(",", COLUMNS));
             writer.print(",date_added");
+            writer.print(",has_collection_date");
             writer.println();
 
             for (String key : rowMap.keySet()) {
                 CSVRecord row = rowMap.get(key);
-                String cogId = row.get("cog_id");
+                String cogId = row.get("central_sample_id");
+
+                CSVRecord geo = geographyMap.get(key);
+
                 boolean travel = travelMap.get(cogId) != null && "India".equals(travelMap.get(cogId).get("travel_history"));
                 boolean first = true;
                 for (String column : COLUMNS) {
                     writer.print(first ? "" : ",");
                     first = false;
-                    writer.print(column.equals("travel_history") ? (travel ? "Y" : "N") : row.get(column));
+                    String value = "";
+                    if (column.equals("NUTS1")) {
+                        value = geo.get(column);
+                    } else {
+                        value = row.get(column);
+                    }
+                    if (column.equals("travel_history")) {
+                        value = (travel ? "Y" : "N");
+                    }
+                    writer.print(value);
                 }
                 writer.print("," + dateAddedMap.get(key));
+                writer.print("," + (row.get("collection_date").length() < 10 ? "N" : "Y"));
+//                writer.print("," + (additionalValues.get(0)));
+//                writer.print("," + (additionalValues.get(1)));
+//                writer.print("," + (additionalValues.get(2)));
+
                 writer.println();
             }
 
