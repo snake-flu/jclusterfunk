@@ -199,6 +199,7 @@ class ClusterFunk {
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
+                        options.addOption(DESTINATION_COLUMN);
                         options.addOption(UNIQUE_ONLY);
                         options.addOption(IGNORE_MISSING);
                         break;

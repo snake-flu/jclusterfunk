@@ -379,6 +379,14 @@ class ClusterFunkOptions {
             .desc("a list of metadata columns to sort by (prefix by ^ to reverse order)")
             .type(String.class).build();
 
+    final static Option DESTINATION_COLUMN = Option.builder()
+            .longOpt("destination-column")
+            .argName("column name")
+            .hasArg()
+            .required(false)
+            .desc("metadata column for destination to insert tips")
+            .type(String.class).build();
+
     final static Option REPLACE = Option.builder("r")
             .longOpt("replace")
             .required(false)

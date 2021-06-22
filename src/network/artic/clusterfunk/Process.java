@@ -189,15 +189,15 @@ public class Process {
     }
 
     static final String[] COLUMNS = { /*"sequence_name","cog_id","gisaid_id",*/
-            "sample_date","epi_week","NUTS1", "utla", 
+            "sample_date","epi_week","NUTS1", "utla",
             "is_pillar_2","is_surveillance","lineage", "collection_date",
             "collection_pillar", "received_date", "submission_org_code"};
 
     static final String[] GEO_COLUMNS = { "NUTS1","longitude","latitude","utla","location" };
-    
+
     public static void main(String[] args) {
-        List<String> dateSet = createDateSet(2021, 3, 1, 2021, 6, 3);
-        List<String> dateAddedList = createDateSet(2021, 5, 20, 2021, 6, 3);
+        List<String> dateSet = createDateSet(2021, 4, 1, 2021, 6, 17);
+        List<String> dateAddedList = createDateSet(2021, 6, 3, 2021, 6, 17);
 
         String[] lineages = { "B.1.617.2", "B.1.1.7"};
         Set<String> lineageSet = new HashSet<>(Arrays.asList(lineages));
@@ -248,7 +248,7 @@ public class Process {
         List<String> metadataColumns = metadataMap.get(metadataMap.keySet().iterator().next()).getParser().getHeaderNames();
 
         filename = "cog_global_" + latestDateAdded + "_geography.csv";
-        Map<String, CSVRecord> geographyMap = readCSVMap(filename, "central_sample_id");
+        Map<String, CSVRecord> geographyMap = readCSVMap(filename, "cog_id");
         List<String> geoColumns = geographyMap.get(geographyMap.keySet().iterator().next()).getParser().getHeaderNames();
 
         filename = "majora." + latestDateAdded + ".metadata.matched.tsv";
@@ -298,11 +298,12 @@ public class Process {
 
             writer.println("epi_week,utla,lineage,count");
 
-            for (int week = 52; week <= 74; week += 1) {
+            for (int week = 52; week <= 77; week += 1) {
                 Map<String, Integer> locationCountsB117 = new HashMap<>();
 //                Map<String, Integer> locationCountsB117Travel = new HashMap<>();
                 Map<String, Integer> locationCountsB16172 = new HashMap<>();
- //               Map<String, Integer> locationCountsB16172Travel = new HashMap<>();
+                //               Map<String, Integer> locationCountsB16172Travel = new HashMap<>();
+                int count = 0;
                 for (String key : rowMap.keySet()) {
                     CSVRecord row = rowMap.get(key);
 //                    String cogId = row.get("cog_id");
@@ -332,11 +333,14 @@ public class Process {
                                     locationCountsB16172.put(location,
                                             locationCountsB16172.getOrDefault(location, 0) + 1);
                                 }
+                                count += 1;
 //                            }
                             }
                         }
                     }
                 }
+
+                System.out.println("Epiweek: " + week + ": " + count);
 
 //                Set<String> locations = new TreeSet<>(locationCountsB117.keySet());
 //                locations.addAll(locationCountsB1617.keySet());
@@ -379,7 +383,7 @@ public class Process {
 //                    writer.print("," + locationCountsB16172Travel.getOrDefault(location, 0));
 //                    writer.println();
 //                }
-                }
+            }
             writer.close();
         } catch (IOException ioe) {
             errorStream.println("Error opening output file: " + ioe.getMessage());
@@ -499,7 +503,7 @@ public class Process {
 
                     writer.println();
                 } else {
-                    System.err.println(cogId + " missing from Majora table");
+                    //System.err.println(cogId + " missing from Majora table");
                 }
             }
 
