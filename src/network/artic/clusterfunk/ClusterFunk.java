@@ -245,6 +245,7 @@ class ClusterFunk {
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(KEEP_TAXA);
+                        options.addOption(IGNORE_MISSING);
                         break;
                     case RECONSTRUCT:
                         options.addOption(INPUT);
@@ -292,6 +293,7 @@ class ClusterFunk {
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(KEEP_TAXA);
+                        options.addOption(IGNORE_MISSING);
                         break;
                     case SCALE:
                         BRANCH_THRESHOLD.setRequired(false);
@@ -522,6 +524,7 @@ class ClusterFunk {
                         commandLine.getOptionValue("metadata"),
                         commandLine.getOptionValue("output"),
                         format,
+                        commandLine.getOptionValue("destination-column", null),
                         commandLine.getOptionValue("id-column", null),
                         Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
                         commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
