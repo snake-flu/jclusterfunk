@@ -21,6 +21,7 @@ public class Insert extends Command {
                   String metadataFileName,
                   String outputFileName,
                   FormatType outputFormat,
+                  String destinationColumn,
                   String indexColumn,
                   int indexHeader,
                   String headerDelimiter,
@@ -43,7 +44,7 @@ public class Insert extends Command {
         for (String key : metadata.keySet()) {
             Node tip = tipMap.get(key);
 
-            String taxa = metadata.get(key).get(1);
+            String taxa = metadata.get(key).get(destinationColumn);
             String[] insertions = taxa.split("\\|");
 
             if (tip != null) {
