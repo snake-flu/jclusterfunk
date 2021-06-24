@@ -33,6 +33,7 @@ public class Sample extends Command {
                   String secondaryAttribute,
                   String collapseBy,
                   String clumpBy,
+                  boolean annotateOnly,
                   boolean leaveRepresentative,
                   boolean ignoreMissing,
                   boolean isVerbose) {
@@ -69,7 +70,7 @@ public class Sample extends Command {
 
         if (collapseBy != null) {
             annotateTips(sampledTree, taxonMap, collapseBy, ignoreMissing);
-            pruneCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseBy, leaveRepresentative, subtreeMap);
+            pruneCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseBy, annotateOnly, leaveRepresentative, subtreeMap);
 //        collapseCollapsedSubtrees(sampledTree, sampledTree.getRootNode(), collapseAttributeName);
             int count = subtreeMap.values().stream().mapToInt(subtree -> subtree.tips.size()).sum();
             if (isVerbose) {
@@ -79,7 +80,7 @@ public class Sample extends Command {
         }
         if (clumpBy != null) {
             annotateTips(sampledTree, taxonMap, clumpBy, ignoreMissing);
-            clumpByAttribute(sampledTree, sampledTree.getRootNode(), clumpBy, leaveRepresentative, subtreeMap);
+            clumpByAttribute(sampledTree, sampledTree.getRootNode(), clumpBy, annotateOnly, leaveRepresentative, subtreeMap);
             if (isVerbose) {
                 outStream.println("Clumped tips by " + collapseBy + "");
                 outStream.println();
@@ -214,10 +215,10 @@ public class Sample extends Command {
      * @return
      */
     private void clumpByAttribute(MutableRootedTree tree, Node node, String attributeName,
-                                  boolean leaveRepresentative, Map<String, Subtree> subtrees) {
+                                  boolean annotateOnly, boolean leaveRepresentative, Map<String, Subtree> subtrees) {
         if (!tree.isExternal(node)) {
             for (Node child : tree.getChildren(node)) {
-                clumpByAttribute(tree, child, attributeName, leaveRepresentative, subtrees);
+                clumpByAttribute(tree, child, attributeName, annotateOnly, leaveRepresentative, subtrees);
             }
 
             Map<String, List<Node>> clumps = new HashMap<>();
@@ -245,15 +246,24 @@ public class Sample extends Command {
                         }
                         tree.removeChild(externalNode, node);
                     }
-                    Node tip = tree.createExternalNode(
-                            Taxon.getTaxon(
-                                    (leaveRepresentative ? representative + "|" : "") +
-                                            name + "|" + value + "|" + tips.size()));
-                    tree.addChild(tip, node);
-                    tree.setLength(tip, minLength);
-                    tip.setAttribute(attributeName, value);
-                    tip.setAttribute("tips", tips.size());
+                    if (annotateOnly) {
+                        node.setAttribute("!collapse", "{\"clumped\"," + tips.size() + "}");
+                        node.setAttribute(attributeName, value);
+                        node.setAttribute("tip_count", tips.size());
+                        Node newNode = tree.createInternalNode(externalNodes);
+                        tree.addChild(newNode, node);
+                        tree.setLength(newNode, minLength);
+                    } else {
 
+                        Node tip = tree.createExternalNode(
+                                Taxon.getTaxon(
+                                        (leaveRepresentative ? representative + "|" : "") +
+                                                name + "|" + value + "|" + tips.size()));
+                        tree.addChild(tip, node);
+                        tree.setLength(tip, minLength);
+                        tip.setAttribute(attributeName, value);
+                        tip.setAttribute("tip_count", tips.size());
+                    }
                     subtrees.put(name, new Subtree(name, null, attributeName, value, tips));
                 }
             }
@@ -280,7 +290,7 @@ public class Sample extends Command {
 
 
     private void pruneCollapsedSubtrees(MutableRootedTree tree, Node node, String attributeName,
-                                        boolean leaveRepresentative, Map<String, Subtree> subtrees) {
+                                        boolean annotateOnly, boolean leaveRepresentative, Map<String, Subtree> subtrees) {
         if (!tree.isExternal(node)) {
             Set<Object> attributes = getTipAttributes(tree, node, attributeName).keySet();
             if (attributes.size() == 1) {
@@ -289,30 +299,38 @@ public class Sample extends Command {
                 List<Node> externalNodes = tree.getExternalNodes(node);
                 String representative = null;
                 double minDivergence = Double.MAX_VALUE;
+                double maxDivergence = 0.0;
                 for (Node tip : externalNodes) {
                     double d = tree.getHeight(node) - tree.getHeight(tip);
                     if (d < minDivergence) {
                         minDivergence = d;
                         representative = tree.getTaxon(tip).getName();
                     }
+                    if (d > maxDivergence) {
+                        maxDivergence = d;
+                    }
                 }
                 List<String> tips = externalNodes.stream().map(node1 -> tree.getTaxon(node1).getName()).collect(Collectors.toList());
-                Node parent = tree.getParent(node);
-                tree.removeChild(node, parent);
-                Node tip = tree.createExternalNode(
-                        Taxon.getTaxon(
-                                (leaveRepresentative ? representative + "|" : "") +
-                                        name + "|" + value + "|" + tips.size()));
-                tree.addChild(tip, parent);
-                tree.setLength(tip, leaveRepresentative ? minDivergence : tree.getLength(node));
-                tip.setAttribute(attributeName, value);
-                tip.setAttribute("tips", tips.size());
-
+                String taxonName = (leaveRepresentative ? representative + "|" : "") + name + "|" + value + "|" + tips.size();
+                if (annotateOnly) {
+                    node.setAttribute("!collapse", new Object[] {"collapsed",maxDivergence});
+                    node.setAttribute("Name", taxonName);
+                    node.setAttribute(attributeName, value);
+                    node.setAttribute("tip_count", tips.size());
+                } else {
+                    Node parent = tree.getParent(node);
+                    tree.removeChild(node, parent);
+                    Node tip = tree.createExternalNode(Taxon.getTaxon(taxonName));
+                    tree.addChild(tip, parent);
+                    tree.setLength(tip, leaveRepresentative ? minDivergence : tree.getLength(node));
+                    tip.setAttribute(attributeName, value);
+                    node.setAttribute("tip_count", tips.size());
+                }
                 subtrees.put(name, new Subtree(name, node, attributeName, value, tips));
             } else {
 
                 for (Node child : tree.getChildren(node)) {
-                    pruneCollapsedSubtrees(tree, child, attributeName, leaveRepresentative, subtrees);
+                    pruneCollapsedSubtrees(tree, child, attributeName, annotateOnly, leaveRepresentative, subtrees);
                 }
             }
         }

@@ -293,7 +293,9 @@ class ClusterFunk {
                         options.addOption(INDEX_COLUMN);
                         options.addOption(INDEX_FIELD);
                         options.addOption(HEADER_DELIMITER);
-                        options.addOption(KEEP_TAXA);
+                        options.addOption(COLLAPSE_BY);
+                        options.addOption(CLUMP_BY);
+                        options.addOption(ANNOTATE_ONLY);
                         options.addOption(IGNORE_MISSING);
                         break;
                     case SCALE:
@@ -713,9 +715,10 @@ class ClusterFunk {
                         1000,
                         "adm0",
                         "adm1",
-                        "adm2",
-                        "adm2",
-                        false,
+                        commandLine.getOptionValue("collapse-by", null),
+                        commandLine.getOptionValue("clump-by", null),
+                        commandLine.hasOption("annotate-only"),
+                        commandLine.hasOption("leave-representative"),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;

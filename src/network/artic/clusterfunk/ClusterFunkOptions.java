@@ -304,8 +304,23 @@ class ClusterFunkOptions {
             .argName("attribute_name")
             .hasArg()
             .required(false)
-            .desc("an attribute to collapse children by")
+            .desc("an attribute to collapse homogenous subtrees by")
             .type(String.class).build();
+
+    final static Option CLUMP_BY = Option.builder()
+            .longOpt("clump-by")
+            .argName("attribute_name")
+            .hasArg()
+            .required(false)
+            .desc("an attribute to clump homogenous children by")
+            .type(String.class).build();
+
+    final static Option ANNOTATE_ONLY = Option.builder()
+            .longOpt("annotate-only")
+            .required(false)
+            .desc("only annotate clumped, collapsed and sampled tips (default false)")
+            .type(String.class).build();
+
 
     final static Option MIN_SUBTREE_SIZE = Option.builder()
             .longOpt("min-size")
