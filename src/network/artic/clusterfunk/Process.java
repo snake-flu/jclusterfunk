@@ -196,8 +196,8 @@ public class Process {
     static final String[] GEO_COLUMNS = { "NUTS1","longitude","latitude","utla","location" };
 
     public static void main(String[] args) {
-        List<String> dateSet = createDateSet(2021, 4, 1, 2021, 6, 17);
-        List<String> dateAddedList = createDateSet(2021, 6, 3, 2021, 6, 17);
+        List<String> dateSet = createDateSet(2021, 4, 1, 2021, 6, 24);
+        List<String> dateAddedList = createDateSet(2021, 6, 10, 2021, 6, 24);
 
         String[] lineages = { "B.1.617.2", "B.1.1.7"};
         Set<String> lineageSet = new HashSet<>(Arrays.asList(lineages));
@@ -210,6 +210,8 @@ public class Process {
         Map<String, String> dateAddedMap = new HashMap<>();
 
         String latestDateAdded = "";
+
+        int maxWeek = 0;
 
         for (String dateAdded : dateAddedList) {
             String filename = "cog_" + dateAdded + "_all_metadata.csv";
@@ -224,7 +226,6 @@ public class Process {
                 rows = filter(rows, "sample_date", new HashSet<>(dateSet));
                 outStream.println("         since march only: " + rows.size());
 
-
                 int newCount = 0;
                 for (CSVRecord row : rows) {
                     String cogId = row.get("central_sample_id");
@@ -234,6 +235,10 @@ public class Process {
                         newCount += 1;
                     }
                     rowMap.put(cogId, row);
+                    int week = Integer.parseInt(row.get("epi_week"));
+                    if (week > maxWeek) {
+                        maxWeek = week;
+                    }
                 }
                 outStream.println("         new sequences: " + newCount);
                 outStream.println();
@@ -298,7 +303,7 @@ public class Process {
 
             writer.println("epi_week,utla,lineage,count");
 
-            for (int week = 52; week <= 77; week += 1) {
+            for (int week = 52; week <= maxWeek; week += 1) {
                 Map<String, Integer> locationCountsB117 = new HashMap<>();
 //                Map<String, Integer> locationCountsB117Travel = new HashMap<>();
                 Map<String, Integer> locationCountsB16172 = new HashMap<>();
