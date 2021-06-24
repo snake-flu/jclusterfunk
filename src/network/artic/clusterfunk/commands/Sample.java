@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
  */
 public class Sample extends Command {
     enum CollapseType {
-        CLUSTER("cluster"),
-        CLUMP("clump");
+        COLLAPSED("collapsed"),
+        CLUMPED("clumped");
 
         CollapseType(String name) {
             this.name = name;
@@ -38,6 +38,7 @@ public class Sample extends Command {
 
     public Sample(String treeFileName,
                   String metadataFileName,
+                  String protectTaxa,
                   String outputPath,
                   String outputFileStem,
                   FormatType outputFormat,
@@ -49,12 +50,13 @@ public class Sample extends Command {
                   String secondaryAttribute,
                   String collapseBy,
                   String clumpBy,
-                  boolean annotateOnly,
-                  boolean leaveRepresentative,
+                  int minCollapse,
+                  int minClump,
+                  int maxSoft,
                   boolean ignoreMissing,
                   boolean isVerbose) {
 
-        super(metadataFileName, null, indexColumn, indexHeader, headerDelimiter, isVerbose);
+                super(metadataFileName, protectTaxa, indexColumn, indexHeader, headerDelimiter, isVerbose);
 
         String path = checkOutputPath(outputPath);
 
@@ -86,7 +88,7 @@ public class Sample extends Command {
 
         if (collapseBy != null) {
             annotateTips(sampledTree, taxonMap, collapseBy, ignoreMissing);
-            clusterByAttribute(sampledTree, sampledTree.getRootNode(), collapseBy, 100, 5, subtreeMap);
+            clusterByAttribute(sampledTree, sampledTree.getRootNode(), collapseBy, maxSoft, minCollapse, subtreeMap);
             int count = subtreeMap.values().stream().mapToInt(subtree -> subtree.tips.size()).sum();
             if (isVerbose) {
                 outStream.println("Collapsed subtrees by " + collapseBy + " to " + subtreeMap.size() + " subtrees (containing " + count + " tips)");
@@ -95,7 +97,7 @@ public class Sample extends Command {
         }
         if (clumpBy != null) {
             annotateTips(sampledTree, taxonMap, clumpBy, ignoreMissing);
-            clumpByAttribute(sampledTree, sampledTree.getRootNode(), clumpBy, 100, 5, subtreeMap);
+            clumpByAttribute(sampledTree, sampledTree.getRootNode(), clumpBy, maxSoft, minClump, subtreeMap);
             if (isVerbose) {
                 outStream.println("Clumped tips by " + collapseBy + "");
                 outStream.println();
@@ -249,7 +251,7 @@ public class Sample extends Command {
                         tree.setRoot(node);
                     }
 
-                    clump.setAttribute("!collapse", new Object[] {CollapseType.CLUMP, tips.size(), minLength, maxLength});
+                    clump.setAttribute("!collapse", new Object[] {CollapseType.CLUMPED, tips.size(), minLength, maxLength});
                     clump.setAttribute("Name", taxonName);
                     clump.setAttribute(attributeName, value);
                     clump.setAttribute("tip_count", tips.size());
@@ -257,7 +259,7 @@ public class Sample extends Command {
                     tree.addChild(clump, node);
                     tree.setLength(clump, 0.0);
 
-                    subtrees.put(name, new Subtree(CollapseType.CLUMP, name, null, attributeName, value, tips, 0.0, maxLength));
+                    subtrees.put(name, new Subtree(CollapseType.CLUMPED, name, null, attributeName, value, tips, 0.0, maxLength));
                 }
             }
         } else {
@@ -288,7 +290,7 @@ public class Sample extends Command {
                 List<String> tips = externalNodes.stream().map(node1 -> tree.getTaxon(node1).getName()).collect(Collectors.toList());
                 String taxonName = name + "|" + value + "|" + tips.size();
 
-                    node.setAttribute("!collapse", new Object[] {CollapseType.CLUSTER, maxDivergence, minDivergence, tips.size()});
+                    node.setAttribute("!collapse", new Object[] {CollapseType.COLLAPSED, maxDivergence, minDivergence, tips.size()});
                     node.setAttribute("Name", taxonName);
                     node.setAttribute(attributeName, value);
                     node.setAttribute("tip_count", tips.size());
@@ -300,7 +302,7 @@ public class Sample extends Command {
                     tree.addChild(tip, parent);
                     tree.setLength(tip, minDivergence);
                 }
-                subtrees.put(name, new Subtree(CollapseType.CLUSTER, name, node, attributeName, value, tips, minDivergence, maxDivergence));
+                subtrees.put(name, new Subtree(CollapseType.COLLAPSED, name, node, attributeName, value, tips, minDivergence, maxDivergence));
 
             } else {
 

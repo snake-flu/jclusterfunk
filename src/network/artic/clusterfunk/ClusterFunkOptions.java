@@ -315,12 +315,29 @@ class ClusterFunkOptions {
             .desc("an attribute to clump homogenous children by")
             .type(String.class).build();
 
-    final static Option ANNOTATE_ONLY = Option.builder()
-            .longOpt("annotate-only")
+    final static Option MIN_COLLAPSED_SIZE = Option.builder()
+            .longOpt("min-collapsed")
+            .argName("size")
+            .hasArg()
             .required(false)
-            .desc("only annotate clumped, collapsed and sampled tips (default false)")
-            .type(String.class).build();
+            .desc("minimum number of tips in a collapsed subtree")
+            .type(Integer.class).build();
 
+    final static Option MIN_CLUMPED_SIZE = Option.builder()
+            .longOpt("min-clumped")
+            .argName("size")
+            .hasArg()
+            .required(false)
+            .desc("minimum number of tips in a clump")
+            .type(Integer.class).build();
+
+    final static Option MAX_SOFT = Option.builder()
+            .longOpt("max-soft")
+            .argName("size")
+            .hasArg()
+            .required(false)
+            .desc("maximum number of tips in a soft collapsed node")
+            .type(Integer.class).build();
 
     final static Option MIN_SUBTREE_SIZE = Option.builder()
             .longOpt("min-size")

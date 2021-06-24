@@ -287,6 +287,7 @@ class ClusterFunk {
                     case SAMPLE:
                         options.addOption(INPUT);
                         options.addOption(METADATA);
+                        options.addOption(TAXA);
                         options.addOption(OUTPUT_PATH);
                         options.addOption(OUTPUT_PREFIX);
                         options.addOption(OUTPUT_FORMAT);
@@ -295,7 +296,9 @@ class ClusterFunk {
                         options.addOption(HEADER_DELIMITER);
                         options.addOption(COLLAPSE_BY);
                         options.addOption(CLUMP_BY);
-                        options.addOption(ANNOTATE_ONLY);
+                        options.addOption(MIN_COLLAPSED_SIZE);
+                        options.addOption(MIN_CLUMPED_SIZE);
+                        options.addOption(MAX_SOFT);
                         options.addOption(IGNORE_MISSING);
                         break;
                     case SCALE:
@@ -706,6 +709,7 @@ class ClusterFunk {
                 new Sample(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("metadata"),
+                        commandLine.getOptionValue("taxa"),
                         commandLine.getOptionValue("output"),
                         commandLine.getOptionValue("prefix"),
                         format,
@@ -717,8 +721,9 @@ class ClusterFunk {
                         "adm1",
                         commandLine.getOptionValue("collapse-by", null),
                         commandLine.getOptionValue("clump-by", null),
-                        commandLine.hasOption("annotate-only"),
-                        commandLine.hasOption("leave-representative"),
+                        Integer.parseInt(commandLine.getOptionValue("min-collapsed", "5")),
+                        Integer.parseInt(commandLine.getOptionValue("min-clumped", "5")),
+                        Integer.parseInt(commandLine.getOptionValue("max-soft", "100")),
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
