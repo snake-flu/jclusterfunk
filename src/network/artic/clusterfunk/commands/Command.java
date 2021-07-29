@@ -583,11 +583,13 @@ abstract class Command {
                         first = false;
                     }
                     String key = record.get(indexColumn);
-                    if (csv.containsKey(key)) {
-                        errorStream.println("Duplicate index value, " + key + " in metadata table");
+                    if (!key.isEmpty()) {
+                        if (csv.containsKey(key)) {
+                            errorStream.println("Duplicate index value, " + key + " in metadata table");
 //                        System.exit(1);
+                        }
+                        csv.put(key, record);
                     }
-                    csv.put(key, record);
                 }
             } else {
                 // key the records against the first column
@@ -598,11 +600,13 @@ abstract class Command {
                         first = false;
                     }
                     String key = record.get(0);
-                    if (csv.containsKey(key)) {
-                        errorStream.println("Duplicate index value, " + key + " in metadata table");
+                    if (!key.isEmpty()) {
+                        if (csv.containsKey(key)) {
+                            errorStream.println("Duplicate index value, " + key + " in metadata table");
 //                        System.exit(1);
+                        }
+                        csv.put(key, record);
                     }
-                    csv.put(key, record);
                 }
             }
         } catch (IOException e) {
