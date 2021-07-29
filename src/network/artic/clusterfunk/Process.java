@@ -196,8 +196,8 @@ public class Process {
     static final String[] GEO_COLUMNS = { "NUTS1","longitude","latitude","utla","location" };
 
     public static void main(String[] args) {
-        List<String> dateSet = createDateSet(2021, 4, 1, 2021, 6, 24);
-        List<String> dateAddedList = createDateSet(2021, 6, 10, 2021, 6, 24);
+        List<String> dateSet = createDateSet(2021, 4, 1, 2021, 7, 5);
+        List<String> dateAddedList = createDateSet(2021, 6, 20, 2021, 7, 5);
 
         String[] lineages = { "B.1.617.2", "B.1.1.7"};
         Set<String> lineageSet = new HashSet<>(Arrays.asList(lineages));
