@@ -39,64 +39,44 @@ public class Insert extends Command {
         // map with tip id and list of taxa to insert
         Map<Taxon, List<String>> insertionMap = new HashMap<>();
 
-        Map<String, List<Taxon>> insertionLocationMap = new HashMap<>();
+        int insertionCount = 0;
 
         for (String key : metadata.keySet()) {
-            Node tip = tipMap.get(key);
 
-            String taxa = metadata.get(key).get(destinationColumn);
-            String[] insertions = taxa.split("\\|");
+            String destination = metadata.get(key).get(destinationColumn);
+            if (!destination.isEmpty()) {
+                Node tip = tipMap.get(destination);
 
-            if (tip != null) {
-                List<String> insertionList = Arrays.asList(insertions);
+                if (tip != null) {
+                    Taxon locationTaxon = tree.getTaxon(tip);
 
-                Taxon locationTaxon = tree.getTaxon(tip);
+                    // add the list to a map keyed by taxon of insertion location
+                    List<String> insertionList = insertionMap.getOrDefault(locationTaxon, new ArrayList<>());
+                    insertionList.add(key);
+                    insertionMap.put(locationTaxon, insertionList);
 
-                // add the list to a map keyed by taxon of insertion location
-                insertionMap.put(locationTaxon, insertionList);
-
-                // add all locations to a map keyed by insertion name
-                for (String insertion : insertionList) {
-                    List<Taxon> locations = insertionLocationMap.getOrDefault(insertion, new ArrayList<>());
-                    locations.add(locationTaxon);
-                    insertionLocationMap.put(insertion, locations);
-                }
-
-            } else {
-                if (!ignoreMissing) {
-                    errorStream.println("Taxon, " + key + ", not found in tree");
-                    System.exit(1);
-                } else if (isVerbose) {
-                    outStream.println("Taxon, " + key + ", not found in tree");
+                    insertionCount += 1;
+                } else {
+                    if (!ignoreMissing) {
+                        errorStream.println("Destination taxon, " + destination + ", not found in tree");
+                        System.exit(1);
+                    } else if (isVerbose) {
+                        outStream.println("Destination taxon, " + destination + ", not found in tree");
+                    }
                 }
             }
         }
+
         MutableRootedTree outTree = new MutableRootedTree(tree);
 
-        insertTips(outTree, outTree.getRootNode(), 0,
-                (uniqueOnly ? InsertMode.UNIQUE_ONLY : InsertMode.DUPLICATES), insertionMap, insertionLocationMap);
+        insertTips(outTree, outTree.getRootNode(), 0, insertionMap);
 
         if (isVerbose) {
-            int uniqueLocationCount = 0;
 
-            for (String key : insertionLocationMap.keySet()) {
-                List<Taxon> locations = insertionLocationMap.get(key);
-                if (locations.size() == 1) {
-                    uniqueLocationCount += 1;
-                }
-            }
-
-            if (uniqueOnly) {
-                outStream.println("Only adding taxa that have a single location");
-                outStream.println("Number of taxa added: " + uniqueLocationCount);
-                outStream.println("Final number of tips: " + outTree.getExternalNodes().size());
+                outStream.println("   Number of taxa added: " + insertionCount);
+                outStream.println(" Number of destinations: " + insertionMap.keySet().size());
+                outStream.println("   Final number of tips: " + outTree.getExternalNodes().size());
                 outStream.println();
-            } else {
-                outStream.println("           Number of taxa added: " + insertionLocationMap.keySet().size());
-                outStream.println("Taxa added to a single location: " + uniqueLocationCount);
-                outStream.println("           Final number of tips: " + outTree.getExternalNodes().size());
-                outStream.println();
-            }
         }
 
 
@@ -108,11 +88,11 @@ public class Insert extends Command {
         writeTreeFile(outTree, outputFileName, outputFormat);
     }
 
-    private void insertTips(MutableRootedTree tree, Node node, int depth, InsertMode mode,
-                            Map<Taxon, List<String>> insertionMap, Map<String, List<Taxon>> insertionLocationMap) {
+    private void insertTips(MutableRootedTree tree, Node node, int depth,
+                            Map<Taxon, List<String>> insertionMap) {
         if (!tree.isExternal(node)) {
             for (Node child: tree.getChildren(node)) {
-                insertTips(tree, child, depth + 1, mode, insertionMap, insertionLocationMap);
+                insertTips(tree, child, depth + 1, insertionMap);
             }
         } else {
             Taxon locationTaxon = tree.getTaxon(node);
@@ -122,16 +102,7 @@ public class Insert extends Command {
                 List<Taxon> taxaToInsert = new ArrayList<>();
 
                 for (String insertion : insertions) {
-                    List<Taxon> insertionLocations = insertionLocationMap.get(insertion);
-                    if (insertionLocations.size() > 1) {
-                        if (mode != InsertMode.UNIQUE_ONLY) {
-                            int index = insertionLocations.indexOf(locationTaxon);
-                            assert (index >= 0);
-                            taxaToInsert.add(Taxon.getTaxon(insertion + "|amb_" + (index + 1)));
-                        }
-                    } else {
-                        taxaToInsert.add(Taxon.getTaxon(insertion));
-                    }
+                    taxaToInsert.add(Taxon.getTaxon(insertion));
                 }
 
                 if (taxaToInsert.size() > 0) {
