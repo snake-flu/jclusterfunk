@@ -3,6 +3,7 @@ package network.artic.clusterfunk.commands;
 import jebl.evolution.graphs.Node;
 import jebl.evolution.trees.MutableRootedTree;
 import jebl.evolution.trees.RootedTree;
+import jebl.evolution.trees.RootedTreeUtils;
 import network.artic.clusterfunk.FormatType;
 
 /**
@@ -14,16 +15,32 @@ public class Scale extends Command {
                  FormatType outputFormat,
                  double scaleFactor,
                  double branchThreshold,
+                 boolean scaleRootHeight,
+                 double rootHeight,
                  boolean isVerbose) {
 
         super(isVerbose);
 
+        RootedTree tree = readTree(treeFileName);
+
+        if (scaleRootHeight) {
+            if (rootHeight <= 0.0) {
+                errorStream.println("Root height should be > 0.0");
+                System.exit(1);
+            }
+            double tipDistance = RootedTreeUtils.getAverageTipDistance(tree, tree.getRootNode());
+            scaleFactor = rootHeight / tipDistance;
+            if (isVerbose) {
+                outStream.println("Scaling root height to: " + rootHeight);
+            }
+        }
         if (scaleFactor <= 0.0) {
             errorStream.println("Scale factor should be > 0.0");
             System.exit(1);
         }
-
-        RootedTree tree = readTree(treeFileName);
+        if (isVerbose) {
+            outStream.println("Scaling all branch lengths by: " + scaleFactor);
+        }
 
         MutableRootedTree outTree = new MutableRootedTree(tree);
 

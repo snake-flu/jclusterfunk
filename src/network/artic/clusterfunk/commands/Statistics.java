@@ -1,12 +1,10 @@
 package network.artic.clusterfunk.commands;
 
-import jebl.evolution.graphs.Node;
 import jebl.evolution.trees.RootedTree;
+import jebl.evolution.trees.RootedTreeUtils;
+import jebl.evolution.trees.Utils;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.PrintStream;
 
 /**
  *
@@ -27,27 +25,27 @@ public class Statistics extends Command {
 
         RootedTree tree = readTree(treeFileName);
 
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputFileName)));
+        writeStatistics(tree, outStream);
 
-            writer.print("tip_count");
-            writer.print("\t");
-            writer.print("length");
-            writer.print("\t");
-            writer.print("changes");
-            writer.println();
-
-            for (Node node : tree.getInternalNodes()) {
-                if (!tree.isRoot(node)) {
-                    writer.print(tree.getExternalNodeCount(node));
-                    writer.print("\t");
-                    writer.print(tree.getLength(node));
-                    writer.print("\t");
-                    writer.print((int)(tree.getLength(node) * GENOME_LENGTH));
-                    writer.println();
-                }
-            }
+//        try {
+        //writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputFileName)));
+//            writer.print("tip_count");
+//            writer.print("\t");
+//            writer.print("length");
+//            writer.print("\t");
+//            writer.print("changes");
+//            writer.println();
+//
+//            for (Node node : tree.getInternalNodes()) {
+//                if (!tree.isRoot(node)) {
+//                    writer.print(tree.getExternalNodeCount(node));
+//                    writer.print("\t");
+//                    writer.print(tree.getLength(node));
+//                    writer.print("\t");
+//                    writer.print((int)(tree.getLength(node) * GENOME_LENGTH));
+//                    writer.println();
+//                }
+//            }
 //            writer.print("tree");
 //            writer.print("\t");
 //            writer.print("tip");
@@ -56,10 +54,10 @@ public class Statistics extends Command {
 //            writer.print("\t");
 //            writer.print("tmrca");
 //            writer.println();
-        } catch (IOException ioe) {
-            errorStream.println("Error opening output file: " + ioe.getMessage());
-            System.exit(1);
-        }
+//        } catch (IOException ioe) {
+//            errorStream.println("Error opening output file: " + ioe.getMessage());
+//            System.exit(1);
+//        }
 
 //        final PrintWriter finalWriter = writer;
 //
@@ -68,6 +66,18 @@ public class Statistics extends Command {
 //        });
 //
 //        finalWriter.close();
+    }
+
+    private void writeStatistics(RootedTree tree, PrintStream out) {
+        out.println("tip count\t" + (RootedTreeUtils.getTipCount(tree, tree.getRootNode())));
+        out.println("binary?\t" + (RootedTreeUtils.isBinary(tree)));
+        out.println("ultrametric?\t" + (RootedTreeUtils.isUltrametric(tree, 0.0001)));
+        out.println("root height\t" + (tree.getHeight(tree.getRootNode())));
+        out.println("max tip height\t" + (RootedTreeUtils.getMaxTipHeight(tree, tree.getRootNode())));
+        out.println("min tip height\t" + (RootedTreeUtils.getMinTipHeight(tree, tree.getRootNode())));
+        out.println("root to tip distance\t" + (RootedTreeUtils.getAverageTipDistance(tree, tree.getRootNode())));
+        out.println("max node count\t" + Utils.maxLevels(tree));
+        out.println("total length\t" + Utils.getLength(tree));
     }
 
 

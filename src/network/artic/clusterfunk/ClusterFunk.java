@@ -14,7 +14,7 @@ import static network.artic.clusterfunk.ClusterFunkOptions.*;
 class ClusterFunk {
 
     private final static String NAME = "jclusterfunk";
-    private static final String VERSION = "v0.0.25";
+    private static final String VERSION = "v1.0";
     private static final String HEADER = NAME + " " + VERSION + "\nBunch of functions for trees\n\n";
     private static final String FOOTER = "";
 
@@ -155,42 +155,6 @@ class ClusterFunk {
                         options.addOption(TIP_ATTRIBUTES);
                         options.addOption(IGNORE_MISSING);
                         break;
-                    case GRAPEVINE_ASSIGN_LINEAGES:
-                        options.addOption(INPUT);
-                        options.addOption(METADATA);
-                        options.addOption(OUTPUT_PATH);
-                        options.addOption(OUTPUT_PREFIX);
-                        options.addOption(OUTPUT_FORMAT);
-                        break;
-                    case GRAPEVINE_ASSIGN_REPRESENTATIVES:
-                        options.addOption(INPUT);
-                        options.addOption(METADATA);
-                        options.addOption(OUTPUT_FILE);
-                        options.addOption(OUTPUT_FORMAT);
-                        options.addOption(INDEX_COLUMN);
-                        options.addOption(INDEX_FIELD);
-                        options.addOption(HEADER_DELIMITER);
-                        options.addOption(IGNORE_MISSING);
-                        options.addOption(ATTRIBUTE);
-                        break;
-                    case GRAPEVINE_LABEL_CLUSTERS:
-                        METADATA.setRequired(false);
-                        options.addOption(INPUT);
-                        options.addOption(METADATA);
-                        LINEAGE_FILE.setRequired(false);
-                        options.addOption(LINEAGE_FILE);
-                        options.addOption(OUTPUT_PATH);
-                        options.addOption(OUTPUT_PREFIX);
-                        options.addOption(OUTPUT_FORMAT);
-                        break;
-                    case GRAPEVINE_SUBLINEAGES:
-                        options.addOption(INPUT);
-                        options.addOption(OUTPUT_PATH);
-                        options.addOption(OUTPUT_PREFIX);
-                        options.addOption(OUTPUT_FORMAT);
-                        options.addOption(OUTPUT_METADATA);
-                        options.addOption(MIN_CLUSTER_SIZE);
-                        break;
                     case INSERT:
                         options.addOption(INPUT);
                         options.addOption(METADATA);
@@ -211,27 +175,6 @@ class ClusterFunk {
                         options.addOption(ADD_COLUMNS);
                         options.addOption(EXTRACT);
                         options.addOption(OVERWRITE);
-                        break;
-                    case POLECAT:
-                        options.addOption(INPUT);
-                        options.addOption(METADATA);
-                        options.addOption(TAXA);
-                        options.addOption(OUTPUT_FILE);
-                        options.addOption(MIN_CLUSTER_SIZE);
-                        options.addOption(INDEX_COLUMN);
-                        options.addOption(INDEX_FIELD);
-                        options.addOption(HEADER_DELIMITER);
-                        options.addOption(MIN_CLUSTER_SIZE);
-                        options.addOption(MAX_CLUSTER_SIZE);
-                        options.addOption(MAX_CLUSTER_AGE);
-                        options.addOption(MIN_CLUSTER_RECENCY);
-                        options.addOption(MAX_CLUSTER_RECENCY);
-                        options.addOption(MIN_UK);
-                        options.addOption(OPTIMIZE_BY);
-                        options.addOption(RANK_BY);
-                        options.addOption(MAX_CLUSTER_COUNT);
-                        options.addOption(MAX_DIVERGENCE);
-                        options.addOption(IGNORE_MISSING);
                         break;
                     case PRUNE:
                         options.addOption(INPUT);
@@ -306,7 +249,10 @@ class ClusterFunk {
                         options.addOption(INPUT);
                         options.addOption(OUTPUT_FILE);
                         options.addOption(OUTPUT_FORMAT);
-                        options.addOption(SCALE_FACTOR);
+                        OptionGroup scaleGroup = new OptionGroup();
+                        scaleGroup.addOption(SCALE_FACTOR);
+                        scaleGroup.addOption(ROOT_HEIGHT);
+                        options.addOptionGroup(scaleGroup);
                         options.addOption(BRANCH_THRESHOLD);
                         break;
                     case SPLIT:
@@ -538,46 +484,6 @@ class ClusterFunk {
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
-            case GRAPEVINE_ASSIGN_LINEAGES:
-                new GrapevineAssignLineages(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("metadata"),
-                        commandLine.getOptionValue("output"),
-                        commandLine.getOptionValue("prefix"),
-                        format,
-                        isVerbose);
-                break;
-            case GRAPEVINE_ASSIGN_REPRESENTATIVES:
-                new GrapevineAssignRepresentatives(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("metadata"),
-                        commandLine.getOptionValue("output"),
-                        format,
-                        commandLine.getOptionValue("id-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
-                        commandLine.hasOption("ignore-missing"),
-                        isVerbose);
-                break;
-            case GRAPEVINE_LABEL_CLUSTERS:
-                new GrapevineLabelClusters(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("metadata"),
-                        commandLine.getOptionValue("lineages"),
-                        commandLine.getOptionValue("output"),
-                        commandLine.getOptionValue("prefix"),
-                        format,
-                        isVerbose);
-                break;
-            case GRAPEVINE_SUBLINEAGES:
-                new GrapevineSublineages(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("output"),
-                        commandLine.getOptionValue("prefix"),
-                        format,
-                        Integer.parseInt(commandLine.getOptionValue("min-size", "50")),
-                        isVerbose);
-                break;
             case MERGE:
                 new Merge(
                         commandLine.getOptionValue("input"),
@@ -587,48 +493,6 @@ class ClusterFunk {
                         commandLine.getOptionValues("columns"),
                         commandLine.hasOption("overwrite"),
                         commandLine.hasOption("extract"),
-                        isVerbose);
-                break;
-            case POLECAT:
-                Polecat.Optimization optimization = Polecat.Optimization.MAXIMUM;
-                Polecat.Criterion optimizationCriterion = Polecat.Criterion.getValue(commandLine.getOptionValue("optimize-by", "growth-rate"));
-                if (optimizationCriterion == null) {
-                    System.err.println("Unrecognized optimize-by criterion: " + commandLine.getOptionValue("optimize-by"));
-                    System.exit(1);
-                }
-                Polecat.Optimization ranking = Polecat.Optimization.MAXIMUM;
-                String rankBy = commandLine.getOptionValue("rank-by", "^recency");
-                if (rankBy.startsWith("^")) {
-                    ranking = Polecat.Optimization.MINIMUM;
-                    rankBy = rankBy.substring(1);
-                }
-                Polecat.Criterion rankCiterion = Polecat.Criterion.getValue(rankBy);
-                if (rankCiterion == null) {
-                    System.err.println("Unrecognized rank-by criterion: " + commandLine.getOptionValue("rank-by"));
-                    System.exit(1);
-                }
-
-                new Polecat(
-                        commandLine.getOptionValue("input"),
-                        commandLine.getOptionValue("metadata"),
-                        commandLine.getOptionValue("taxa"),
-                        commandLine.getOptionValue("output"),
-                        commandLine.getOptionValue("id-column", null),
-                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-                        commandLine.getOptionValue("field-delimeter", DEFAULT_DELIMITER),
-                        Integer.parseInt(commandLine.getOptionValue("min-size", "10")),
-                        Integer.parseInt(commandLine.getOptionValue("max-size", "-1")),
-                        Integer.parseInt(commandLine.getOptionValue("max-age", "90")),
-                        Integer.parseInt(commandLine.getOptionValue("min-recency", "-1")),
-                        Integer.parseInt(commandLine.getOptionValue("max-recency", "-1")),
-                        Double.parseDouble(commandLine.getOptionValue("min-UK", "0.5")),
-                        optimization,
-                        optimizationCriterion,
-                        ranking,
-                        rankCiterion,
-                        Integer.parseInt(commandLine.getOptionValue("max-count", "-1")),
-                        Double.parseDouble(commandLine.getOptionValue("max-divergence", "1.5")),
-                        commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
             case PRUNE:
@@ -647,23 +511,6 @@ class ClusterFunk {
                         commandLine.hasOption("ignore-missing"),
                         isVerbose);
                 break;
-//            case RACCOON_DOG:
-//                new RaccoonDog(
-//                        commandLine.getOptionValue("input"),
-//                        commandLine.getOptionValue("metadata"),
-//                        commandLine.getOptionValue("output"),
-//                        format,
-//                        commandLine.getOptionValue("output-metadata"),
-//                        commandLine.getOptionValue("id-column", null),
-//                        Integer.parseInt(commandLine.getOptionValue("id-field", "0")),
-//                        commandLine.getOptionValue("field-delimeter", "\\|"),
-//                        commandLine.getOptionValue("attribute"),
-//                        commandLine.getOptionValue("value"),
-//                        commandLine.getOptionValue("cluster-name"),
-//                        commandLine.getOptionValue("cluster-prefix"),
-//                        Integer.parseInt(commandLine.getOptionValue("max-child", "0")),
-//                        isVerbose);
-//                break;
             case RECONSTRUCT:
                 new Reconstruct(
                         commandLine.getOptionValue("input"),
@@ -728,12 +575,19 @@ class ClusterFunk {
                         isVerbose);
                 break;
             case SCALE:
+                if (commandLine.hasOption("height") && commandLine.hasOption("factor")) {
+                    System.out.println("Use only one of the 'factor' or 'height' options\n");
+                    printHelp(command, options);
+                    return;
+                }
                 new Scale(
                         commandLine.getOptionValue("input"),
                         commandLine.getOptionValue("output"),
                         format,
                         Double.parseDouble(commandLine.getOptionValue("factor", "1.0")),
                         Double.parseDouble(commandLine.getOptionValue("threshold", "-1.0")),
+                        commandLine.hasOption("height"),
+                        Double.parseDouble(commandLine.getOptionValue("height", "1.0")),
                         isVerbose);
                 break;
             case SPLIT:

@@ -1,6 +1,5 @@
 package network.artic.clusterfunk;
 
-import network.artic.clusterfunk.commands.Polecat;
 import org.apache.commons.cli.Option;
 
 /**
@@ -24,12 +23,7 @@ class ClusterFunkOptions {
         CONVERT("convert", "Convert tree from one format to another."),
         DIVIDE("divide", "Divide tree into approximately equal sized subtrees."),
         INSERT("insert", "Insert tips into the tree."),
-        GRAPEVINE_ASSIGN_LINEAGES("grapevine-assign-lineages", "Assign UK tips without lineages to a UK lineage."),
-        GRAPEVINE_ASSIGN_REPRESENTATIVES("grapevine-assign-representatives", "Assign representative tips names to internal nodes."),
-        GRAPEVINE_LABEL_CLUSTERS("grapevine-label-clusters", "Labels nodes in a tree with a cluster."),
-        GRAPEVINE_SUBLINEAGES("grapevine-sublineages", "split existing UK lineages into sub-lineages."),
         MERGE("merge", "Merge two metadata tables"),
-        POLECAT("polecat", "Write out stats for all clusters"),
         PRUNE("prune", "Prune out taxa from a list or based on metadata."),
         RECONSTRUCT("reconstruct", "Reconstruct internal node annotations."),
         REORDER("reorder", "Re-order nodes in ascending or descending clade size."),
@@ -393,6 +387,14 @@ class ClusterFunkOptions {
             .desc("the factor to scale all branches by")
             .type(Double.class).build();
 
+    final static Option ROOT_HEIGHT = Option.builder()
+            .longOpt("height")
+            .argName("value")
+            .required(true)
+            .numberOfArgs(1)
+            .desc("the height of the root to scale to")
+            .type(Double.class).build();
+
     final static Option INCREASING = Option.builder()
             .longOpt("increasing")
             .desc("order nodes by increasing clade size")
@@ -473,7 +475,6 @@ class ClusterFunkOptions {
             .desc("find the time of the stem above the MRCA (default false)")
             .type(String.class).build();
 
-    // polecat cluster stats options
     final static Option MIN_CLUSTER_SIZE = Option.builder()
             .longOpt("min-size")
             .argName("size")
@@ -482,76 +483,5 @@ class ClusterFunkOptions {
             .desc("minimum number of tips in a subcluster (default = 10)")
             .type(Integer.class).build();
 
-    final static Option MAX_CLUSTER_SIZE = Option.builder()
-            .longOpt("max-size")
-            .argName("size")
-            .hasArg()
-            .required(false)
-            .desc("maximum number of tips in a subcluster (default = none)")
-            .type(Integer.class).build();
-
-    final static Option MAX_CLUSTER_AGE = Option.builder()
-            .longOpt("max-age")
-            .argName("days")
-            .hasArg()
-            .required(false)
-            .desc("maximum age of a cluster")
-            .type(Integer.class).build();
-
-    final static Option MIN_CLUSTER_RECENCY = Option.builder()
-            .longOpt("min-recency")
-            .argName("days")
-            .hasArg()
-            .required(false)
-            .desc("minimum recency of a cluster")
-            .type(Integer.class).build();
-
-    final static Option MAX_CLUSTER_RECENCY = Option.builder()
-            .longOpt("max-recency")
-            .argName("days")
-            .hasArg()
-            .required(false)
-            .desc("maximum recency of a cluster")
-            .type(Integer.class).build();
-
-    final static Option MIN_UK = Option.builder()
-            .longOpt("min-UK")
-            .argName("proportion")
-            .hasArg()
-            .required(false)
-            .desc("minimum proportion of UK tips")
-            .type(Integer.class).build();
-
-    final static Option OPTIMIZE_BY = Option.builder()
-            .longOpt("optimize-by")
-            .argName("statistic")
-            .hasArg()
-            .required(false)
-            .desc("Lineage statistic to optimize across ancestry by. Options: " + Polecat.Criterion.getValuesString())
-            .type(String.class).build();
-
-    final static Option RANK_BY = Option.builder()
-            .longOpt("rank-by")
-            .argName("statistic")
-            .hasArg()
-            .required(false)
-            .desc("cluster statistic to rank clusters by (append ^ to sort up). Options: " + Polecat.Criterion.getValuesString())
-            .type(String.class).build();
-
-    final static Option MAX_CLUSTER_COUNT = Option.builder()
-            .longOpt("max-count")
-            .argName("count")
-            .hasArg()
-            .required(false)
-            .desc("maximum number of clusters to report (default = all)")
-            .type(Integer.class).build();
-
-    final static Option MAX_DIVERGENCE = Option.builder()
-            .longOpt("max-divergence")
-            .argName("divergence")
-            .hasArg()
-            .required(false)
-            .desc("maximum divergence to include in counts/stats (default = 1.5)")
-            .type(Double.class).build();
 }
 
