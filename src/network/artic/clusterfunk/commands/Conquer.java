@@ -19,7 +19,6 @@ import java.util.Map;
 
 /**
  * The reverse of Divide - reconstructs a supertree from a set of subtrees
- * @deprecated
  */
 public class Conquer extends Command {
     private static final String[] TREE_EXTENSIONS = {".tree", ".nexus", ".nex", ".newick", ".nwk"};
