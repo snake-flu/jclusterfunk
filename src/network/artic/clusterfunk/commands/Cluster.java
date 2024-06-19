@@ -12,7 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
+ * Finds and annotates monophyletic clusters of taxa have the specified annotation value. The cluster number
+ * is an incrementing value.
  */
 public class Cluster extends Command {
     public Cluster(String treeFileName,

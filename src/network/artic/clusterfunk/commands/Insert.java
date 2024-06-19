@@ -9,7 +9,7 @@ import network.artic.clusterfunk.FormatType;
 import java.util.*;
 
 /**
- *
+ * Replaces a tip in a tree with a polytomy of specified taxa
  */
 public class Insert extends Command {
     enum InsertMode {
@@ -105,7 +105,7 @@ public class Insert extends Command {
                     taxaToInsert.add(Taxon.getTaxon(insertion));
                 }
 
-                if (taxaToInsert.size() > 0) {
+                if (!taxaToInsert.isEmpty()) {
                     Node parent = tree.getParent(node);
 
                     if (tree.getLength(node) > 0.0) {

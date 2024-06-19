@@ -6,7 +6,7 @@ import jebl.evolution.trees.RootedTree;
 import network.artic.clusterfunk.FormatType;
 
 /**
- *
+ * Collapses all branches less than a threshold to form a polytomy
  */
 public class Collapse extends Command {
     public Collapse(String treeFileName,

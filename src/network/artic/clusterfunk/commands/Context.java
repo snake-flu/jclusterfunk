@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- *
+ * Extracts subtrees that are close ancestors, siblings or children of a set of tip.
  */
 public class Context extends Command {
     private final static double GENOME_LENGTH = 29903;

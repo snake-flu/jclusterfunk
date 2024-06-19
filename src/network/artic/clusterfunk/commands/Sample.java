@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- *
+ * Sample taxa down using metadata attributes.
  */
 public class Sample extends Command {
     enum CollapseType {

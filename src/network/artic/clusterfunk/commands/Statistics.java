@@ -10,7 +10,6 @@ import java.io.PrintStream;
  *
  */
 public class Statistics extends Command {
-    private final static double GENOME_LENGTH = 29903;
 
     enum StatisticType {
         INTERNAL_BRANCH_LENGTHS

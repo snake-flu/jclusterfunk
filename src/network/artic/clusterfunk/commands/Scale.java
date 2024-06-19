@@ -7,7 +7,7 @@ import jebl.evolution.trees.RootedTreeUtils;
 import network.artic.clusterfunk.FormatType;
 
 /**
- *
+ * Scales branch lengths of a tree by a factor or to a specified root height.
  */
 public class Scale extends Command {
     public Scale(String treeFileName,

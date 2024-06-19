@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- *
+ * Finds the time of most recent common ancestor of a set of taxa
  */
 public class TMRCA extends Command {
     public TMRCA(String treeFileName,

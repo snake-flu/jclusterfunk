@@ -40,7 +40,7 @@ public class Extract extends Command {
             RootedTree tree = readTree(treeFileName);
             Map<Taxon, String> taxonMap = getTaxonMap(tree);
 
-            if (!ignoreMissing && targetTaxaList.size() > 0) {
+            if (!ignoreMissing && !targetTaxaList.isEmpty()) {
                 for (String key : targetTaxaList) {
                     if (!taxonMap.containsValue(key)) {
                         errorStream.println("Taxon, " + key + ", not found in tree");
@@ -58,13 +58,13 @@ public class Extract extends Command {
 
                 for (Node tip : tree.getExternalNodes()) {
                     String name = taxonMap.get(tree.getTaxon(tip));
-                    if (targetTaxaList.size() == 0 || targetTaxaList.contains(name)) {
+                    if (targetTaxaList.isEmpty() || targetTaxaList.contains(name)) {
                         writer.print(name);
                         for (String attributeName : attributeNames) {
                             writer.print(",");
                             Object value = tip.getAttribute(attributeName);
                             if (value != null) {
-                                writer.print(value.toString());
+                                writer.print(value);
                             }
                         }
                         writer.println();

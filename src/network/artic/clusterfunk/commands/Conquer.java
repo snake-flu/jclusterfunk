@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Divides up a tree into roughly equal sized subtrees. This can be used for dynamic tree building approaches.
- * One of either maxSubtreeCount or maxSubtreeSize can be specified (the other should be 0).
+ * The reverse of Divide - reconstructs a supertree from a set of subtrees
+ * @deprecated
  */
 public class Conquer extends Command {
     private static final String[] TREE_EXTENSIONS = {".tree", ".nexus", ".nex", ".newick", ".nwk"};

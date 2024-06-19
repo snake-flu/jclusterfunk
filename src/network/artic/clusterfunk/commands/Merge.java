@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Adds tip annotations from a metadata file. These can either be added to the tip labels or as NEXUS
- * metadata comments for the tips.
+ * Merges two metadata tables based on an index column (usually taxon names).
  */
 public class Merge extends Command {
     public Merge(String metadataFileName1,

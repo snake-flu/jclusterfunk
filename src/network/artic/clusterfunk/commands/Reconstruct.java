@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- *
+ * Reconstructs annotation values at internal nodes using parsimony.
  */
 public class Reconstruct extends Command {
 

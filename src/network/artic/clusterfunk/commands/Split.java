@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * Split the tree into subtrees defined by annotations of the tips or the nodes.
  */
 public class Split extends Command {
 

@@ -7,7 +7,7 @@ import network.artic.clusterfunk.FormatType;
 import java.util.*;
 
 /**
- *
+ * @deprecated
  */
 public class Subcluster extends Command {
 

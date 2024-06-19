@@ -8,15 +8,30 @@ The general command line for running jclusterfunk is:
 
 ### commands
 
-|command|description|
-|:---|:---|
-| `annotate` | Take data fields from a metadata file and apply either to the tip labels of the tree or as annotations as used by [FigTree](http://tree.bio.ed.ac.uk/software/figtree). |
-| `context` | Extracts subtrees that are close ancestors, siblings or children of a set of tip. |
-| `convert` | Convert the tree from one format to another without changing it. |
-| `prune` | Prune out sets of tips from a tree. |
-| `reorder` | Reorder branches at each node to have increasing or decreasing numbers of child nodes. |
-| `reroot` | Reroot the tree using an outgroup or at the midpoint. |
-| `split` | Split the tree into subtrees defined by annotations of the tips or the nodes. |
+| command         | description                                                                                                                                                                                                                          |
+|:----------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `annotate`      | Take data fields from a metadata file and apply either to the tip labels of the tree or as annotations as used by [FigTree](http://tree.bio.ed.ac.uk/software/figtree).                                                              |
+| `cluster`       | Finds and annotates monophyletic clusters of taxa have the specified annotation value. The cluster number is an incrementing value.                                                                                                  |
+| `collapse`      | Collapses branches less than a threshold into a polytomy.                                                                                                                                                                            |
+| `context`       | Extracts subtrees that are close ancestors, siblings or children of a set of tip.                                                                                                                                                    |
+| `convert`       | Convert the tree from one format to another without changing it.                                                                                                                                                                     |
+| `divide`        | Divides up a tree into roughly equal sized subtrees.                                                                                                                                                                                 |
+| `extract`       | Extracts metadata fields from the tips of a tree.                                                                                                                                                                                    |
+| `insert`        | Replaces a tip in a tree with a polytomy of specified taxa.                                                                                                                                                                          |
+| `merge`         | Merges two metadata tables based on an index column (usually taxon names).                                                                                                                                                           |
+| `prune`         | Prune out sets of tips from a tree.                                                                                                                                                                                                  |
+| `Reconstructs`  | Reconstructs annotation values at internal nodes using parsimony.                                                                                                                                                                    |
+| `reorder`       | Reorder branches at each node to have increasing or decreasing numbers of child nodes.                                                                                                                                               |
+| `reroot`        | Reroot the tree using an outgroup or at the midpoint.                                                                                                                                                                                |
+| `sample`        | Sample taxa down using metadata attributes.                                                                                                                                                                                                                                    |
+| `scale`         | Scales branch lengths of a tree by a factor or to a specified root height.                                                                                                                                                           |
+| `split`         | Split the tree into subtrees defined by annotations of the tips or the nodes.                                                                                                                                                        |
+| `statistics`    | Writes out a list of statistics and information about a tree.                                                                                                                                                                        |
+| `tmrca`         | Finds the time of most recent common ancestor of a set of taxa.                                                                                                                                                                      |
+
+annotate assign cluster collapse extract subcluster conquer context
+convert divide insert merge prune reconstruct reorder reroot sample scale
+split statistics tmrca
 
 ### general options
 
@@ -45,10 +60,10 @@ The general command line for running jclusterfunk is:
 `--index-field <field number>` The tip label field to use to match metadata rows indexed from 1 (default = whole label)
 
 `--field-delimiter <delimiter>` The delimiter used to specify fields in the tip labels (default `|`)
-                                     
+
 ### command specific options
 
-#### `annotate`                                
+#### `annotate`
 
 `--label-fields <columns>` A list of metadata columns to add as tip label header fields.
 

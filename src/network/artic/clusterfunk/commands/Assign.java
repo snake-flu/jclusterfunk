@@ -16,7 +16,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- *
+ * Assign lineages to branches
+ * @deprecated
  */
 public class Assign extends Command {
     public Assign(String treeFileName,
